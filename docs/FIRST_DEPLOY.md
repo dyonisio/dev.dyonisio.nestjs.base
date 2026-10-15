@@ -350,7 +350,10 @@ Daqui em diante, cada deploy é só o passo 6.
 | `database "nestjs_base" does not exist` | Banco não criado | Passo 5.4 |
 | `self-signed certificate` / `unable to verify` | Certificado não informado | Passo 5.2 e `DB_SSL_CA_FILE` |
 | `ADMIN_PASSWORD está com um valor de exemplo` | `.env` com a senha de exemplo | Passo 5.0 |
-| `/api/health` responde `database: down` | A Lambda não alcança o banco | Banco público com 5432 liberado para `0.0.0.0/0` (opção A) ou Lambda na VPC (opção B) |
+| API demora ~30 s e responde `Internal Server Error` (sem `requestId`) | A Lambda não alcança o banco e trava ao subir | Security group do RDS só libera o **seu** IP: a Lambda (fora da VPC) sai por IPs variáveis da AWS. Libere 5432 para `0.0.0.0/0` (opção A) ou coloque a Lambda na VPC (opção B). O log do CloudWatch mostra uma linha `fatal` com o motivo |
+| Rota inexistente dá 404, mas **toda rota real dá 500** (com `requestId`) | A API conectou num banco **sem as tabelas** (o 1º passo de toda rota grava em `rate_limits`) | Confira o `DB_NAME` no SSM (ex.: ficou `postgres` em vez de `nestjs_base`) ou rode as migrations (passo 5) |
+| Corrigi um valor no SSM e nada mudou | O deploy **copia** os valores do SSM para a Lambda | Rode o deploy de novo (ou edite a variável direto em *Lambda → Configuration → Environment variables*) |
+| `/api/health` responde `database: down` | A Lambda não alcança o banco | Mesma causa da linha do "~30 s" acima |
 | E-mails não chegam | SES em sandbox ou domínio não verificado **na região do deploy** | Passo 3; veja também a fila de falhas (DLQ) em [DEPLOY_AWS_LAMBDA.md](DEPLOY_AWS_LAMBDA.md#fila-de-e-mails) |
 
 Ver o motivo exato de uma falha do deploy: **CloudFormation → Stacks → `nestjs-base-api-<stage>` → aba Events**. A primeira linha
