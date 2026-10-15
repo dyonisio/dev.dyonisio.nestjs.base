@@ -12,7 +12,7 @@ const collectCoverageFrom = [
   '!src/**/*.spec.ts',
   '!src/main.ts', // bootstrap — coberto pelo e2e via configureApp()
   '!src/lambda.ts',
-  '!src/**/*.handler.ts', // entrypoints de Lambda (a lógica fica em arquivos testados)
+  '!src/**/*-handler.ts', // entrypoints de Lambda (a lógica fica em arquivos testados)
   '!src/maintenance/run-maintenance.ts', // entrypoint de linha de comando
   '!src/database/**', // migrations (testadas em `npm run test:pg`), seed, data-source da CLI
   '!src/**/dto/**',

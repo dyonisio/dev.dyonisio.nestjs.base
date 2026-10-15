@@ -19,8 +19,8 @@ Além da API, existem duas aplicações "sem HTTP" que reaproveitam os mesmos m�
 
 | Aplicação | Entrada | Para quê |
 | --- | --- | --- |
-| `mailWorker` | `src/mail/worker/mail-worker.handler.ts` | Lambda que consome a fila de e-mails (SQS) e envia |
-| `maintenance` | `src/maintenance/maintenance.handler.ts` (ou `npm run maintenance`) | Job agendado: anonimização, faxina de uploads, sessões, auditoria e rate limits |
+| `mailWorker` | `src/mail/worker/mail-worker-handler.ts` | Lambda que consome a fila de e-mails (SQS) e envia |
+| `maintenance` | `src/maintenance/maintenance-handler.ts` (ou `npm run maintenance`) | Job agendado: anonimização, faxina de uploads, sessões, auditoria e rate limits |
 
 ## O caminho de uma requisição
 

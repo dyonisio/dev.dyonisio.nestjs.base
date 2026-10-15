@@ -27,8 +27,8 @@ CloudWatch Alarms ──► SNS ──► e-mail (alarmEmail)
 | --- | --- |
 | `src/lambda.ts` | Handler. Cria a app Nest **uma vez por container** e a reaproveita nas invocações seguintes (warm start). |
 | `src/app.setup.ts` | Configuração compartilhada (`/api/v1`, validação, serialização, Swagger) — a mesma do `main.ts`. |
-| `src/mail/worker/mail-worker.handler.ts` | Handler da `mailWorker`: consome a fila e envia os e-mails (aplicação mínima, sem banco). |
-| `src/maintenance/maintenance.handler.ts` | Handler da `maintenance`: anonimização de contas, faxina de uploads, sessões e auditoria. |
+| `src/mail/worker/mail-worker-handler.ts` | Handler da `mailWorker`: consome a fila e envia os e-mails (aplicação mínima, sem banco). |
+| `src/maintenance/maintenance-handler.ts` | Handler da `maintenance`: anonimização de contas, faxina de uploads, sessões e auditoria. |
 | `serverless.yml` | Funções, rota `*` do HTTP API, filas, bucket, alarmes, variáveis de ambiente, permissões e empacotamento. |
 
 O código é compilado com `nest build` e o pacote enviado contém apenas `dist/`, `package.json` e as

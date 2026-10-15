@@ -136,7 +136,7 @@ functions:
   # Consome a fila de e-mails: renderiza e envia. Falhas voltam para a fila
   # (novas tentativas) e, após 5, vão para a DLQ.
   mailWorker:
-    handler: dist/mail/worker/mail-worker.handler.handler
+    handler: dist/mail/worker/mail-worker-handler.handler
     memorySize: 512
     timeout: 30
     events:
@@ -149,7 +149,7 @@ functions:
   # Manutenção a cada 6 horas: anonimiza contas excluídas, apaga uploads abandonados,
   # sessões antigas, auditoria fora da retenção e contadores de rate limit expirados.
   maintenance:
-    handler: dist/maintenance/maintenance.handler.handler
+    handler: dist/maintenance/maintenance-handler.handler
     memorySize: 512
     timeout: 300
     events:
