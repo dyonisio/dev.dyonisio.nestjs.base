@@ -72,8 +72,8 @@
     "typeorm": "^0.3.20"
   },
   "devDependencies": {
-    "@electric-sql/pglite": "^0.3.3",
-    "@electric-sql/pglite-socket": "^0.0.8",
+    "@electric-sql/pglite": "^0.5.8",
+    "@electric-sql/pglite-socket": "^0.2.11",
     "@eslint/js": "^9.18.0",
     "@nestjs/cli": "^11.0.0",
     "@nestjs/schematics": "^11.0.0",
