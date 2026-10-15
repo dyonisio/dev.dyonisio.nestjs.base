@@ -23,7 +23,7 @@ provider:
     # --param="frontendUrl=https://app.seudominio.com" — o deploy falha se faltar.
     FRONTEND_URL: ${param:frontendUrl}
     # Origens que podem chamar a API pelo navegador. Padrão: só o front. Nunca '*'.
-    CORS_ORIGIN: ${param:corsOrigin, ${param:frontendUrl}}
+    CORS_ORIGIN: ${param:corsOrigin, param:frontendUrl}
     SWAGGER_ENABLED: ${param:swaggerEnabled, 'false'}
     FALLBACK_LANGUAGE: ${param:fallbackLanguage, 'en'}
 
