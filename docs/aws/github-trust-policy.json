@@ -12,7 +12,10 @@
           "token.actions.githubusercontent.com:aud": "sts.amazonaws.com"
         },
         "StringLike": {
-          "token.actions.githubusercontent.com:sub": "repo:dyonisio/dev.dyonisio.nestjs.base:environment:*"
+          "token.actions.githubusercontent.com:sub": [
+            "repo:dyonisio@62189506/dev.dyonisio.nestjs.base@1420175707:environment:*",
+            "repo:dyonisio/dev.dyonisio.nestjs.base:environment:*"
+          ]
         }
       }
     }

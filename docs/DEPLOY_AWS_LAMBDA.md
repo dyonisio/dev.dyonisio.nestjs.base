@@ -291,6 +291,11 @@ Não há chave de acesso (`AWS_ACCESS_KEY_ID`) guardada em lugar nenhum. Configu
 
    Políticas prontas (troque `SEU_ACCOUNT_ID`, o repositório e, se renomeou o projeto, o prefixo `nestjs-base-api`):
    - confiança (quem pode assumir a role): [docs/aws/github-trust-policy.json](aws/github-trust-policy.json)
+
+     **Atenção ao formato do `sub`:** o GitHub pode enviar o formato com os IDs numéricos do dono e do
+     repositório (`repo:dono@123/repo@456:environment:prod`) ou o antigo (`repo:dono/repo:environment:prod`).
+     O modelo aceita os dois — troque os nomes e os números pelos seus. Para descobrir os números, rode o
+     deploy uma vez: a etapa "Diagnóstico do login na AWS" mostra o `sub` exato que a AWS recebe.
    - permissões do deploy, limitadas aos recursos `nestjs-base-api-*`: [docs/aws/github-deploy-policy.json](aws/github-deploy-policy.json)
 3. **GitHub → Settings → Environments**: crie `dev` e `prod`. Em `prod`, ative *Required reviewers* para exigir aprovação
    antes de cada deploy em produção.
