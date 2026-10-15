@@ -34,6 +34,8 @@ export function buildTypeOrmOptions(config: ConfigService): TypeOrmModuleOptions
     // Aplica migrations pendentes ao subir. Útil em testes/ambientes simples;
     // na Lambda prefira rodar `npm run migration:run` no deploy (várias instâncias sobem juntas).
     migrationsRun: db.migrationsRun,
-    extra: { max: db.poolMax },
+    retryAttempts: db.connectRetries,
+    retryDelay: 1000,
+    extra: { max: db.poolMax, connectionTimeoutMillis: db.connectTimeoutMs },
   };
 }

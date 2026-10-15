@@ -122,6 +122,16 @@ export default () => {
       migrationsRun: toBool(process.env.DB_MIGRATIONS_RUN, false),
       logging: toBool(process.env.DB_LOGGING, false),
       poolMax: toInt(process.env.DB_POOL_MAX, 10),
+      /**
+       * Tentativas de conectar ao subir. Na Lambda são poucas: o API Gateway desiste em ~30 s,
+       * então é melhor falhar rápido (com o erro no log) do que estourar o tempo sem explicação.
+       */
+      connectRetries: toInt(
+        process.env.DB_CONNECT_RETRIES,
+        process.env.AWS_LAMBDA_FUNCTION_NAME ? 2 : 10,
+      ),
+      /** Tempo máximo para abrir uma conexão (ms). Banco inalcançável falha em vez de travar. */
+      connectTimeoutMs: toInt(process.env.DB_CONNECT_TIMEOUT_MS, 5000),
     },
     jwt: {
       secret: process.env.JWT_SECRET as string,
