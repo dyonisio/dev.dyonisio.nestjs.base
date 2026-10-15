@@ -28,7 +28,7 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Instalar Node.js 22 (com cache do npm)
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v7
         with:
           node-version-file: .nvmrc
           cache: npm
