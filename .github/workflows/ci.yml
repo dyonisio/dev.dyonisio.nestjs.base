@@ -25,7 +25,7 @@ jobs:
 
     steps:
       - name: Baixar o código
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
 
       - name: Instalar Node.js 22 (com cache do npm)
         uses: actions/setup-node@v4
