@@ -72,12 +72,16 @@ provider:
   iam:
     role:
       statements:
-        # Só identidades (domínios/e-mails verificados) desta conta e região
+        # Só identidades (domínios/e-mails verificados) e configuration sets desta conta e
+        # região. O SES confere a permissão também no configuration set associado ao domínio
+        # (o assistente do console cria um, ex.: "my-first-configuration-set").
         - Effect: Allow
           Action:
             - ses:SendEmail
             - ses:SendRawEmail
-          Resource: arn:aws:ses:${aws:region}:${aws:accountId}:identity/*
+          Resource:
+            - arn:aws:ses:${aws:region}:${aws:accountId}:identity/*
+            - arn:aws:ses:${aws:region}:${aws:accountId}:configuration-set/*
         # A API publica e-mails na fila; o worker os consome (permissão de consumo
         # é adicionada automaticamente pelo evento sqs da função mailWorker)
         - Effect: Allow
