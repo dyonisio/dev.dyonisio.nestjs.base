@@ -64,8 +64,10 @@ A cada push na `main` e em todo Pull Request, o [ci.yml](../.github/workflows/ci
 
 Para **bloquear merge** de PR com ❌: *Settings → Branches → Branch protection rules → Require status checks → "Lint, testes e build"*.
 
-O [Dependabot](../.github/dependabot.yml) abre PRs semanais de atualização (npm), e mensais para GitHub Actions e a imagem
-Docker. Cada PR passa pelo CI antes do merge.
+O [Dependabot](../.github/dependabot.yml) abre PRs de atualização: semanais para o npm (patch/minor, agrupados), mensais para
+as GitHub Actions e a imagem Docker. Cada PR passa pelo CI antes do merge. Versões **major** (que quebram API) não viram PR
+automático: atualize-as quando planejar, lendo o changelog. Vulnerabilidades continuam sendo pegas pelo `npm audit` do CI e
+pelos alertas de segurança do GitHub.
 
 O deploy ([deploy.yml](../.github/workflows/deploy.yml)) é **manual** (*Actions → Deploy → Run workflow*). Veja
 [DEPLOY_AWS_LAMBDA.md](DEPLOY_AWS_LAMBDA.md#9-deploy-pelo-github-actions).

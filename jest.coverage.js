@@ -49,10 +49,11 @@ module.exports = {
       displayName: 'e2e',
       testMatch: ['<rootDir>/test/*.e2e-spec.ts'],
       setupFiles: ['<rootDir>/test/setup-env.ts'],
-      // sobe a aplicação inteira (e compila sob demanda com cache frio, como no CI)
-      testTimeout: 30000,
     },
   ],
+  // Os e2e sobem a aplicação inteira e, com o cache frio (sempre, no CI), a primeira
+  // compilação passa dos 5 s padrão. Precisa ficar AQUI: dentro de `projects` o Jest ignora.
+  testTimeout: 30000,
   // Precisa estar também no nível global (além de em cada projeto) para as exclusões valerem
   collectCoverageFrom,
   coverageDirectory: '<rootDir>/coverage',

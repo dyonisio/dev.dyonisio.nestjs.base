@@ -1,5 +1,11 @@
-# Dependabot: abre PRs atualizando dependências (e avisa de vulnerabilidades).
-# Cada PR passa pelo CI antes do merge — atualização que quebra algo fica vermelha.
+# Dependabot: abre PRs atualizando dependências. Cada PR passa pelo CI antes do merge.
+#
+# Política:
+#  - patch/minor: PR automático (agrupado, para não lotar a lista)
+#  - MAJOR (ex.: eslint 9 -> 10, serverless 3 -> 4): ignorado aqui. Versão major quebra API
+#    e exige trabalho manual — faça quando planejar, num PR próprio, lendo o changelog.
+#  - Vulnerabilidades: o `npm audit` do CI falha com falha alta/crítica em produção, e os
+#    alertas de segurança do GitHub (Settings → Code security) avisam mesmo das majors.
 version: 2
 updates:
   - package-ecosystem: npm
@@ -7,23 +13,31 @@ updates:
     schedule:
       interval: weekly
       day: monday
-    open-pull-requests-limit: 10
+    open-pull-requests-limit: 5
+    ignore:
+      - dependency-name: '*'
+        update-types: ['version-update:semver-major']
     groups:
-      # Um PR só para patches/minors de desenvolvimento (menos barulho)
-      dev-dependencies:
+      # Produção e desenvolvimento em PRs separados (produção merece mais atenção)
+      production:
+        dependency-type: production
+      development:
         dependency-type: development
-        update-types: [minor, patch]
-      nestjs:
-        patterns: ['@nestjs/*']
-      aws-sdk:
-        patterns: ['@aws-sdk/*']
 
   - package-ecosystem: github-actions
     directory: /
     schedule:
       interval: monthly
+    groups:
+      actions:
+        patterns: ['*']
 
   - package-ecosystem: docker
     directory: /
     schedule:
       interval: monthly
+    ignore:
+      # Node: só versões LTS (pares). A troca de major (22 -> 24) é manual e deve acompanhar
+      # o .nvmrc e o runtime da Lambda (serverless.yml) — os três precisam ser iguais.
+      - dependency-name: node
+        update-types: ['version-update:semver-major']
