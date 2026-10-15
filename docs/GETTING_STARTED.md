@@ -79,4 +79,4 @@ Siga as [receitas](GUIDES.md). A mais comum é "criar um módulo novo (CRUD)". R
 
 ## 7. Antes de ir para produção
 
-Siga o [checklist de produção](SECURITY.md#checklist-de-produção) e o [guia de deploy](DEPLOY_AWS_LAMBDA.md).
+Siga o [passo a passo do primeiro deploy](FIRST_DEPLOY.md) e o [checklist de produção](SECURITY.md#checklist-de-produção).

@@ -11,6 +11,14 @@ Baixe o bundle oficial da AWS para esta pasta:
 curl -fsSL -o certs/rds-global-bundle.pem https://truststore.pki.rds.amazonaws.com/global/global-bundle.pem
 ```
 
+No PowerShell, use `curl.exe` (o `curl` sozinho é outro comando lá):
+
+```powershell
+curl.exe -fsSL -o certs/rds-global-bundle.pem https://truststore.pki.rds.amazonaws.com/global/global-bundle.pem
+```
+
+> O bundle já está commitado nesta pasta. Baixe de novo só para atualizar (a AWS renova as CAs de tempos em tempos).
+
 e configure:
 
 ```

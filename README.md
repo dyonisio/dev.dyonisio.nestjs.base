@@ -79,7 +79,8 @@ npm run start:dev
 | [Segurança](docs/SECURITY.md) | O que está protegido e como, checklist de produção e decisões conscientes |
 | [Cliente para o front](docs/API_CLIENT.md) | Gerar tipos e chamadas do front a partir do `openapi.json` |
 | [Testes e CI](docs/TESTING.md) | Tipos de teste, cobertura, CI e como rodar tudo localmente |
-| [Deploy na AWS](docs/DEPLOY_AWS_LAMBDA.md) | Lambda passo a passo, alarmes, e a alternativa em container (ECS) |
+| [Primeiro deploy, passo a passo](docs/FIRST_DEPLOY.md) | Banco, segredos, e-mail (SES), GitHub ↔ AWS e o deploy — para quem nunca publicou na AWS, com os erros comuns |
+| [Deploy na AWS (referência)](docs/DEPLOY_AWS_LAMBDA.md) | Detalhes técnicos da Lambda, operação, alarmes e a alternativa em container (ECS) |
 
 ## Scripts
 

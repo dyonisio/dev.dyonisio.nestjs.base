@@ -1,5 +1,8 @@
 # Deploy na AWS Lambda
 
+> **Primeira vez?** Siga o [passo a passo do primeiro deploy](FIRST_DEPLOY.md) — ordem certa, explicações para iniciantes
+> e os erros mais comuns. Este documento é a referência técnica de cada peça.
+
 A API roda em uma função Lambda atrás de um **API Gateway HTTP API**, usando
 [`@codegenie/serverless-express`](https://github.com/CodeGenieApp/serverless-express) para
 adaptar o Express do Nest ao evento da Lambda. O deploy é feito com o **Serverless Framework v3**
@@ -146,7 +149,8 @@ Se o seu Postgres não for o RDS, aponte `DB_SSL_CA_FILE` para a CA dele.
 ## 5. Migrations e admin inicial
 
 O deploy **não** roda migrations (rodar DDL no cold start de várias Lambdas em paralelo é arriscado).
-Rode-as a partir da sua máquina ou do CI, apontando o `.env` para o banco da AWS:
+Rode-as a partir da sua máquina, apontando para o banco da AWS — o passo a passo no Windows (PowerShell, certificado,
+variáveis só no terminal, criação do banco) está em [FIRST_DEPLOY.md → 5](FIRST_DEPLOY.md#5-criar-as-tabelas-e-o-administrador):
 
 ```bash
 npm run migration:run
@@ -164,7 +168,8 @@ Sem `ADMIN_PASSWORD`, o seed gera uma senha forte e a mostra **uma vez** no term
 npm run deploy
 ```
 
-Isso executa `nest build` + `serverless deploy` (stage `dev`, região `us-east-1`). Ao final o Serverless mostra a URL:
+Isso executa `nest build` + `serverless deploy` (stage `dev`). A região vem de `--region`, senão da variável `AWS_REGION`,
+senão `us-east-1` — **precisa ser a mesma dos segredos (SSM) e do SES**. Ao final o Serverless mostra a URL:
 
 ```
 endpoint: ANY - https://abc123.execute-api.us-east-1.amazonaws.com
@@ -280,14 +285,7 @@ Não há chave de acesso (`AWS_ACCESS_KEY_ID`) guardada em lugar nenhum. Configu
 
 1. **IAM → Identity providers → Add provider**: tipo *OpenID Connect*, URL `https://token.actions.githubusercontent.com`,
    audience `sts.amazonaws.com`.
-2. **IAM → Roles → Create role** → *Web identity* → o provider acima. Na *trust policy*, restrinja ao seu repositório:
-
-   ```json
-   "Condition": {
-     "StringEquals": { "token.actions.githubusercontent.com:aud": "sts.amazonaws.com" },
-     "StringLike": { "token.actions.githubusercontent.com:sub": "repo:SEU_USUARIO/SEU_REPO:environment:*" }
-   }
-   ```
+2. **IAM → Roles → Create role** → *Custom trust policy*, restrita ao seu repositório.
 
    Políticas prontas (troque `SEU_ACCOUNT_ID`, o repositório e, se renomeou o projeto, o prefixo `nestjs-base-api`):
    - confiança (quem pode assumir a role): [docs/aws/github-trust-policy.json](aws/github-trust-policy.json)
@@ -305,7 +303,8 @@ Não há chave de acesso (`AWS_ACCESS_KEY_ID`) guardada em lugar nenhum. Configu
    | --- | --- | --- |
    | `AWS_ROLE_ARN` | sim | ARN da role acima |
    | `FRONTEND_URL`, `MAIL_FROM`, `SUPPORT_EMAIL` | sim | os parâmetros obrigatórios (seção 4.2) |
-   | `ALARM_EMAIL`, `GOOGLE_CLIENT_IDS`, `APPLE_CLIENT_IDS`, `AWS_REGION` | não | opcionais |
+   | `AWS_REGION` | se não for `us-east-1` | região do deploy — a mesma dos segredos (SSM) e do SES |
+   | `ALARM_EMAIL`, `GOOGLE_CLIENT_IDS`, `APPLE_CLIENT_IDS` | não | opcionais (vazios não são enviados) |
 
    O workflow passa esses valores ao `serverless deploy` por variáveis de ambiente, sem interpolar no script (evita injeção de comandos).
 
