@@ -354,6 +354,9 @@ Daqui em diante, cada deploy é só o passo 6.
 | Rota inexistente dá 404, mas **toda rota real dá 500** (com `requestId`) | A API conectou num banco **sem as tabelas** (o 1º passo de toda rota grava em `rate_limits`) | Confira o `DB_NAME` no SSM (ex.: ficou `postgres` em vez de `nestjs_base`) ou rode as migrations (passo 5) |
 | Corrigi um valor no SSM e nada mudou | O deploy **copia** os valores do SSM para a Lambda | Rode o deploy de novo (ou edite a variável direto em *Lambda → Configuration → Environment variables*) |
 | `/api/health` responde `database: down` | A Lambda não alcança o banco | Mesma causa da linha do "~30 s" acima |
+| Mensagens ficam **"in flight"** na fila de e-mail e não somem | O `mailWorker` está falhando a cada tentativa (até 5, a cada 3 min; depois vão para a DLQ) | Veja o motivo no log do `mailWorker` (linhas abaixo). Corrigida a causa, as que foram para a DLQ voltam com *Start DLQ redrive* |
+| `not authorized to perform 'ses:SendRawEmail' on resource ...:configuration-set/...` (log do `mailWorker`) | O domínio tem um *configuration set* (o assistente do SES cria `my-first-configuration-set`) | Já coberto pelo `serverless.yml` atual (permite `configuration-set/*`); rode o deploy |
+| `Email address is not verified` (log do `mailWorker`) | SES ainda no sandbox nessa região | Aguarde a liberação (3.3) ou verifique o e-mail destinatário em *SES → Identities* |
 | E-mails não chegam | SES em sandbox ou domínio não verificado **na região do deploy** | Passo 3; veja também a fila de falhas (DLQ) em [DEPLOY_AWS_LAMBDA.md](DEPLOY_AWS_LAMBDA.md#fila-de-e-mails) |
 
 Ver o motivo exato de uma falha do deploy: **CloudFormation → Stacks → `nestjs-base-api-<stage>` → aba Events**. A primeira linha
