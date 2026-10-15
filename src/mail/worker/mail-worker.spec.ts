@@ -5,7 +5,6 @@ import type { SQSRecord } from 'aws-lambda';
 import { MailService } from '../mail.service';
 import { MailJob, MailTemplate } from '../mail.types';
 import { processMailRecords } from './mail-worker';
-import { MailWorkerModule } from './mail-worker.module';
 
 const job: MailJob = {
   to: 'ana@test.com',
@@ -80,11 +79,17 @@ describe('MailWorkerModule', () => {
       MAIL_DELIVERY: 'sync',
       LOG_LEVEL: 'silent',
     };
-    app = await NestFactory.createApplicationContext(MailWorkerModule, { logger: false });
+    // Importado só agora: o ConfigModule.forRoot() lê e valida o ambiente quando o módulo é
+    // carregado. Com import no topo, o teste dependeria de um .env local (que não existe no CI).
+    const { MailWorkerModule } = await import('./mail-worker.module');
+    app = await NestFactory.createApplicationContext(MailWorkerModule, {
+      logger: false,
+      abortOnError: false, // falha vira erro do teste, em vez de encerrar o Jest
+    });
   });
 
   afterAll(async () => {
-    await app.close();
+    await app?.close();
     process.env = env;
   });
 
