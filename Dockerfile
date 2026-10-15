@@ -10,7 +10,7 @@
 #   docker run --env-file .env nestjs-base-api npm run migration:run:prod
 
 # ---------- 1) dependências (com as de desenvolvimento, para compilar) ----------
-FROM node:22-alpine AS deps
+FROM node:25-alpine AS deps
 WORKDIR /app
 COPY package.json package-lock.json ./
 RUN npm ci --ignore-scripts
@@ -24,7 +24,7 @@ RUN npm run build \
   && npm prune --omit=dev --ignore-scripts
 
 # ---------- 3) runtime ----------
-FROM node:22-alpine AS runtime
+FROM node:25-alpine AS runtime
 ENV NODE_ENV=production \
     PORT=3000
 WORKDIR /app
