@@ -59,6 +59,16 @@
       "Resource": "*"
     },
     {
+      "Sid": "LambdaEventSourceMappingTags",
+      "Effect": "Allow",
+      "Action": [
+        "lambda:TagResource",
+        "lambda:UntagResource",
+        "lambda:ListTags"
+      ],
+      "Resource": "arn:aws:lambda:*:*:event-source-mapping:*"
+    },
+    {
       "Sid": "LambdaExecutionRole",
       "Effect": "Allow",
       "Action": [
