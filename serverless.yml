@@ -8,7 +8,9 @@ provider:
   name: aws
   runtime: nodejs22.x
   architecture: arm64
-  region: ${opt:region, 'us-east-1'}
+  # Região: --region > AWS_REGION (no GitHub Actions, a mesma da credencial) > us-east-1.
+  # Tudo (Lambda, SSM, SES, bucket) é procurado/criado nela — precisa ser a mesma dos segredos.
+  region: ${opt:region, env:AWS_REGION, 'us-east-1'}
   stage: ${opt:stage, 'dev'}
   memorySize: 1024
   timeout: 29 # limite do API Gateway

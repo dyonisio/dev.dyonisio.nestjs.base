@@ -96,6 +96,7 @@ jobs:
           GOOGLE_CLIENT_IDS: ${{ vars.GOOGLE_CLIENT_IDS }}
           APPLE_CLIENT_IDS: ${{ vars.APPLE_CLIENT_IDS }}
           STAGE: ${{ inputs.stage }}
+          REGION: ${{ vars.AWS_REGION || 'us-east-1' }}
         # Valores via variáveis de ambiente (não interpolados no script): sem injeção de comandos.
         # O Serverless recusa "--param=chave=" vazio, então só os preenchidos são enviados.
         run: |
@@ -118,4 +119,5 @@ jobs:
           [ -n "$APPLE_CLIENT_IDS" ] && params+=(--param="appleClientIds=$APPLE_CLIENT_IDS")
 
           npm run build
-          npx serverless deploy --stage "$STAGE" "${params[@]}"
+          # --region explícito: a mesma região da credencial, dos segredos (SSM) e do SES
+          npx serverless deploy --stage "$STAGE" --region "$REGION" "${params[@]}"
