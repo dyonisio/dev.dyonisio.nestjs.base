@@ -95,13 +95,27 @@ jobs:
           ALARM_EMAIL: ${{ vars.ALARM_EMAIL }}
           GOOGLE_CLIENT_IDS: ${{ vars.GOOGLE_CLIENT_IDS }}
           APPLE_CLIENT_IDS: ${{ vars.APPLE_CLIENT_IDS }}
-        # Valores via variáveis de ambiente (não interpolados no script): sem injeção de comandos
+          STAGE: ${{ inputs.stage }}
+        # Valores via variáveis de ambiente (não interpolados no script): sem injeção de comandos.
+        # O Serverless recusa "--param=chave=" vazio, então só os preenchidos são enviados.
         run: |
+          missing=""
+          for name in FRONTEND_URL MAIL_FROM SUPPORT_EMAIL; do
+            [ -n "${!name}" ] || missing="$missing $name"
+          done
+          if [ -n "$missing" ]; then
+            echo "::error::Variáveis obrigatórias vazias no environment '$STAGE':$missing (Settings → Environments → $STAGE)"
+            exit 1
+          fi
+
+          params=(
+            --param="frontendUrl=$FRONTEND_URL"
+            --param="mailFrom=$MAIL_FROM"
+            --param="supportEmail=$SUPPORT_EMAIL"
+          )
+          [ -n "$ALARM_EMAIL" ] && params+=(--param="alarmEmail=$ALARM_EMAIL")
+          [ -n "$GOOGLE_CLIENT_IDS" ] && params+=(--param="googleClientIds=$GOOGLE_CLIENT_IDS")
+          [ -n "$APPLE_CLIENT_IDS" ] && params+=(--param="appleClientIds=$APPLE_CLIENT_IDS")
+
           npm run build
-          npx serverless deploy --stage "${{ inputs.stage }}" \
-            --param="frontendUrl=$FRONTEND_URL" \
-            --param="mailFrom=$MAIL_FROM" \
-            --param="supportEmail=$SUPPORT_EMAIL" \
-            --param="alarmEmail=$ALARM_EMAIL" \
-            --param="googleClientIds=$GOOGLE_CLIENT_IDS" \
-            --param="appleClientIds=$APPLE_CLIENT_IDS"
+          npx serverless deploy --stage "$STAGE" "${params[@]}"
