@@ -289,7 +289,9 @@ Não há chave de acesso (`AWS_ACCESS_KEY_ID`) guardada em lugar nenhum. Configu
    }
    ```
 
-   Permissões: as mesmas do deploy manual (CloudFormation, Lambda, API Gateway, IAM, S3, CloudWatch Logs, SSM de leitura).
+   Políticas prontas (troque `SEU_ACCOUNT_ID`, o repositório e, se renomeou o projeto, o prefixo `nestjs-base-api`):
+   - confiança (quem pode assumir a role): [docs/aws/github-trust-policy.json](aws/github-trust-policy.json)
+   - permissões do deploy, limitadas aos recursos `nestjs-base-api-*`: [docs/aws/github-deploy-policy.json](aws/github-deploy-policy.json)
 3. **GitHub → Settings → Environments**: crie `dev` e `prod`. Em `prod`, ative *Required reviewers* para exigir aprovação
    antes de cada deploy em produção.
 4. Em cada environment, crie as **variáveis**:

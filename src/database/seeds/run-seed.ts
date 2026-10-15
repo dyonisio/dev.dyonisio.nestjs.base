@@ -11,7 +11,10 @@ import { hashPassword } from '../../common/crypto/password-hash';
 import { Role } from '../../common/enums/role.enum';
 import { User } from '../../users/entities/user.entity';
 
-/** Valores de exemplo da documentação/.env.example — recusados fora do desenvolvimento. */
+/**
+ * Senhas que aparecem na documentação ou em versões antigas do .env.example: sempre recusadas
+ * (um .env de desenvolvimento esquecido apontando para o banco de produção criaria um admin conhecido).
+ */
 const EXAMPLE_PASSWORDS = ['Admin@123456', 'Password123', 'Senha123'];
 
 async function run() {
@@ -19,12 +22,14 @@ async function run() {
   if (!email) throw new Error('Defina ADMIN_EMAIL (e-mail do administrador inicial)');
   const name = process.env.ADMIN_NAME || 'Administrador';
 
-  let password = process.env.ADMIN_PASSWORD;
-  if (process.env.NODE_ENV === 'production' && password && EXAMPLE_PASSWORDS.includes(password)) {
-    throw new Error('ADMIN_PASSWORD está com um valor de exemplo — use uma senha forte');
+  let password = process.env.ADMIN_PASSWORD?.trim();
+  if (password && EXAMPLE_PASSWORDS.includes(password)) {
+    throw new Error(
+      'ADMIN_PASSWORD está com um valor de exemplo — use uma senha forte ou deixe vazio para gerar uma',
+    );
   }
   const generated = !password;
-  password ??= `${randomBytes(12).toString('base64url')}9a`; // garante letra + número
+  if (!password) password = `${randomBytes(12).toString('base64url')}9a`; // garante letra + número
 
   await dataSource.initialize();
   const repo = dataSource.getRepository(User);
