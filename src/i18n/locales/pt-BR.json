@@ -1,0 +1,151 @@
+{
+  "errors": {
+    "tooManyRequests": "Muitas tentativas. Tente novamente em {seconds} segundos.",
+    "validation": "Erro de validação",
+    "invalidUuid": "O id deve ser um UUID válido",
+    "http": {
+      "400": "Requisição inválida",
+      "401": "Autenticação necessária",
+      "403": "Você não tem permissão para acessar este recurso",
+      "404": "Recurso não encontrado",
+      "405": "Método não permitido",
+      "409": "Conflito",
+      "413": "Conteúdo muito grande",
+      "415": "Tipo de conteúdo não suportado",
+      "422": "Entidade não processável",
+      "429": "Muitas requisições",
+      "500": "Erro interno do servidor",
+      "503": "Serviço indisponível"
+    }
+  },
+  "auth": {
+    "invalidCredentials": "E-mail ou senha inválidos",
+    "userInactive": "Este usuário está inativo",
+    "invalidRefreshToken": "Refresh token inválido ou expirado",
+    "sessionExpired": "Sua sessão foi encerrada. Faça login novamente",
+    "forbidden": "Você não tem permissão para acessar este recurso",
+    "emailNotVerified": "Confirme seu e-mail para continuar"
+  },
+  "users": {
+    "notFound": "Usuário não encontrado",
+    "emailTaken": "Este e-mail já está cadastrado",
+    "cannotChangeOwnRole": "Você não pode alterar o seu próprio perfil de acesso",
+    "cannotDeleteSelf": "Você não pode remover a sua própria conta",
+    "sameEmail": "Este já é o seu e-mail",
+    "anonymized": "Esta conta foi apagada definitivamente e não pode mais ser restaurada"
+  },
+  "account": {
+    "passwordRequired": "Confirme sua senha atual para continuar",
+    "reauthRequired": "Por segurança, entre novamente para confirmar esta ação",
+    "lastAdmin": "Você é o único administrador. Promova outra pessoa antes de excluir sua conta.",
+    "emailChangeRequested": "Enviamos um link de confirmação para {email}. A troca vale depois que você confirmar."
+  },
+  "sessions": {
+    "notFound": "Sessão não encontrada"
+  },
+  "files": {
+    "notFound": "Arquivo não encontrado",
+    "invalidType": "Tipo de arquivo não permitido. Aceitos: {allowed}",
+    "tooLarge": "Arquivo muito grande. Máximo: {maxMb} MB",
+    "notUploaded": "O arquivo ainda não foi enviado",
+    "invalidContent": "O conteúdo do arquivo não corresponde ao tipo informado",
+    "invalidFile": "Arquivo inválido: envie um upload concluído do tipo certo",
+    "invalidUploadPolicy": "Autorização de upload inválida ou expirada",
+    "invalidDownloadLink": "Link de download inválido ou expirado",
+    "tooManyPending": "Há muitos envios não concluídos. Conclua ou apague-os antes de começar outros."
+  },
+  "password": {
+    "invalidResetToken": "Token inválido ou expirado",
+    "wrongCurrentPassword": "A senha atual está incorreta",
+    "forgotRequested": "Se o e-mail estiver cadastrado, você receberá as instruções em instantes.",
+    "resetDone": "Senha redefinida com sucesso.",
+    "notSet": "Sua conta ainda não tem senha. Use \"esqueci a senha\" para criar uma"
+  },
+  "emailVerification": {
+    "invalidToken": "Link de confirmação inválido ou expirado",
+    "alreadyVerified": "Este e-mail já está confirmado",
+    "verified": "E-mail confirmado com sucesso.",
+    "sent": "Enviamos um novo link de confirmação para o seu e-mail."
+  },
+  "twoFactor": {
+    "alreadyEnabled": "A verificação em duas etapas já está ativada",
+    "notSetUp": "Inicie a configuração primeiro (POST /auth/2fa/setup)",
+    "notEnabled": "A verificação em duas etapas não está ativada",
+    "invalidCode": "Código inválido ou já utilizado",
+    "invalidChallenge": "Sua tentativa de login expirou. Entre novamente",
+    "codeRequired": "Informe o código do seu app autenticador para continuar"
+  },
+  "social": {
+    "unknownProvider": "Provedor de login desconhecido",
+    "providerNotConfigured": "Este provedor de login não está habilitado",
+    "invalidToken": "Não foi possível validar o login com o provedor. Tente novamente",
+    "emailRequired": "O provedor não compartilhou o seu e-mail",
+    "emailNotVerified": "Seu e-mail não está verificado no provedor",
+    "identityNotFound": "Esta forma de login não está vinculada à sua conta",
+    "lastLoginMethod": "Você não pode remover a única forma de entrar na conta. Defina uma senha antes"
+  },
+  "validation": {
+    "isEmail": "{field} deve ser um e-mail válido",
+    "isNotEmpty": "{field} não pode ficar vazio",
+    "isString": "{field} deve ser um texto",
+    "isBoolean": "{field} deve ser verdadeiro ou falso",
+    "isInt": "{field} deve ser um número inteiro",
+    "isUuid": "{field} deve ser um UUID válido",
+    "isEnum": "{field} deve ser um destes valores: {values}",
+    "isIn": "{field} deve ser um destes valores: {values}",
+    "minLength": "{field} deve ter pelo menos {min} caracteres",
+    "maxLength": "{field} deve ter no máximo {max} caracteres",
+    "min": "{field} deve ser maior ou igual a {min}",
+    "max": "{field} deve ser menor ou igual a {max}",
+    "strongPassword": "{field} deve conter ao menos uma letra e um número",
+    "whitelistValidation": "O campo {field} não é permitido",
+    "invalid": "{field} é inválido",
+    "twoFactorCode": "{field} deve ser um código de 6 dígitos ou um código de recuperação (ABCD-EFGH)",
+    "personName": "{field} só pode ter letras, espaços, apóstrofos, hífens e pontos",
+    "passwordTooLong": "{field} é longa demais (no máximo 72 bytes — letras acentuadas contam em dobro)"
+  },
+  "fields": {
+    "name": "nome",
+    "email": "e-mail",
+    "password": "senha",
+    "currentPassword": "senha atual",
+    "newPassword": "nova senha",
+    "role": "perfil",
+    "isActive": "ativo",
+    "token": "token",
+    "refreshToken": "refresh token",
+    "page": "página",
+    "limit": "limite",
+    "search": "busca",
+    "sortBy": "ordenação",
+    "order": "direção",
+    "locale": "idioma",
+    "code": "código",
+    "twoFactorToken": "token de verificação",
+    "purpose": "finalidade",
+    "contentType": "tipo do arquivo",
+    "size": "tamanho",
+    "fileId": "arquivo",
+    "newEmail": "novo e-mail"
+  },
+  "mail": {
+    "subjects": {
+      "welcome": "Bem-vindo(a) ao {appName}!",
+      "verifyEmail": "Confirme seu e-mail",
+      "forgotPassword": "Redefinição de senha",
+      "passwordChanged": "Sua senha foi alterada",
+      "roleChanged": "Suas permissões foram atualizadas",
+      "newLogin": "Novo acesso à sua conta",
+      "twoFactorEnabled": "Verificação em duas etapas ativada",
+      "twoFactorDisabled": "Verificação em duas etapas desativada",
+      "socialLinked": "{provider} foi vinculado à sua conta",
+      "emailChanged": "O e-mail da sua conta foi alterado",
+      "accountDeleted": "Sua conta foi excluída"
+    }
+  },
+  "roles": {
+    "admin": "Administrador",
+    "manager": "Gerente",
+    "user": "Usuário"
+  }
+}

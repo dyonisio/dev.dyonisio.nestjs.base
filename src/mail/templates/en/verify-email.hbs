@@ -1,0 +1,8 @@
+<h1>Confirm your email</h1>
+<p>Hi, {{name}}!</p>
+<p>One last step to activate your <strong>{{appName}}</strong> account: confirm that this email address belongs to you.</p>
+{{> button url=verifyUrl label="Confirm my email"}}
+<p>This link expires in <strong>{{expiresInHours}} hours</strong>. After that, request a new one in the app.</p>
+<p class="muted">If the button does not work, copy and paste this address into your browser:</p>
+<p class="muted break-all" style="word-break:break-all;overflow-wrap:anywhere;font-size:12px;"><a href="{{verifyUrl}}" style="word-break:break-all;overflow-wrap:anywhere;">{{verifyUrl}}</a></p>
+<p class="muted">If you did not create an account, you can ignore this email.</p>

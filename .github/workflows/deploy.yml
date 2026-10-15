@@ -1,0 +1,86 @@
+# Deploy MANUAL na AWS Lambda: Actions → "Deploy" → "Run workflow" → escolha o stage.
+# Nada é publicado automaticamente.
+#
+# Configuração única (veja docs/DEPLOY_AWS_LAMBDA.md, seção "Deploy pelo GitHub Actions"):
+#   1. Na AWS, crie um Identity Provider OIDC para token.actions.githubusercontent.com
+#      e uma IAM Role que confie nele (sem chaves de acesso guardadas no GitHub).
+#   2. No GitHub, em Settings → Environments, crie os environments "dev" e "prod"
+#      (em "prod" você pode exigir aprovação de alguém antes de rodar).
+#   3. Em cada environment, crie as variáveis: AWS_ROLE_ARN (ARN da role), FRONTEND_URL,
+#      MAIL_FROM, SUPPORT_EMAIL e, opcionalmente, ALARM_EMAIL, GOOGLE_CLIENT_IDS, APPLE_CLIENT_IDS.
+name: Deploy
+
+on:
+  workflow_dispatch:
+    inputs:
+      stage:
+        description: Ambiente de destino
+        type: choice
+        options: [dev, prod]
+        default: dev
+
+permissions:
+  contents: read
+  id-token: write # necessário para o login na AWS via OIDC
+
+jobs:
+  deploy:
+    name: Deploy (${{ inputs.stage }})
+    runs-on: ubuntu-latest
+    environment: ${{ inputs.stage }}
+    timeout-minutes: 30
+    concurrency:
+      group: deploy-${{ inputs.stage }}
+      cancel-in-progress: false
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+
+      - run: npm ci
+
+      - name: Testes (não publica código quebrado)
+        run: |
+          npm test -- --ci
+          npm run test:e2e -- --ci
+
+      - name: Login na AWS (OIDC, sem chaves fixas)
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ vars.AWS_ROLE_ARN }}
+          aws-region: ${{ vars.AWS_REGION || 'us-east-1' }}
+
+      # Migrations: só funciona se o runner do GitHub alcançar o banco. Com o RDS em
+      # subnet privada (recomendado), rode-as por outro caminho — veja a documentação.
+      # - name: Migrations
+      #   run: npm run migration:run
+      #   env:
+      #     DB_HOST: ${{ secrets.DB_HOST }}
+      #     DB_NAME: ${{ secrets.DB_NAME }}
+      #     DB_USERNAME: ${{ secrets.DB_USERNAME }}
+      #     DB_PASSWORD: ${{ secrets.DB_PASSWORD }}
+      #     DB_SSL: 'true'
+      #     JWT_SECRET: ${{ secrets.JWT_SECRET }}
+
+      - name: Build + deploy
+        env:
+          FRONTEND_URL: ${{ vars.FRONTEND_URL }}
+          MAIL_FROM: ${{ vars.MAIL_FROM }}
+          SUPPORT_EMAIL: ${{ vars.SUPPORT_EMAIL }}
+          ALARM_EMAIL: ${{ vars.ALARM_EMAIL }}
+          GOOGLE_CLIENT_IDS: ${{ vars.GOOGLE_CLIENT_IDS }}
+          APPLE_CLIENT_IDS: ${{ vars.APPLE_CLIENT_IDS }}
+        # Valores via variáveis de ambiente (não interpolados no script): sem injeção de comandos
+        run: |
+          npm run build
+          npx serverless deploy --stage "${{ inputs.stage }}" \
+            --param="frontendUrl=$FRONTEND_URL" \
+            --param="mailFrom=$MAIL_FROM" \
+            --param="supportEmail=$SUPPORT_EMAIL" \
+            --param="alarmEmail=$ALARM_EMAIL" \
+            --param="googleClientIds=$GOOGLE_CLIENT_IDS" \
+            --param="appleClientIds=$APPLE_CLIENT_IDS"

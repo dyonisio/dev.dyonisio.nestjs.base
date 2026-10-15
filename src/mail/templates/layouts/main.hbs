@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="{{lang}}">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>{{subject}}</title>
+    <style>
+      body { margin: 0; padding: 0; background: #f4f5f7; font-family: Arial, Helvetica, sans-serif; color: #1f2937; }
+      a { color: #4f46e5; }
+      .container { width: 100%; max-width: 600px; margin: 0 auto; }
+      .card { background: #ffffff; border-radius: 8px; padding: 32px; }
+      h1 { font-size: 22px; margin: 0 0 16px; }
+      p { font-size: 15px; line-height: 1.6; margin: 0 0 16px; }
+      .muted { color: #6b7280; font-size: 13px; }
+      .break-all { word-break: break-all; overflow-wrap: anywhere; }
+    </style>
+  </head>
+  <body>
+    <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="background:#f4f5f7;padding:24px 12px;">
+      <tr>
+        <td align="center">
+          <!-- table-layout:fixed impede que conteúdo longo (URLs, tokens) alargue o e-mail -->
+          <table role="presentation" class="container" width="600" cellspacing="0" cellpadding="0" style="width:100%;max-width:600px;table-layout:fixed;">
+            <tr>
+              <td style="padding:16px 0;text-align:center;">
+                <a href="{{frontendUrl}}" style="font-size:20px;font-weight:bold;color:#111827;text-decoration:none;">{{appName}}</a>
+              </td>
+            </tr>
+            <tr>
+              <td class="card" style="background:#ffffff;border-radius:8px;padding:32px;overflow-wrap:break-word;word-wrap:break-word;">
+                {{{body}}}
+              </td>
+            </tr>
+            <tr>
+              <td>
+                {{> footer}}
+              </td>
+            </tr>
+          </table>
+        </td>
+      </tr>
+    </table>
+  </body>
+</html>

@@ -1,0 +1,12 @@
+{{#if enabled}}
+<h1>Two-step verification turned on</h1>
+<p>Hi, {{name}}.</p>
+<p>Two-step verification was <strong>turned on</strong> for your <strong>{{appName}}</strong> account on <strong>{{when}}</strong>. From now on, besides your password, you'll be asked for the code from your authenticator app.</p>
+<p>Keep your recovery codes somewhere safe: they are the only way in if you lose your phone.</p>
+{{else}}
+<h1>Two-step verification turned off</h1>
+<p>Hi, {{name}}.</p>
+<p>Two-step verification was <strong>turned off</strong> for your <strong>{{appName}}</strong> account on <strong>{{when}}</strong>{{#if byAdmin}}, by an administrator at your request{{/if}}. Your account is now protected by your password only.</p>
+{{/if}}
+<p><strong>Don't recognize this change?</strong> Change your password right away and contact <a href="mailto:{{supportEmail}}">{{supportEmail}}</a>.</p>
+{{> button url=securityUrl label="Review account security"}}

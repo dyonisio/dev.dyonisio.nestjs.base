@@ -1,0 +1,86 @@
+# Integração contínua: roda a cada push na main e em todo Pull Request.
+# Se qualquer passo falhar, o commit/PR fica marcado com ❌.
+# Dica: em Settings → Branches → Branch protection rules, marque este workflow como
+# "required" para o GitHub bloquear o merge de PRs que não passaram.
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+# Um novo push no mesmo PR cancela a execução anterior (economiza minutos)
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  ci:
+    name: Lint, testes e build
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    steps:
+      - name: Baixar o código
+        uses: actions/checkout@v4
+
+      - name: Instalar Node.js 22 (com cache do npm)
+        uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+
+      - name: Instalar dependências (exatamente as do package-lock.json)
+        run: npm ci
+
+      # Falha se alguma dependência DE PRODUÇÃO tiver vulnerabilidade conhecida alta/crítica.
+      # (As de desenvolvimento não vão para a Lambda/imagem; o Dependabot cuida delas.)
+      - name: Auditoria de dependências (npm audit)
+        run: npm audit --omit=dev --audit-level=high
+
+      - name: Lint (ESLint + Prettier)
+        run: npm run lint
+
+      - name: Checagem de tipos (TypeScript)
+        run: npm run typecheck
+
+      # Roda unitários + e2e (SQLite) juntos e mede a cobertura COMBINADA.
+      # Falha se ficar abaixo das metas definidas em jest.coverage.js.
+      - name: Testes unitários + e2e com cobertura
+        run: npm run test:cov -- --ci
+
+      - name: Publicar relatório de cobertura
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-report
+          path: coverage/lcov-report
+          retention-days: 14
+
+      - name: Resumo da cobertura na página da execução
+        if: always()
+        run: |
+          node -e "
+            const t = require('./coverage/coverage-summary.json').total;
+            const row = (k, label) => '| ' + label + ' | ' + t[k].pct + '% | ' + t[k].covered + '/' + t[k].total + ' |';
+            console.log(['### Cobertura (unit + e2e)', '', '| Métrica | % | Cobertos |', '|---|---|---|',
+              row('lines', 'Linhas'), row('branches', 'Branches'), row('functions', 'Funções'), row('statements', 'Statements')].join('\n'));
+          " >> "$GITHUB_STEP_SUMMARY"
+
+      # Postgres real (PGlite, sem Docker): aplica as migrations, compara o schema com as
+      # entidades, testa o down() e roda a suíte e2e inteira sobre as tabelas das migrations.
+      - name: Migrations + testes e2e no Postgres
+        run: npm run test:pg -- --ci
+
+      - name: Build
+        run: npm run build
+
+      # O contrato da API (openapi.json) commitado precisa bater com o código: assim toda
+      # mudança de rota/DTO aparece no diff do PR e o front sabe que precisa regenerar o cliente.
+      - name: Contrato da API (openapi.json) atualizado
+        run: |
+          npm run openapi:export
+          git diff --exit-code openapi.json || (echo "::error::openapi.json desatualizado — rode 'npm run openapi:export' e commite" && exit 1)

@@ -1,0 +1,14 @@
+{
+  "moduleFileExtensions": ["js", "json", "ts"],
+  "rootDir": ".",
+  "testEnvironment": "node",
+  "testRegex": "(\\.e2e-spec|\\.pg-spec)\\.ts$",
+  "transform": {
+    "^.+\\.(t|j)s$": "ts-jest"
+  },
+  "globalSetup": "<rootDir>/postgres/global-setup.ts",
+  "globalTeardown": "<rootDir>/postgres/global-teardown.ts",
+  "setupFiles": ["<rootDir>/postgres/setup-env.ts"],
+  "setupFilesAfterEnv": ["<rootDir>/postgres/reset-database.ts"],
+  "testTimeout": 30000
+}

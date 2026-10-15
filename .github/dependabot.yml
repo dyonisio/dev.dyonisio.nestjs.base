@@ -1,0 +1,29 @@
+# Dependabot: abre PRs atualizando dependências (e avisa de vulnerabilidades).
+# Cada PR passa pelo CI antes do merge — atualização que quebra algo fica vermelha.
+version: 2
+updates:
+  - package-ecosystem: npm
+    directory: /
+    schedule:
+      interval: weekly
+      day: monday
+    open-pull-requests-limit: 10
+    groups:
+      # Um PR só para patches/minors de desenvolvimento (menos barulho)
+      dev-dependencies:
+        dependency-type: development
+        update-types: [minor, patch]
+      nestjs:
+        patterns: ['@nestjs/*']
+      aws-sdk:
+        patterns: ['@aws-sdk/*']
+
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: monthly
+
+  - package-ecosystem: docker
+    directory: /
+    schedule:
+      interval: monthly

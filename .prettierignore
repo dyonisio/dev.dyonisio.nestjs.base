@@ -1,0 +1,9 @@
+# Templates de e-mail: HTML de e-mail tem regras próprias (tabelas, estilos inline)
+# e o Prettier não entende os partials do Handlebars.
+**/*.hbs
+
+dist
+coverage
+node_modules
+.serverless
+tmp

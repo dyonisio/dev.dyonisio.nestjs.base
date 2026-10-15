@@ -1,0 +1,41 @@
+# ---------- Dependências e build ----------
+node_modules/
+dist/
+*.tsbuildinfo
+.eslintcache
+
+# ---------- Testes e arquivos gerados localmente ----------
+coverage/
+# uploads do driver local, preview de e-mails, uploads dos testes
+tmp/
+
+# ---------- Deploy ----------
+.serverless/
+.aws-sam/
+
+# ---------- Variáveis de ambiente e segredos ----------
+# O .env tem senhas e segredos reais: NUNCA vai para o Git (o .env.example sim)
+.env
+.env.*
+!.env.example
+# Chaves privadas (ex.: chave .p8 do Sign in with Apple, certificados de cliente)
+*.key
+*.p8
+*.p12
+*.pfx
+# Em certs/ só entram CAs públicas (ex.: bundle do RDS); chaves privadas ficam de fora acima
+
+# ---------- Logs ----------
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# ---------- IDE / sistema operacional ----------
+.idea/
+.vscode/*
+!.vscode/extensions.json
+!.vscode/settings.json
+*.swp
+.DS_Store
+Thumbs.db

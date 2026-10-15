@@ -1,0 +1,8 @@
+<h1>Confirme seu e-mail</h1>
+<p>Olá, {{name}}!</p>
+<p>Falta só um passo para ativar sua conta no <strong>{{appName}}</strong>: confirme que este endereço de e-mail é seu.</p>
+{{> button url=verifyUrl label="Confirmar meu e-mail"}}
+<p>Este link expira em <strong>{{expiresInHours}} horas</strong>. Depois disso, peça um novo pelo aplicativo.</p>
+<p class="muted">Se o botão não funcionar, copie e cole este endereço no navegador:</p>
+<p class="muted break-all" style="word-break:break-all;overflow-wrap:anywhere;font-size:12px;"><a href="{{verifyUrl}}" style="word-break:break-all;overflow-wrap:anywhere;">{{verifyUrl}}</a></p>
+<p class="muted">Se você não criou uma conta, ignore este e-mail.</p>

@@ -1,0 +1,43 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: nestjs-base-postgres
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: nestjs_base
+    ports:
+      - '5432:5432'
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+
+  # Servidor SMTP fake para desenvolvimento: todos os e-mails aparecem em http://localhost:8025
+  mailpit:
+    image: axllent/mailpit:latest
+    container_name: nestjs-base-mailpit
+    ports:
+      - '1025:1025'
+      - '8025:8025'
+
+  # A API rodando a imagem de produção (Dockerfile) — opcional:
+  #   docker compose --profile app up -d --build
+  # No dia a dia use `npm run start:dev`; isto serve para testar a imagem antes de ir para o ECS.
+  api:
+    profiles: ['app']
+    build: .
+    container_name: nestjs-base-api
+    env_file: .env
+    environment:
+      NODE_ENV: development # libera Swagger e não exige as variáveis de produção localmente
+      DB_HOST: postgres
+      SMTP_HOST: mailpit
+      SMTP_PORT: '1025'
+      STORAGE_LOCAL_DIR: /tmp/uploads
+    ports:
+      - '3000:3000'
+    depends_on:
+      - postgres
+      - mailpit
+
+volumes:
+  pgdata:

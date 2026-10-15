@@ -1,0 +1,20 @@
+# Só o que o Dockerfile precisa entra no contexto do build (mais rápido e sem vazar segredos)
+node_modules
+dist
+coverage
+tmp
+.serverless
+.git
+.github
+.env
+.env.*
+!.env.example
+test
+docs
+scripts
+*.md
+# mantém a pasta certs/ no contexto (o Dockerfile a copia)
+!certs/README.md
+Dockerfile
+.dockerignore
+docker-compose.yml

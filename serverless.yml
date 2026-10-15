@@ -1,0 +1,317 @@
+# Deploy na AWS Lambda + API Gateway (HTTP API).
+# Guia completo: docs/DEPLOY_AWS_LAMBDA.md
+service: nestjs-base-api
+
+frameworkVersion: '3'
+
+provider:
+  name: aws
+  runtime: nodejs22.x
+  architecture: arm64
+  region: ${opt:region, 'us-east-1'}
+  stage: ${opt:stage, 'dev'}
+  memorySize: 1024
+  timeout: 29 # limite do API Gateway
+  logRetentionInDays: 14
+
+  environment:
+    NODE_ENV: production
+    NODE_OPTIONS: --enable-source-maps
+    APP_NAME: NestJS Base API
+    APP_URL: ${param:appUrl, ''}
+    # Obrigatórios (sem valor padrão de propósito): defina em `params` abaixo ou com
+    # --param="frontendUrl=https://app.seudominio.com" — o deploy falha se faltar.
+    FRONTEND_URL: ${param:frontendUrl}
+    # Origens que podem chamar a API pelo navegador. Padrão: só o front. Nunca '*'.
+    CORS_ORIGIN: ${param:corsOrigin, ${param:frontendUrl}}
+    SWAGGER_ENABLED: ${param:swaggerEnabled, 'false'}
+    FALLBACK_LANGUAGE: ${param:fallbackLanguage, 'en'}
+
+    # Banco — valores sensíveis vêm do SSM Parameter Store (veja a doc)
+    DB_TYPE: postgres
+    DB_HOST: ${ssm:/${self:service}/${sls:stage}/DB_HOST}
+    DB_PORT: '5432'
+    DB_NAME: ${ssm:/${self:service}/${sls:stage}/DB_NAME}
+    DB_USERNAME: ${ssm:/${self:service}/${sls:stage}/DB_USERNAME}
+    DB_PASSWORD: ${ssm:/${self:service}/${sls:stage}/DB_PASSWORD}
+    DB_SSL: 'true'
+    # O certificado do RDS é conferido (TLS de verdade). A Lambda já traz as CAs da AWS
+    # neste arquivo; só é preciso dizer ao Node para usá-lo.
+    NODE_EXTRA_CA_CERTS: /var/runtime/ca-cert.pem
+    DB_SYNCHRONIZE: 'false'
+    DB_POOL_MAX: '2'
+
+    JWT_SECRET: ${ssm:/${self:service}/${sls:stage}/JWT_SECRET}
+    # Cifra dados sensíveis no banco (segredos 2FA). NÃO troque depois de em uso.
+    ENCRYPTION_KEY: ${ssm:/${self:service}/${sls:stage}/ENCRYPTION_KEY}
+    JWT_EXPIRES_IN: '900'
+    REFRESH_TOKEN_EXPIRES_IN: '2592000'
+
+    # Login social (client IDs não são segredo). Vazio = provedor desligado
+    GOOGLE_CLIENT_IDS: ${param:googleClientIds, ''}
+    APPLE_CLIENT_IDS: ${param:appleClientIds, ''}
+
+    # E-mail via Amazon SES usando a IAM role da função (sem credenciais SMTP)
+    MAIL_TRANSPORT: ses
+    MAIL_FROM: ${param:mailFrom}
+    MAIL_SUPPORT_EMAIL: ${param:supportEmail}
+    MAIL_TIMEZONE: ${param:mailTimezone, 'America/Sao_Paulo'}
+    # E-mails assíncronos: a API publica na fila e a função mailWorker envia
+    MAIL_DELIVERY: sqs
+    MAIL_QUEUE_URL: !Ref MailQueue
+
+    # Arquivos (upload direto do navegador para o S3)
+    STORAGE_DRIVER: s3
+    STORAGE_S3_BUCKET: !Ref UploadsBucket
+
+    # Logs em JSON (CloudWatch Logs Insights): fatal | error | warn | info | debug
+    LOG_LEVEL: ${param:logLevel, 'info'}
+
+  iam:
+    role:
+      statements:
+        # Só identidades (domínios/e-mails verificados) desta conta e região
+        - Effect: Allow
+          Action:
+            - ses:SendEmail
+            - ses:SendRawEmail
+          Resource: arn:aws:ses:${aws:region}:${aws:accountId}:identity/*
+        # A API publica e-mails na fila; o worker os consome (permissão de consumo
+        # é adicionada automaticamente pelo evento sqs da função mailWorker)
+        - Effect: Allow
+          Action:
+            - sqs:SendMessage
+          Resource: !GetAtt MailQueue.Arn
+        # Upload/download de arquivos. As URLs assinadas herdam estas permissões:
+        # a Lambda autoriza, o navegador envia/baixa direto do S3.
+        - Effect: Allow
+          Action:
+            - s3:PutObject
+            - s3:GetObject
+            - s3:DeleteObject
+          Resource: !Join ['', [!GetAtt UploadsBucket.Arn, '/*']]
+
+  # Descomente se o banco (RDS) estiver em subnets privadas de uma VPC.
+  # Lembre: Lambda em VPC precisa de NAT Gateway (ou VPC Endpoint do SES) para enviar e-mails.
+  # vpc:
+  #   securityGroupIds:
+  #     - sg-xxxxxxxx
+  #   subnetIds:
+  #     - subnet-aaaaaaaa
+  #     - subnet-bbbbbbbb
+
+# Parâmetros por stage (sobrescreva conforme seu ambiente)
+params:
+  default:
+    swaggerEnabled: 'false'
+    # Preencha para o seu projeto (ou passe com --param no deploy):
+    # frontendUrl: https://app.seudominio.com
+    # mailFrom: Minha App <no-reply@seudominio.com>
+    # supportEmail: suporte@seudominio.com
+    # alarmEmail: devops@seudominio.com   # recebe os alarmes (confirme a inscrição no e-mail)
+  dev:
+    swaggerEnabled: 'true'
+
+package:
+  # O código já vem compilado (npm run build). devDependencies são excluídas automaticamente.
+  patterns:
+    - '!**'
+    - 'package.json'
+    - 'dist/**'
+    - '!dist/**/*.spec.js'
+    - 'node_modules/**'
+    - '!node_modules/.cache/**'
+    - '!node_modules/**/*.md'
+    - '!node_modules/**/*.d.ts'
+    - '!node_modules/**/*.map'
+
+functions:
+  api:
+    handler: dist/lambda.handler
+    events:
+      - httpApi: '*'
+
+  # Consome a fila de e-mails: renderiza e envia. Falhas voltam para a fila
+  # (novas tentativas) e, após 5, vão para a DLQ.
+  mailWorker:
+    handler: dist/mail/worker/mail-worker.handler.handler
+    memorySize: 512
+    timeout: 30
+    events:
+      - sqs:
+          arn: !GetAtt MailQueue.Arn
+          batchSize: 10
+          maximumBatchingWindow: 5
+          functionResponseType: ReportBatchItemFailures
+
+  # Manutenção a cada 6 horas: anonimiza contas excluídas, apaga uploads abandonados,
+  # sessões antigas, auditoria fora da retenção e contadores de rate limit expirados.
+  maintenance:
+    handler: dist/maintenance/maintenance.handler.handler
+    memorySize: 512
+    timeout: 300
+    events:
+      - schedule: rate(6 hours)
+
+resources:
+  Resources:
+    MailQueue:
+      Type: AWS::SQS::Queue
+      Properties:
+        QueueName: ${self:service}-${sls:stage}-mail
+        # >= 6x o timeout do worker (recomendação da AWS para gatilhos de Lambda)
+        VisibilityTimeout: 180
+        RedrivePolicy:
+          deadLetterTargetArn: !GetAtt MailDeadLetterQueue.Arn
+          maxReceiveCount: 5
+
+    # Arquivos enviados pelos usuários. Só o prefixo public/ (ex.: avatares) é legível
+    # publicamente; private/ só por link temporário assinado pela API.
+    UploadsBucket:
+      Type: AWS::S3::Bucket
+      Properties:
+        BucketName: ${self:service}-${sls:stage}-uploads-${aws:accountId}
+        OwnershipControls:
+          Rules:
+            - ObjectOwnership: BucketOwnerEnforced
+        PublicAccessBlockConfiguration:
+          BlockPublicAcls: true
+          IgnorePublicAcls: true
+          BlockPublicPolicy: false # permite a política abaixo (leitura pública de public/*)
+          RestrictPublicBuckets: false
+        CorsConfiguration:
+          CorsRules:
+            # O navegador envia o arquivo direto para o bucket (presigned POST)
+            - AllowedMethods: [POST, GET]
+              AllowedOrigins: ['${param:frontendUrl}']
+              AllowedHeaders: ['*']
+              MaxAge: 3600
+        LifecycleConfiguration:
+          Rules:
+            - Id: abort-incomplete-multipart
+              Status: Enabled
+              AbortIncompleteMultipartUpload:
+                DaysAfterInitiation: 1
+
+    UploadsBucketPolicy:
+      Type: AWS::S3::BucketPolicy
+      Properties:
+        Bucket: !Ref UploadsBucket
+        PolicyDocument:
+          Version: '2012-10-17'
+          Statement:
+            - Sid: PublicReadForPublicPrefix
+              Effect: Allow
+              Principal: '*'
+              Action: s3:GetObject
+              Resource: !Join ['', [!GetAtt UploadsBucket.Arn, '/public/*']]
+
+    # E-mails que falharam 5 vezes ficam aqui por 14 dias para inspeção/reprocessamento
+    MailDeadLetterQueue:
+      Type: AWS::SQS::Queue
+      Properties:
+        QueueName: ${self:service}-${sls:stage}-mail-dlq
+        MessageRetentionPeriod: 1209600
+
+    # ---------- Alarmes ----------
+    # Avisam por e-mail (param alarmEmail) quando algo quebra — antes de o usuário reclamar.
+    AlarmTopic:
+      Type: AWS::SNS::Topic
+      Properties:
+        TopicName: ${self:service}-${sls:stage}-alarms
+
+    AlarmEmailSubscription:
+      Type: AWS::SNS::Subscription
+      Condition: HasAlarmEmail
+      Properties:
+        TopicArn: !Ref AlarmTopic
+        Protocol: email
+        Endpoint: ${param:alarmEmail, ''}
+
+    # A API respondeu 5xx (erro do servidor) 5+ vezes em 5 minutos
+    ApiServerErrorsAlarm:
+      Type: AWS::CloudWatch::Alarm
+      Properties:
+        AlarmName: ${self:service}-${sls:stage}-api-5xx
+        AlarmDescription: A API respondeu com erro 5xx. Veja os logs da função api no CloudWatch.
+        Namespace: AWS/ApiGateway
+        MetricName: 5xx
+        Dimensions:
+          - Name: ApiId
+            Value: !Ref HttpApi
+        Statistic: Sum
+        Period: 300
+        EvaluationPeriods: 1
+        Threshold: 5
+        ComparisonOperator: GreaterThanOrEqualToThreshold
+        TreatMissingData: notBreaching
+        AlarmActions: [!Ref AlarmTopic]
+        OKActions: [!Ref AlarmTopic]
+
+    # Alguma função falhou (crash, timeout, manutenção com erro)
+    ApiFunctionErrorsAlarm:
+      Type: AWS::CloudWatch::Alarm
+      Properties:
+        AlarmName: ${self:service}-${sls:stage}-api-errors
+        AlarmDescription: A função api falhou (crash/timeout).
+        Namespace: AWS/Lambda
+        MetricName: Errors
+        Dimensions:
+          - Name: FunctionName
+            Value: ${self:service}-${sls:stage}-api
+        Statistic: Sum
+        Period: 300
+        EvaluationPeriods: 1
+        Threshold: 1
+        ComparisonOperator: GreaterThanOrEqualToThreshold
+        TreatMissingData: notBreaching
+        AlarmActions: [!Ref AlarmTopic]
+
+    MaintenanceErrorsAlarm:
+      Type: AWS::CloudWatch::Alarm
+      Properties:
+        AlarmName: ${self:service}-${sls:stage}-maintenance-errors
+        AlarmDescription: O job de manutenção falhou. Veja os logs da função maintenance.
+        Namespace: AWS/Lambda
+        MetricName: Errors
+        Dimensions:
+          - Name: FunctionName
+            Value: ${self:service}-${sls:stage}-maintenance
+        Statistic: Sum
+        Period: 21600
+        EvaluationPeriods: 1
+        Threshold: 1
+        ComparisonOperator: GreaterThanOrEqualToThreshold
+        TreatMissingData: notBreaching
+        AlarmActions: [!Ref AlarmTopic]
+
+    # E-mails que desistiram depois de 5 tentativas (SES fora, remetente não verificado...)
+    MailDeadLetterAlarm:
+      Type: AWS::CloudWatch::Alarm
+      Properties:
+        AlarmName: ${self:service}-${sls:stage}-mail-dlq
+        AlarmDescription: Há e-mails na fila de falhas (DLQ). Veja docs/DEPLOY_AWS_LAMBDA.md, "Fila de e-mails".
+        Namespace: AWS/SQS
+        MetricName: ApproximateNumberOfMessagesVisible
+        Dimensions:
+          - Name: QueueName
+            Value: !GetAtt MailDeadLetterQueue.QueueName
+        Statistic: Maximum
+        Period: 300
+        EvaluationPeriods: 1
+        Threshold: 1
+        ComparisonOperator: GreaterThanOrEqualToThreshold
+        TreatMissingData: notBreaching
+        AlarmActions: [!Ref AlarmTopic]
+        OKActions: [!Ref AlarmTopic]
+
+  Conditions:
+    HasAlarmEmail: !Not [!Equals ["${param:alarmEmail, ''}", '']]
+
+plugins:
+  - serverless-offline
+
+custom:
+  serverless-offline:
+    httpPort: 3000
+    noPrependStageInUrl: true

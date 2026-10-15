@@ -1,0 +1,12 @@
+{{#if enabled}}
+<h1>Verificação em duas etapas ativada</h1>
+<p>Olá, {{name}}.</p>
+<p>A verificação em duas etapas foi <strong>ativada</strong> na sua conta do <strong>{{appName}}</strong> em <strong>{{when}}</strong>. A partir de agora, além da senha, será pedido o código do seu app autenticador.</p>
+<p>Guarde os códigos de recuperação em um lugar seguro: eles são a única forma de entrar se você perder o celular.</p>
+{{else}}
+<h1>Verificação em duas etapas desativada</h1>
+<p>Olá, {{name}}.</p>
+<p>A verificação em duas etapas foi <strong>desativada</strong> na sua conta do <strong>{{appName}}</strong> em <strong>{{when}}</strong>{{#if byAdmin}}, por um administrador, a seu pedido{{/if}}. Sua conta agora está protegida apenas pela senha.</p>
+{{/if}}
+<p><strong>Não reconhece esta alteração?</strong> Troque sua senha imediatamente e fale com <a href="mailto:{{supportEmail}}">{{supportEmail}}</a>.</p>
+{{> button url=securityUrl label="Revisar a segurança da conta"}}

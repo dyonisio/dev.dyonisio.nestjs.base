@@ -1,0 +1,11 @@
+# Quebras de linha sempre LF no repositório (inclusive em quem clona no Windows):
+# evita diffs só de CRLF/LF e mantém os scripts compatíveis com Linux (CI, Lambda, Docker).
+* text=auto eol=lf
+
+# Binários: nunca converter
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.webp binary
+*.pdf binary
+*.ico binary

@@ -1,0 +1,20 @@
+<h1>Novo acesso à sua conta</h1>
+<p>Olá, {{name}}.</p>
+<p>Sua conta no <strong>{{appName}}</strong> foi acessada de um dispositivo que não reconhecemos:</p>
+<table role="presentation" cellspacing="0" cellpadding="8" style="margin:16px 0;border-collapse:collapse;">
+  <tr>
+    <td style="color:#6b7280;">Quando</td>
+    <td><strong>{{when}}</strong></td>
+  </tr>
+  <tr>
+    <td style="color:#6b7280;">Dispositivo</td>
+    <td><strong>{{device}}</strong></td>
+  </tr>
+  <tr>
+    <td style="color:#6b7280;">IP</td>
+    <td><strong>{{ip}}</strong></td>
+  </tr>
+</table>
+<p>Se foi você, nenhuma ação é necessária.</p>
+<p><strong>Não foi você?</strong> Encerre essa sessão, troque sua senha e ative a verificação em duas etapas.</p>
+{{> button url=securityUrl label="Revisar meus acessos"}}

@@ -1,0 +1,15 @@
+<h1>Your permissions were updated</h1>
+<p>Hi, {{name}}.</p>
+<p>An administrator changed your access level on <strong>{{appName}}</strong>:</p>
+<table role="presentation" cellspacing="0" cellpadding="8" style="margin:16px 0;border-collapse:collapse;">
+  <tr>
+    <td style="color:#6b7280;">Previous role</td>
+    <td><strong>{{oldRole}}</strong></td>
+  </tr>
+  <tr>
+    <td style="color:#6b7280;">New role</td>
+    <td><strong>{{newRole}}</strong></td>
+  </tr>
+</table>
+<p>The new permissions already apply.</p>
+{{> button url=frontendUrl label="Open the platform"}}
