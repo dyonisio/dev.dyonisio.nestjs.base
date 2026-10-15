@@ -24,14 +24,21 @@
     {
       "Sid": "CloudFormationGlobal",
       "Effect": "Allow",
-      "Action": ["cloudformation:ValidateTemplate", "cloudformation:ListStacks"],
+      "Action": [
+        "cloudformation:ValidateTemplate",
+        "cloudformation:ListStacks",
+        "cloudformation:GetTemplateSummary"
+      ],
       "Resource": "*"
     },
     {
       "Sid": "DeploymentAndUploadBuckets",
       "Effect": "Allow",
       "Action": "s3:*",
-      "Resource": ["arn:aws:s3:::nestjs-base-api-*", "arn:aws:s3:::nestjs-base-api-*/*"]
+      "Resource": [
+        "arn:aws:s3:::nestjs-base-api-*",
+        "arn:aws:s3:::nestjs-base-api-*/*"
+      ]
     },
     {
       "Sid": "LambdaFunctions",
@@ -84,7 +91,11 @@
         "logs:TagLogGroup",
         "logs:DescribeLogStreams",
         "logs:FilterLogEvents",
-        "logs:GetLogEvents"
+        "logs:GetLogEvents",
+        "logs:UntagResource",
+        "logs:UntagLogGroup",
+        "logs:ListTagsForResource",
+        "logs:ListTagsLogGroup"
       ],
       "Resource": "arn:aws:logs:*:*:log-group:/aws/lambda/nestjs-base-api-*"
     },
@@ -97,7 +108,11 @@
     {
       "Sid": "QueuesTopicsSchedules",
       "Effect": "Allow",
-      "Action": ["sqs:*", "sns:*", "events:*"],
+      "Action": [
+        "sqs:*",
+        "sns:*",
+        "events:*"
+      ],
       "Resource": [
         "arn:aws:sqs:*:*:nestjs-base-api-*",
         "arn:aws:sns:*:*:nestjs-base-api-*",
@@ -111,14 +126,19 @@
         "cloudwatch:PutMetricAlarm",
         "cloudwatch:DeleteAlarms",
         "cloudwatch:DescribeAlarms",
-        "cloudwatch:TagResource"
+        "cloudwatch:TagResource",
+        "cloudwatch:UntagResource",
+        "cloudwatch:ListTagsForResource"
       ],
       "Resource": "arn:aws:cloudwatch:*:*:alarm:nestjs-base-api-*"
     },
     {
       "Sid": "ReadSecrets",
       "Effect": "Allow",
-      "Action": ["ssm:GetParameter", "ssm:GetParameters"],
+      "Action": [
+        "ssm:GetParameter",
+        "ssm:GetParameters"
+      ],
       "Resource": "arn:aws:ssm:*:*:parameter/nestjs-base-api/*"
     }
   ]
