@@ -93,6 +93,7 @@ jobs:
           MAIL_FROM: ${{ vars.MAIL_FROM }}
           SUPPORT_EMAIL: ${{ vars.SUPPORT_EMAIL }}
           ALARM_EMAIL: ${{ vars.ALARM_EMAIL }}
+          CORS_ORIGIN: ${{ vars.CORS_ORIGIN }}
           GOOGLE_CLIENT_IDS: ${{ vars.GOOGLE_CLIENT_IDS }}
           APPLE_CLIENT_IDS: ${{ vars.APPLE_CLIENT_IDS }}
           STAGE: ${{ inputs.stage }}
@@ -115,6 +116,7 @@ jobs:
             --param="supportEmail=$SUPPORT_EMAIL"
           )
           [ -n "$ALARM_EMAIL" ] && params+=(--param="alarmEmail=$ALARM_EMAIL")
+          [ -n "$CORS_ORIGIN" ] && params+=(--param="corsOrigin=$CORS_ORIGIN")
           [ -n "$GOOGLE_CLIENT_IDS" ] && params+=(--param="googleClientIds=$GOOGLE_CLIENT_IDS")
           [ -n "$APPLE_CLIENT_IDS" ] && params+=(--param="appleClientIds=$APPLE_CLIENT_IDS")
 

@@ -242,6 +242,7 @@ Repositório → **Settings → Environments → New environment** → `prod` (e
 | `MAIL_FROM` | sim | `Minha App <no-reply@seudominio.com.br>` (domínio verificado no SES) |
 | `SUPPORT_EMAIL` | sim | e-mail de suporte |
 | `ALARM_EMAIL` | não | quem recebe os alarmes |
+| `CORS_ORIGIN` | não | origens do front que chamam a API e enviam arquivos **pelo navegador**, separadas por vírgula e sem espaços (ex.: `https://app.seudominio.com.br,http://localhost:3000`). Padrão: `FRONTEND_URL` |
 | `GOOGLE_CLIENT_IDS` / `APPLE_CLIENT_IDS` | não | login social |
 
 No `prod`, marque **Required reviewers** com o seu usuário: todo deploy em produção espera a sua aprovação.
@@ -357,6 +358,7 @@ Daqui em diante, cada deploy é só o passo 6.
 | Mensagens ficam **"in flight"** na fila de e-mail e não somem | O `mailWorker` está falhando a cada tentativa (até 5, a cada 3 min; depois vão para a DLQ) | Veja o motivo no log do `mailWorker` (linhas abaixo). Corrigida a causa, as que foram para a DLQ voltam com *Start DLQ redrive* |
 | `not authorized to perform 'ses:SendRawEmail' on resource ...:configuration-set/...` (log do `mailWorker`) | O domínio tem um *configuration set* (o assistente do SES cria `my-first-configuration-set`) | Já coberto pelo `serverless.yml` atual (permite `configuration-set/*`); rode o deploy |
 | `Email address is not verified` (log do `mailWorker`) | SES ainda no sandbox nessa região | Aguarde a liberação (3.3) ou verifique o e-mail destinatário em *SES → Identities* |
+| **`Failed to fetch`** no navegador ao enviar o arquivo para o S3 | O bucket só aceita uploads vindos das origens do `CORS_ORIGIN` (padrão: `FRONTEND_URL`); o front rodando em outra origem (ex.: `localhost`) é barrado pelo CORS | Adicione a origem ao `CORS_ORIGIN` do environment e rode o deploy |
 | E-mails não chegam | SES em sandbox ou domínio não verificado **na região do deploy** | Passo 3; veja também a fila de falhas (DLQ) em [DEPLOY_AWS_LAMBDA.md](DEPLOY_AWS_LAMBDA.md#fila-de-e-mails) |
 
 Ver o motivo exato de uma falha do deploy: **CloudFormation → Stacks → `nestjs-base-api-<stage>` → aba Events**. A primeira linha

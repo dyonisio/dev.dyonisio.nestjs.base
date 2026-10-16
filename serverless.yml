@@ -187,9 +187,10 @@ resources:
           RestrictPublicBuckets: false
         CorsConfiguration:
           CorsRules:
-            # O navegador envia o arquivo direto para o bucket (presigned POST)
+            # O navegador envia o arquivo direto para o bucket (presigned POST). As mesmas origens
+            # que podem chamar a API (corsOrigin, separadas por vírgula, sem espaços; padrão: frontendUrl).
             - AllowedMethods: [POST, GET]
-              AllowedOrigins: ['${param:frontendUrl}']
+              AllowedOrigins: !Split [',', '${param:corsOrigin, param:frontendUrl}']
               AllowedHeaders: ['*']
               MaxAge: 3600
         LifecycleConfiguration:

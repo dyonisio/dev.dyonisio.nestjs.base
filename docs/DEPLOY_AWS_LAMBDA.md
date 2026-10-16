@@ -127,7 +127,7 @@ aberto. Defina-os em `params:` no `serverless.yml` (por stage) ou na linha de co
 | `mailFrom` | `Minha App <no-reply@seudominio.com>` | Remetente (verificado no SES) |
 | `supportEmail` | `suporte@seudominio.com` | Contato nos e-mails |
 | `alarmEmail` (opcional) | `devops@seudominio.com` | Recebe os alarmes. **Confirme a inscrição** no e-mail que a AWS envia |
-| `corsOrigin` (opcional) | `https://app.com,https://admin.app.com` | Se houver mais de um front. Padrão: `frontendUrl` |
+| `corsOrigin` (opcional) | `https://app.com,https://admin.app.com` | Origens que chamam a API **e enviam arquivos ao bucket** pelo navegador (vírgula, sem espaços). Padrão: `frontendUrl` |
 | `googleClientIds` / `appleClientIds` (opcional) | ver acima | Login social |
 | `swaggerEnabled` (opcional) | `true` | Padrão: ligado só no stage `dev` |
 
@@ -304,7 +304,7 @@ Não há chave de acesso (`AWS_ACCESS_KEY_ID`) guardada em lugar nenhum. Configu
    | `AWS_ROLE_ARN` | sim | ARN da role acima |
    | `FRONTEND_URL`, `MAIL_FROM`, `SUPPORT_EMAIL` | sim | os parâmetros obrigatórios (seção 4.2) |
    | `AWS_REGION` | se não for `us-east-1` | região do deploy — a mesma dos segredos (SSM) e do SES |
-   | `ALARM_EMAIL`, `GOOGLE_CLIENT_IDS`, `APPLE_CLIENT_IDS` | não | opcionais (vazios não são enviados) |
+   | `ALARM_EMAIL`, `CORS_ORIGIN`, `GOOGLE_CLIENT_IDS`, `APPLE_CLIENT_IDS` | não | opcionais (vazios não são enviados) |
 
    O workflow passa esses valores ao `serverless deploy` por variáveis de ambiente, sem interpolar no script (evita injeção de comandos).
 
