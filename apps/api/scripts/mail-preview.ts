@@ -12,7 +12,7 @@ import { MailTemplateService } from '../src/mail/mail-template.service';
 import { MailTemplate, MailTemplateContextMap } from '../src/mail/mail.types';
 
 const globals = {
-  appName: 'NestJS Base API',
+  appName: 'NestJS Base',
   appUrl: 'http://localhost:3000',
   frontendUrl: 'http://localhost:5173',
   supportEmail: 'suporte@example.com',

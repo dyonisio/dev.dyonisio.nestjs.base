@@ -323,7 +323,7 @@ export class MailService {
   }
 
   private get appName() {
-    return this.config.get<string>('app.name', 'NestJS Base API');
+    return this.config.get<string>('app.name', 'NestJS Base');
   }
 
   private get frontendUrl() {

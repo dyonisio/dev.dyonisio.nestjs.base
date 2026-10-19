@@ -66,7 +66,7 @@ export class TwoFactorService {
       otpauthUrl: otpauthUrl({
         secret,
         account: user.email,
-        issuer: this.config.get<string>('app.name', 'NestJS Base API'),
+        issuer: this.config.get<string>('app.name', 'NestJS Base'),
         image: this.config.get<string>('app.totpImageUrl'),
       }),
     };

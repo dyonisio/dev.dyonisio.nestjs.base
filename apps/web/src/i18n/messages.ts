@@ -5,8 +5,10 @@
  *
  * {nome} é substituído pelo valor com f(texto, { nome }).
  */
+import { APP_NAME } from '../config';
+
 const en = {
-  appName: 'NestJS Base',
+  appName: APP_NAME,
   language: 'Language',
   theme: { label: 'Theme', light: 'Light', dark: 'Dark', system: 'System' },
   common: {
@@ -393,7 +395,7 @@ type Dict = {
 };
 
 const ptBR: Dict = {
-  appName: 'NestJS Base',
+  appName: APP_NAME,
   language: 'Idioma',
   theme: { label: 'Tema', light: 'Claro', dark: 'Escuro', system: 'Do sistema' },
   common: {

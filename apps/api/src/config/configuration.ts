@@ -20,7 +20,8 @@ export default () => {
 
   return {
     app: {
-      name: process.env.APP_NAME ?? 'NestJS Base API',
+      /** Nome do produto: apps autenticadores (2FA), e-mails e Swagger. O front usa o mesmo (VITE_APP_NAME). */
+      name: process.env.APP_NAME ?? 'NestJS Base',
       env,
       port: toInt(process.env.PORT, 3000),
       /** fatal | error | warn | info | debug | trace | silent */

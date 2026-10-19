@@ -14,8 +14,7 @@ Checklist para transformar a base no **seu** projeto. Faça na ordem; cada item 
    | --- | --- |
    | `package.json` → `name` | nome do pacote (ex.: `minha-api`; o do front em `apps/web/package.json`) |
    | `serverless.yml` → `service` | prefixo de **tudo** na AWS: funções, filas, bucket, parâmetros do SSM (`/minha-api/<stage>/...`) |
-   | `.env` → `APP_NAME` | nome que aparece nos e-mails, no Swagger e no app autenticador do 2FA |
-   | `apps/web/index.html` → `<title>` e `apps/web/src/i18n/messages.ts` → `appName` | nome que aparece no front |
+   | `APP_NAME` (no `.env` da API e, em produção, a variável `APP_NAME` do environment do GitHub) | nome do produto: e-mails, Swagger, app autenticador do 2FA **e** o front (título da aba, login, barra lateral). Localmente o front lê `VITE_APP_NAME` do `apps/web/.env` |
 
 3. Ajuste o título/descrição do Swagger em `buildOpenApiDocument` ([src/app.setup.ts](../apps/api/src/app.setup.ts)).
 

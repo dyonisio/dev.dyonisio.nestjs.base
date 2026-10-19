@@ -21,7 +21,7 @@ Object.assign(process.env, {
   STORAGE_DRIVER: 'local',
   SWAGGER_ENABLED: 'false',
   LOG_LEVEL: 'silent',
-  APP_NAME: 'NestJS Base API',
+  APP_NAME: 'NestJS Base',
 });
 
 async function run() {

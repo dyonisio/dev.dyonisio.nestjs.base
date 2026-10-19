@@ -3522,7 +3522,7 @@
     }
   },
   "info": {
-    "title": "NestJS Base API",
+    "title": "NestJS Base",
     "description": "API base with JWT authentication, revocable sessions (refresh tokens), 2FA, social sign-in and permission-based access control (roles `admin`, `manager`, `user`).\n\n**Versioning:** every route is under `/api/v1`. A breaking change ships as `/api/v2` while v1 keeps working.\n\n**Localized errors:** send the `Accept-Language` header (e.g. `pt-BR`, `en`) and every error message comes back in that language.\nErrors always have the shape `{ statusCode, code, message, errors?, requestId }` — use `code` in the client, it never changes.",
     "version": "1.0.0",
     "contact": {}

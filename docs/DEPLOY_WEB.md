@@ -67,6 +67,7 @@ Em **Settings → Environments → prod → Environment variables**:
 | `FRONTEND_URL` | `https://base.dyonisio.dev` (links dos e-mails) |
 | `CORS_ORIGIN` | `https://base.dyonisio.dev` (quem pode chamar a API e enviar uploads; mais de um, separe por vírgula) |
 | `FALLBACK_LANGUAGE` | `pt-BR` (opcional): idioma de quem ainda não escolheu um. Padrão `en` |
+| `APP_NAME` | Nome do produto (opcional; padrão `NestJS Base`): vale para a API (e-mails, 2FA, Swagger) e para o front (título, login, barra lateral). Para trocar, edite e rode o deploy |
 
 Opcionais, para o login social no front: `WEB_GOOGLE_CLIENT_ID`, `WEB_APPLE_CLIENT_ID` e `WEB_APPLE_REDIRECT_URI`
 (os mesmos client IDs de `GOOGLE_CLIENT_IDS` / `APPLE_CLIENT_IDS`; veja [WEB.md](WEB.md#login-social-google-e-apple)).

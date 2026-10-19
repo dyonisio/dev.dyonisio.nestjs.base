@@ -19,7 +19,8 @@ provider:
   environment:
     NODE_ENV: production
     NODE_OPTIONS: --enable-source-maps
-    APP_NAME: NestJS Base API
+    # Nome do produto (2FA, e-mails, Swagger). No GitHub: variável APP_NAME (vale para o front também)
+    APP_NAME: ${param:appName, 'NestJS Base'}
     APP_URL: ${param:appUrl, ''}
     # Obrigatórios (sem valor padrão de propósito): defina em `params` abaixo ou com
     # --param="frontendUrl=https://app.seudominio.com" — o deploy falha se faltar.

@@ -95,7 +95,7 @@ export function buildOpenApiDocument(
   i18n: I18nService = app.get(I18nService),
 ): OpenAPIObject {
   const document = new DocumentBuilder()
-    .setTitle(config.get<string>('app.name', 'NestJS Base API'))
+    .setTitle(config.get<string>('app.name', 'NestJS Base'))
     .setDescription(
       [
         'API base with JWT authentication, revocable sessions (refresh tokens), 2FA, social sign-in and permission-based access control (roles `admin`, `manager`, `user`).',
