@@ -56,7 +56,7 @@ function startOrChallenge(data: LoginResponse): LoginResult {
 export function AuthProvider({ children }: { children: ReactNode }) {
   const user = useSyncExternalStore(session.subscribe, session.getUser);
   // Ao abrir o site com um refresh token salvo, recupera a sessão antes de decidir as rotas
-  const [restoring, setRestoring] = useState(() => !!session.getRefreshToken());
+  const [restoring, setRestoring] = useState(() => session.hasSession());
 
   useEffect(() => {
     if (!restoring) return;
@@ -109,10 +109,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         session.start(data);
       },
       async logout() {
-        const refreshToken = session.getRefreshToken();
-        // Revoga a sessão na API (o access token dela para na hora); falha de rede não impede sair
-        if (refreshToken) {
-          await api.POST('/api/v1/auth/logout', { body: { refreshToken } }).catch(() => undefined);
+        // Revoga a sessão na API (o refresh token vai no cookie); falha de rede não impede sair
+        if (session.hasSession()) {
+          await api.POST('/api/v1/auth/logout', { body: {} }).catch(() => undefined);
         }
         session.clear();
       },

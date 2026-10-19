@@ -368,7 +368,7 @@ export interface paths {
         put?: never;
         /**
          * Refresh the tokens
-         * @description Exchanges the refresh token for a new token pair in the same session. Each refresh token can be used only once: reusing an already used token revokes the whole session (refresh and access tokens).
+         * @description Exchanges the refresh token for a new token pair in the same session. Each refresh token can be used only once: reusing an already used token revokes the whole session (refresh and access tokens). In cookie mode (`X-Session-Cookie: 1`) the token comes from the httpOnly cookie and the new one goes back in it.
          */
         post: operations["AuthController_refresh_v1"];
         delete?: never;
@@ -388,7 +388,7 @@ export interface paths {
         put?: never;
         /**
          * Sign out
-         * @description Revokes the session of the given refresh token. Its access tokens stop working immediately.
+         * @description Revokes the session of the given refresh token (or of the httpOnly cookie, in cookie mode). Its access tokens stop working immediately.
          */
         post: operations["AuthController_logout_v1"];
         delete?: never;
@@ -1106,10 +1106,10 @@ export interface components {
             /** @description Short-lived JWT — send it as `Authorization: Bearer <token>` */
             accessToken: string;
             /**
-             * @description Long-lived opaque token — single use, exchange it at POST /api/v1/auth/refresh
+             * @description Long-lived opaque token — single use, exchange it at POST /api/v1/auth/refresh. Omitted when the request sends `X-Session-Cookie: 1`: then it goes in an httpOnly cookie instead (web front).
              * @example 3f1c2b9e-8a4d-4f6e-9b1a-2c3d4e5f6a7b.kJ8x...
              */
-            refreshToken: string;
+            refreshToken?: string;
             /** @example Bearer */
             tokenType: string;
             /**
@@ -1145,8 +1145,8 @@ export interface components {
             password: string;
         };
         RefreshTokenDto: {
-            /** @description Refresh token received from the login or the last refresh */
-            refreshToken: string;
+            /** @description Refresh token received from the login or the last refresh. Omit it in cookie mode (`X-Session-Cookie: 1`): the httpOnly cookie is used. */
+            refreshToken?: string;
         };
         RegisterDto: {
             /** @example Jane Doe */
@@ -1194,10 +1194,10 @@ export interface components {
             /** @description Short-lived JWT — send it as `Authorization: Bearer <token>` */
             accessToken: string;
             /**
-             * @description Long-lived opaque token — single use, exchange it at POST /api/v1/auth/refresh
+             * @description Long-lived opaque token — single use, exchange it at POST /api/v1/auth/refresh. Omitted when the request sends `X-Session-Cookie: 1`: then it goes in an httpOnly cookie instead (web front).
              * @example 3f1c2b9e-8a4d-4f6e-9b1a-2c3d4e5f6a7b.kJ8x...
              */
-            refreshToken: string;
+            refreshToken?: string;
             /** @example Bearer */
             tokenType: string;
             /**

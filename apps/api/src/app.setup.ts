@@ -48,8 +48,13 @@ export function configureApp(app: INestApplication): INestApplication {
   // Rotas de infraestrutura (ex.: /api/health) são VERSION_NEUTRAL.
   app.setGlobalPrefix('api');
   app.enableVersioning({ type: VersioningType.URI, defaultVersion: '1' });
+  // credentials: o front web manda o cookie httpOnly do refresh token (auth/session-cookie.ts).
+  // Com cookie, o navegador exige a origem exata: '*' vira "reflete a origem" — só em
+  // desenvolvimento, porque em produção a validação do ambiente recusa CORS_ORIGIN=*.
+  const corsOrigin = config.get<string | string[]>('app.corsOrigin', '*');
   app.enableCors({
-    origin: config.get<string | string[]>('app.corsOrigin', '*'),
+    origin: corsOrigin === '*' ? true : corsOrigin,
+    credentials: true,
     exposedHeaders: ['Content-Language', 'X-Request-Id'],
   });
 

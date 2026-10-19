@@ -33,7 +33,7 @@ describe('login por link', () => {
     expect(await lastBody(fetch, 'POST', '/api/v1/auth/magic-link')).toEqual({
       email: 'ana@exemplo.com.br',
     });
-    expect(session.getRefreshToken()).toBeNull();
+    expect(session.hasSession()).toBe(false);
   });
 
   it('a tela do link só entra com um clique (filtros de e-mail não gastam o link)', async () => {
@@ -66,7 +66,7 @@ describe('login por link', () => {
     await userEvent.click(await screen.findByRole('button', { name: 'Sign in' }));
 
     expect(await screen.findByText('Two-step verification')).toBeInTheDocument();
-    expect(session.getRefreshToken()).toBeNull();
+    expect(session.hasSession()).toBe(false);
   });
 });
 

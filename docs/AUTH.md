@@ -40,6 +40,26 @@ requisição. Por isso logout, troca de senha e "encerrar dispositivo" derrubam 
 | `POST /auth/refresh` | Rotação: o refresh token é consumido e um par novo é emitido na mesma sessão |
 | Refresh token já usado aparece de novo | Indício de roubo: **a sessão é revogada** (o ladrão e a vítima precisam logar de novo) e fica na auditoria |
 | `POST /auth/logout { refreshToken }` | Encerra a sessão |
+
+### Refresh token em cookie (front web)
+
+Um cliente web pode pedir o refresh token num **cookie `httpOnly`** em vez de no corpo, mandando o cabeçalho
+`X-Session-Cookie: 1` (e `credentials: 'include'` no `fetch`):
+
+- toda resposta que traz um refresh token (login, cadastro, 2FA, social, link mágico, refresh, troca e criação de senha)
+  o grava no cookie e **o tira do corpo**;
+- `POST /auth/refresh` e `POST /auth/logout` aceitam corpo vazio: usam o cookie. O logout apaga o cookie, e um refresh
+  recusado também;
+- o cookie é `HttpOnly`, `SameSite=Strict`, `Path=/api/v1/auth` e, em produção (HTTPS), `Secure` com o nome
+  `__Secure-refresh`.
+
+**Por que é seguro contra outro site:** o cookie só é lido quando o cabeçalho `X-Session-Cookie` vem junto, e outro site
+não consegue enviar um cabeçalho próprio sem passar pelo CORS (que só libera a origem do `CORS_ORIGIN`). O `SameSite=Strict`
+nem deixa o navegador mandar o cookie a partir de outro site. Isso exige o front e a API no **mesmo site** (mesmo domínio
+registrado, como `base.dyonisio.dev` e `api.base.dyonisio.dev`).
+
+Sem o cabeçalho (apps mobile, integrações), nada muda: o token vem no corpo, como acima. O CORS libera credenciais
+(`credentials: true`); por isso `CORS_ORIGIN=*` é recusado em produção.
 | Troca/redefinição de senha | Encerra **todas** as sessões (a troca devolve um par novo para quem trocou) |
 | Usuário desativado ou excluído | Todas as sessões caem |
 | Sessão com mais de `SESSION_MAX_AGE_DAYS` (90) | Expira, mesmo se usada todo dia: login de novo |

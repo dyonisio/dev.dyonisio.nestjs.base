@@ -217,11 +217,16 @@ O cliente já resolve sozinho:
 | Token | Onde | Por quê |
 | --- | --- | --- |
 | Access token | Só na memória | Some ao fechar a aba; dura 15 minutos de qualquer forma |
-| Refresh token | `localStorage` | Para a sessão sobreviver a um recarregamento da página |
+| Refresh token | **Cookie `httpOnly`** gravado pela API | O JavaScript da página não consegue ler: um script malicioso injetado (XSS) não rouba a sessão para usar em outro lugar |
+| Marcador `nb.session` | `localStorage` | Só diz "tem sessão" (nenhum segredo), para o site saber, ao abrir, se vale tentar renovar pelo cookie |
 
-O `localStorage` fica ao alcance de um script malicioso injetado na página (XSS). Por isso o front nunca renderiza HTML
-vindo de fora (o React escapa tudo por padrão; não use `dangerouslySetInnerHTML` com dados da API), e a API detecta
-reuso de refresh token e derruba a sessão.
+O front pede esse modo mandando `X-Session-Cookie: 1` em toda chamada, com `credentials: 'include'` (o cliente `api`
+já faz isso). O cookie é `Secure` e `SameSite=Strict` e só vai para `/api/v1/auth`. Veja
+[AUTH.md → Refresh token em cookie](AUTH.md#refresh-token-em-cookie-front-web).
+
+Ainda assim, o front nunca renderiza HTML vindo de fora (o React escapa tudo por padrão; não use
+`dangerouslySetInnerHTML` com dados da API): um script injetado continuaria podendo agir **dentro** da página enquanto
+ela estiver aberta.
 
 ### Erros
 

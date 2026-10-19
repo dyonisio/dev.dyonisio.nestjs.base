@@ -59,7 +59,7 @@ export function resetLoginMethods() {
 
 // Saiu da conta: o próximo login busca do zero
 session.subscribe(() => {
-  if (!session.getAccessToken() && !session.getRefreshToken()) resetLoginMethods();
+  if (!session.getAccessToken() && !session.hasSession()) resetLoginMethods();
 });
 
 export function useLoginMethods() {

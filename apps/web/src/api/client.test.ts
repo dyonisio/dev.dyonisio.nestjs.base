@@ -1,7 +1,7 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { session } from '../auth/session';
 import { json, mockFetch, requestOf } from '../test/fetch-mock';
-import { api } from './client';
+import { api, refreshSession } from './client';
 
 const tokens = (n: number) => ({ accessToken: `access-${n}`, refreshToken: `refresh-${n}` });
 /** O que a API responde com o access token ausente ou vencido. */
@@ -36,7 +36,8 @@ describe('cliente da API', () => {
 
     expect(data).toEqual({ id: 'u1' });
     expect(fetch).toHaveBeenCalledTimes(3);
-    expect(session.getRefreshToken()).toBe('refresh-2');
+    expect(session.getAccessToken()).toBe('access-2');
+    expect(session.hasSession()).toBe(true);
   });
 
   it('vários 401 ao mesmo tempo compartilham UM refresh (o refresh token é de uso único)', async () => {
@@ -64,7 +65,7 @@ describe('cliente da API', () => {
     const { error } = await api.GET('/api/v1/users/me');
 
     expect(error).toMatchObject({ statusCode: 401 });
-    expect(session.getRefreshToken()).toBeNull();
+    expect(session.hasSession()).toBe(false);
     expect(session.getAccessToken()).toBeNull();
   });
 
@@ -79,7 +80,7 @@ describe('cliente da API', () => {
 
     expect(error).toMatchObject({ code: 'account.reauthRequired' });
     expect(fetch).toHaveBeenCalledTimes(1);
-    expect(session.getRefreshToken()).toBe('refresh-1');
+    expect(session.hasSession()).toBe(true);
   });
 
   it('401 no login é senha errada: NÃO tenta renovar', async () => {
@@ -95,5 +96,36 @@ describe('cliente da API', () => {
 
     expect(error).toMatchObject({ code: 'auth.invalidCredentials' });
     expect(fetch).toHaveBeenCalledTimes(1);
+  });
+
+  it('modo cookie: toda chamada pede o cookie (credentials) e o refresh vai sem token no corpo', async () => {
+    session.start(tokens(1));
+    const fetch = mockFetch({
+      'GET /api/v1/users/me': meRoute,
+      'POST /api/v1/auth/refresh': () => json(200, { accessToken: 'access-2' }),
+    });
+
+    await api.GET('/api/v1/users/me');
+
+    const me = requestOf(fetch.mock.calls[0]!);
+    expect(me.credentials).toBe('include');
+    expect(me.headers.get('X-Session-Cookie')).toBe('1');
+    const refresh = requestOf(fetch.mock.calls[1]!);
+    expect(refresh.credentials).toBe('include');
+    expect(refresh.headers.get('X-Session-Cookie')).toBe('1');
+    expect(await refresh.json()).toEqual({}); // o token está no cookie httpOnly
+  });
+
+  it('quem vem da versão antiga (token no localStorage) troca pelo cookie no primeiro refresh', async () => {
+    localStorage.setItem('nb.refreshToken', 'antigo');
+    const fetch = mockFetch({
+      'POST /api/v1/auth/refresh': () => json(200, { accessToken: 'novo' }),
+    });
+
+    await refreshSession();
+
+    expect(await requestOf(fetch.mock.calls[0]!).json()).toEqual({ refreshToken: 'antigo' });
+    expect(localStorage.getItem('nb.refreshToken')).toBeNull(); // nunca mais fica exposto ali
+    expect(session.hasSession()).toBe(true);
   });
 });

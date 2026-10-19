@@ -1,4 +1,5 @@
 import { Module } from '@nestjs/common';
+import { APP_INTERCEPTOR } from '@nestjs/core';
 import { PassportModule } from '@nestjs/passport';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { MailModule } from '../mail/mail.module';
@@ -16,6 +17,7 @@ import { PasswordController } from './controllers/password.controller';
 import { RegistrationController } from './controllers/registration.controller';
 import { AuthService } from './services/auth.service';
 import { MagicLinkService } from './services/magic-link.service';
+import { SessionCookie, SessionCookieInterceptor } from './session-cookie';
 import { PasswordService } from './services/password.service';
 import { RegistrationService } from './services/registration.service';
 import { JwtStrategy } from './strategies/jwt.strategy';
@@ -47,6 +49,8 @@ import { TwoFactorModule } from './two-factor/two-factor.module';
     RegistrationService,
     PasswordService,
     MagicLinkService,
+    SessionCookie,
+    { provide: APP_INTERCEPTOR, useClass: SessionCookieInterceptor },
     SocialAuthService,
     OidcVerifier,
     JwksResolver,

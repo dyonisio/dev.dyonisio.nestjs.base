@@ -68,6 +68,7 @@ A rota de upload local (dev) é bloqueada **antes** de ler o corpo quando o driv
 - **Container:** usuário sem privilégios, imagem mínima, sem dependências de desenvolvimento.
 - **AWS:** IAM com o mínimo (fila, bucket e identidades SES específicas), bucket com leitura pública só em `public/`.
 - **Dependências:** `npm audit` no CI (falha com vulnerabilidade alta em dependência de produção) e Dependabot semanal.
+- **Refresh token fora do alcance do JavaScript (front web):** fica num cookie `httpOnly`, `Secure`, `SameSite=Strict`, restrito a `/api/v1/auth` e lido só com o cabeçalho `X-Session-Cookie` (que outro site não consegue mandar). Um script injetado não consegue roubar a sessão. Veja [AUTH.md](AUTH.md#refresh-token-em-cookie-front-web).
 
 ## Checklist de produção
 

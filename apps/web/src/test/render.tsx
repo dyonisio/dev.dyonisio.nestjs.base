@@ -49,7 +49,7 @@ type Routes = Parameters<typeof mockFetch>[0];
  */
 export function renderApp(path: string, user: User, routes: Routes = {}) {
   setLanguage('en');
-  session.start({ accessToken: 'access', refreshToken: 'refresh' });
+  session.start({ accessToken: 'access' });
   const fetch = mockFetch({
     'POST /api/v1/auth/refresh': () =>
       json(200, { accessToken: 'access', refreshToken: 'refresh', user }),

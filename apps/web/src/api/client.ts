@@ -31,6 +31,9 @@ async function isExpiredToken(response: Response): Promise<boolean> {
   }
 }
 
+/** Pede à API o modo cookie: o refresh token vai e volta num cookie httpOnly, nunca no corpo. */
+const SESSION_COOKIE_HEADER = 'X-Session-Cookie';
+
 let refreshing: Promise<boolean> | null = null;
 
 /**
@@ -39,15 +42,22 @@ let refreshing: Promise<boolean> | null = null;
  * fariam a API detectar "reuso" e derrubar a sessão).
  */
 export function refreshSession(): Promise<boolean> {
-  const refreshToken = session.getRefreshToken();
-  if (!refreshToken) return Promise.resolve(false);
+  if (!session.hasSession()) return Promise.resolve(false);
 
   refreshing ??= (async () => {
     try {
+      // O refresh token vai sozinho, no cookie httpOnly. Quem vem da versão antiga (token no
+      // localStorage) manda o token uma última vez, e a API passa a usar o cookie.
+      const legacy = session.takeLegacyRefreshToken();
       const res = await fetch(`${API_URL}/api/v1/auth/refresh`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'Accept-Language': getLanguage() },
-        body: JSON.stringify({ refreshToken }),
+        credentials: 'include',
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept-Language': getLanguage(),
+          [SESSION_COOKIE_HEADER]: '1',
+        },
+        body: JSON.stringify(legacy ? { refreshToken: legacy } : {}),
       });
       if (!res.ok) {
         session.clear();
@@ -65,10 +75,13 @@ export function refreshSession(): Promise<boolean> {
 }
 
 function withHeaders(request: Request): Request {
+  // credentials: 'include' para o navegador mandar (e guardar) o cookie da sessão
+  const withCookies = new Request(request, { credentials: 'include' });
   const token = session.getAccessToken();
-  if (token) request.headers.set('Authorization', `Bearer ${token}`);
-  request.headers.set('Accept-Language', getLanguage());
-  return request;
+  if (token) withCookies.headers.set('Authorization', `Bearer ${token}`);
+  withCookies.headers.set('Accept-Language', getLanguage());
+  withCookies.headers.set(SESSION_COOKIE_HEADER, '1');
+  return withCookies;
 }
 
 /** fetch usado pelo cliente: põe o token e, num 401, renova a sessão e repete UMA vez. */

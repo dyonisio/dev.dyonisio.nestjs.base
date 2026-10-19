@@ -44,6 +44,7 @@ describe('configureApp', () => {
     expect(app.setGlobalPrefix).toHaveBeenCalledWith('api');
     expect(app.enableCors).toHaveBeenCalledWith({
       origin: ['https://app.com'],
+      credentials: true, // o front web manda o cookie do refresh token
       exposedHeaders: ['Content-Language', 'X-Request-Id'],
     });
     expect(app.use).toHaveBeenCalledTimes(3); // contexto da requisição + helmet + i18n

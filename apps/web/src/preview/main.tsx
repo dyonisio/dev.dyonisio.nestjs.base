@@ -35,7 +35,7 @@ document.documentElement.lang = getLanguage();
 session.clear();
 if (as === 'admin' || as === 'user') {
   installMockApi(me[as]);
-  session.start({ accessToken: 'preview', refreshToken: 'preview' });
+  session.start({ accessToken: 'preview' });
 }
 
 createRoot(document.getElementById('root')!).render(

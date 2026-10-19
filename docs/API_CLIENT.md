@@ -80,7 +80,7 @@ Adicione um script no front para regenerar quando a API mudar:
 
 | Situação | Como reconhecer | O que fazer |
 | --- | --- | --- |
-| Access token expirou | 401 em rota autenticada | `POST /auth/refresh` com o refresh token e repetir a chamada. Se o refresh também der 401, mandar para o login |
+| Access token expirou | 401 em rota autenticada | `POST /auth/refresh` com o refresh token e repetir a chamada. Se o refresh também der 401, mandar para o login. No navegador, prefira o modo cookie ([AUTH.md](AUTH.md#refresh-token-em-cookie-front-web)): o refresh token fica num cookie `httpOnly` |
 | Login com 2FA | resposta tem `twoFactorRequired: true` | Pedir o código e chamar `/auth/2fa/verify` |
 | E-mail não confirmado | 403 `auth.emailNotVerified` | Tela "confirme seu e-mail" com botão de reenviar |
 | Ação sensível sem senha recente | 401 `account.reauthRequired` | Pedir para entrar de novo (contas só com Google/Apple) |

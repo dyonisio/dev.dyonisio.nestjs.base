@@ -3,15 +3,17 @@ import type { components } from '../api/schema';
 export type User = components['schemas']['User'];
 
 /**
- * Onde os tokens ficam:
+ * Onde a sessão fica:
  *  - accessToken: só em memória (some ao fechar a aba; dura 15 min de qualquer forma)
- *  - refreshToken: no localStorage, para a sessão sobreviver a um recarregamento
- *
- * O refreshToken no localStorage é o padrão de SPAs, mas fica ao alcance de um script
- * malicioso (XSS) — por isso o site não usa HTML vindo de fora e o CloudFront manda
- * uma CSP restritiva. A API ainda detecta reuso do refresh token e derruba a sessão.
+ *  - refreshToken: num cookie httpOnly que a API grava (o JavaScript da página não lê).
+ *    Um script injetado (XSS) não consegue roubar a sessão para usar em outro lugar.
+ *  - no localStorage fica só um MARCADOR "tem sessão" (sem nada secreto), para o site saber,
+ *    ao abrir, se vale tentar renovar a sessão pelo cookie.
+ * Veja apps/api/src/auth/session-cookie.ts.
  */
-const REFRESH_KEY = 'nb.refreshToken';
+const SESSION_KEY = 'nb.session';
+/** Versão antiga guardava o refresh token aqui: é trocado pelo cookie no primeiro refresh */
+const LEGACY_REFRESH_KEY = 'nb.refreshToken';
 
 type Listener = () => void;
 
@@ -21,32 +23,40 @@ const listeners = new Set<Listener>();
 
 const notify = () => listeners.forEach((l) => l());
 
-function readRefresh(): string | null {
+function storage(action: (s: Storage) => void) {
   try {
-    return localStorage.getItem(REFRESH_KEY);
+    action(localStorage);
   } catch {
-    return null; // navegação privada / armazenamento bloqueado
+    /* navegação privada / armazenamento bloqueado: a sessão dura enquanto a aba estiver aberta */
   }
 }
 
-function writeRefresh(token: string | null) {
+function read(key: string): string | null {
   try {
-    if (token) localStorage.setItem(REFRESH_KEY, token);
-    else localStorage.removeItem(REFRESH_KEY);
+    return localStorage.getItem(key);
   } catch {
-    /* sem armazenamento: a sessão dura só enquanto a aba estiver aberta */
+    return null;
   }
 }
 
 export const session = {
   getAccessToken: () => accessToken,
-  getRefreshToken: readRefresh,
   getUser: () => currentUser,
 
-  /** Guarda o par de tokens (login, cadastro, 2FA, refresh). */
-  start(tokens: { accessToken: string; refreshToken: string; user?: User | null }) {
+  /** Há (ou havia) uma sessão para tentar renovar pelo cookie? */
+  hasSession: () => read(SESSION_KEY) === '1' || !!read(LEGACY_REFRESH_KEY),
+
+  /** Refresh token da versão antiga, se houver (lido uma vez e apagado). */
+  takeLegacyRefreshToken(): string | null {
+    const token = read(LEGACY_REFRESH_KEY);
+    storage((s) => s.removeItem(LEGACY_REFRESH_KEY));
+    return token;
+  },
+
+  /** Abre a sessão (login, cadastro, 2FA, refresh). O refresh token já veio no cookie. */
+  start(tokens: { accessToken: string; user?: User | null }) {
     accessToken = tokens.accessToken;
-    writeRefresh(tokens.refreshToken);
+    storage((s) => s.setItem(SESSION_KEY, '1'));
     if (tokens.user !== undefined) currentUser = tokens.user;
     notify();
   },
@@ -59,7 +69,10 @@ export const session = {
   clear() {
     accessToken = null;
     currentUser = null;
-    writeRefresh(null);
+    storage((s) => {
+      s.removeItem(SESSION_KEY);
+      s.removeItem(LEGACY_REFRESH_KEY);
+    });
     notify();
   },
 

@@ -45,7 +45,7 @@ describe('LoginPage', () => {
     await fillAndSubmit('secret123');
 
     expect(await screen.findByText('home page')).toBeInTheDocument();
-    expect(session.getRefreshToken()).toBe('r');
+    expect(session.hasSession()).toBe(true);
   });
 
   it('com 2FA: pede o código e só então abre a sessão', async () => {
@@ -60,7 +60,7 @@ describe('LoginPage', () => {
     await fillAndSubmit('secret123');
 
     expect(await screen.findByText('Two-step verification')).toBeInTheDocument();
-    expect(session.getRefreshToken()).toBeNull();
+    expect(session.hasSession()).toBe(false);
 
     await userEvent.type(screen.getByLabelText('Code'), ' 123456 ');
     await userEvent.click(screen.getByRole('button', { name: 'Verify' }));
