@@ -81,7 +81,7 @@ function productionErrors(config: Record<string, unknown>): string[] {
   // Endereço completo: os links dos e-mails e o domínio das passkeys saem dele
   if (config.FRONTEND_URL && !isHttpsUrl(config.FRONTEND_URL)) {
     errors.push(
-      `FRONTEND_URL precisa ser o endereço completo do front, com https:// (ex.: https://app.exemplo.com), recebido: "${String(config.FRONTEND_URL)}"`,
+      `FRONTEND_URL precisa ser o endereço completo do front, com https:// (ex.: https://app.exemplo.com), recebido: ${JSON.stringify(config.FRONTEND_URL)}`,
     );
   }
   for (const key of ['JWT_SECRET', 'ENCRYPTION_KEY']) {
