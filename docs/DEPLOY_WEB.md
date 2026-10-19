@@ -36,7 +36,7 @@ Para cada um:
 4. Abra o certificado. Em *Domains* aparece um **CNAME name** e um **CNAME value**.
 5. No **Cloudflare** → seu domínio → **DNS → Records → Add record**:
    - **Type:** CNAME
-   - **Name:** o *CNAME name* **sem** o final `.dyonisio.dev.` (ex.: de `_3f2a...base.dyonisio.dev.` fica `_3f2a...base`)
+   - **Name:** o *CNAME name* **sem** o domínio principal no final (o Cloudflare o acrescenta sozinho; ex.: de `_3f2a...base.dyonisio.dev.` fica `_3f2a...base`)
    - **Target:** o *CNAME value* inteiro (termina em `.acm-validations.aws.`)
    - **Proxy status:** desligado (nuvem cinza, "DNS only")
 6. Volte ao ACM e espere o status virar **Issued** (de 1 a 30 minutos). Copie o **ARN** do certificado.
@@ -129,7 +129,7 @@ continua sendo criado do seu computador, uma vez só.
 | `... is not authorized to perform: cloudfront:...` ou `acm:...` | A política da role não foi atualizada (passo 2) |
 | `Caller does not have permissions to create a Service Linked Role` no `ApiCustomDomain` | Falta o bloco `ApiGatewayServiceLinkedRole` na política (passo 2). O stack volta sozinho à versão anterior (a API continua no ar); atualize a política e rode o deploy de novo |
 | `CNAMEAlreadyExists` | O domínio já está em outra distribuição do CloudFront (nesta ou em outra conta). Remova-o de lá |
-| Certificado parado em *Pending validation* | O CNAME de validação está errado: confira o *Name* sem o `.dyonisio.dev` final e o proxy desligado |
+| Certificado parado em *Pending validation* | O CNAME de validação está errado: confira o *Name* sem o domínio principal no final e o proxy desligado |
 | Certificado em *Failed*: `CAA error` | O domínio tem registros **CAA** (quem pode emitir certificados) sem a Amazon. No Cloudflare, acrescente no `@` quatro registros CAA, *Tag* "Only allow specific hostnames" (`issue`), com `amazon.com`, `amazontrust.com`, `awstrust.com` e `amazonaws.com`. Não apague os que já existem. Um certificado que falhou não revalida: apague-o e peça outro |
 | `CAA error` mesmo com a Amazon liberada | O nome (ou o "pai" dele: o `base` para o `api.base`) **já é um CNAME para outro serviço** (Vercel, Netlify...). A AWS segue o CNAME e lê o CAA **do destino**, que não libera a Amazon. Remova o CNAME antigo (o site anterior sai do ar até o deploy) ou use outro nome. Para conferir: `https://dns.google/resolve?name=base.seudominio.com&type=CAA` |
 | Site abre, mas "Failed to fetch" nas telas | `CORS_ORIGIN`/`FRONTEND_URL` sem o endereço do site: corrija e rode o deploy de novo |

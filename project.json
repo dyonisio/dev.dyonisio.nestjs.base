@@ -1,0 +1,8 @@
+{
+  "name": "NestJS Base",
+  "slug": "nestjs-base",
+  "domain": "base.dyonisio.dev",
+  "apiDomain": "api.base.dyonisio.dev",
+  "repo": "dyonisio/dev.dyonisio.nestjs.base",
+  "color": "#1b6c80"
+}

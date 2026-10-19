@@ -63,7 +63,7 @@ describe('2FA (e2e)', () => {
 
       expect(res.body.secret).toMatch(/^[A-Z2-7]{32}$/);
       expect(res.body.otpauthUrl).toMatch(
-        /^otpauth:\/\/totp\/NestJS%20Base%20API:ana%40test\.com\?secret=[A-Z2-7]{32}&issuer=/,
+        /^otpauth:\/\/totp\/Test%20App:ana%40test\.com\?secret=[A-Z2-7]{32}&issuer=/,
       );
       secret = res.body.secret;
       base = currentStep();

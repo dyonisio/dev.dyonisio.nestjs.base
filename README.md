@@ -102,6 +102,21 @@ npm run dev
 Abra http://localhost:5173 e entre com o administrador do seed. O front fala com `http://localhost:3000`
 por padrão (mude em `apps/web/.env` → `VITE_API_URL`; veja o `.env.example`).
 
+## Começar um projeto novo
+
+Para usar esta base num produto novo, troque nome, identificador, domínios, repositório e cor de uma vez:
+
+```bash
+node scripts/new-project.mjs
+```
+
+Ele pergunta cada valor (ou receba tudo por parâmetro: `--name "Acme Portal" --domain portal.acme.com
+--repo acme/portal --color "#2563eb" --yes`; `--dry-run` só mostra o que mudaria). Troca o nome do produto
+(API, e-mails, 2FA, front), o identificador (serviço e recursos na AWS, pacotes, políticas IAM), os domínios dos
+exemplos e da documentação, o repositório da trust policy e a cor da marca (com as variações do tema escuro). A
+identidade atual fica em `project.json`, então dá para rodar de novo. No fim ele lista o que é manual: o logo
+(`apps/web/public/icon.png` e `favicon.svg`), o `git remote` e as variáveis no GitHub. O `.env` local não é tocado.
+
 ## Documentação
 
 | Guia | Para quê |

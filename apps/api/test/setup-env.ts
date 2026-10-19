@@ -2,6 +2,7 @@
 // Definidas antes do ConfigModule carregar — sobrescrevem qualquer valor do .env.
 Object.assign(process.env, {
   NODE_ENV: 'test',
+  APP_NAME: 'Test App', // fixo: não depende do .env local nem do nome do projeto
   DB_TYPE: 'sqljs',
   DB_LOGGING: 'false',
   JWT_SECRET: 'segredo-de-teste-e2e-com-tamanho-suficiente',
