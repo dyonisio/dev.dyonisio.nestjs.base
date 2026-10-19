@@ -20,6 +20,7 @@ export enum AuditAction {
   // Usuários
   USER_REGISTERED = 'user.registered',
   USER_CREATED = 'user.created',
+  USER_INVITATION_SENT = 'user.invitation_sent',
   USER_UPDATED = 'user.updated',
   USER_ROLE_CHANGED = 'user.role_changed',
   USER_DELETED = 'user.deleted',

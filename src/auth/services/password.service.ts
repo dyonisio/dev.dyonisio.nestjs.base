@@ -1,13 +1,13 @@
 import { BadRequestException, Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { JwtService } from '@nestjs/jwt';
-import { deriveSecret } from '../../common/crypto/derive-secret';
 import { verifyPassword } from '../../common/crypto/password-hash';
 import { AuditAction } from '../../audit/audit-action.enum';
 import { AuditService } from '../../audit/audit.service';
 import { i18nKey } from '../../i18n/translations';
 import { MailService } from '../../mail/mail.service';
 import { User } from '../../users/entities/user.entity';
+import { passwordLinkSecret } from '../../users/password-link';
 import { UsersService } from '../../users/users.service';
 import { AuthTokensDto } from '../dto/auth-response.dto';
 import { ResetPasswordPayload } from '../interfaces/jwt-payload.interface';
@@ -62,10 +62,14 @@ export class PasswordService {
       throw invalid;
     }
 
+    const firstPassword = !user.password; // convite do admin ou conta só de login social
     await this.usersService.updatePassword(user.id, newPassword);
     await this.sessionService.revokeAllForUser(user.id);
-    await this.mailService.sendPasswordChanged(user);
-    await this.audit.record(AuditAction.AUTH_PASSWORD_RESET, { actorId: user.id });
+    if (!firstPassword) await this.mailService.sendPasswordChanged(user);
+    await this.audit.record(AuditAction.AUTH_PASSWORD_RESET, {
+      actorId: user.id,
+      ...(firstPassword ? { metadata: { firstPassword: true } } : {}),
+    });
   }
 
   /**
@@ -94,12 +98,6 @@ export class PasswordService {
   }
 
   private resetSecret(user: User): string {
-    // O hash da senha entra na derivação: trocar a senha invalida o link (uso único).
-    // Conta sem senha (só login social): usa o id, e o link deixa de valer quando a senha é criada.
-    return deriveSecret(
-      this.config.getOrThrow<string>('jwt.secret'),
-      'reset-password',
-      user.password ?? `no-password:${user.id}`,
-    );
+    return passwordLinkSecret(this.config.getOrThrow<string>('jwt.secret'), user);
   }
 }

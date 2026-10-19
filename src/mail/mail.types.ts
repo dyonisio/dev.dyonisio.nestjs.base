@@ -13,6 +13,7 @@ export enum MailTemplate {
   FORGOT_PASSWORD = 'forgot-password',
   PASSWORD_CHANGED = 'password-changed',
   ROLE_CHANGED = 'role-changed',
+  ACCOUNT_CREATED = 'account-created',
   // Alertas de segurança
   NEW_LOGIN = 'new-login',
   TWO_FACTOR_CHANGED = 'two-factor-changed',
@@ -27,6 +28,13 @@ export interface MailTemplateContextMap {
   [MailTemplate.FORGOT_PASSWORD]: { name: string; resetUrl: string; expiresInMinutes: number };
   [MailTemplate.PASSWORD_CHANGED]: { name: string; changedAt: string };
   [MailTemplate.ROLE_CHANGED]: { name: string; oldRole: string; newRole: string };
+  [MailTemplate.ACCOUNT_CREATED]: {
+    name: string;
+    loginUrl: string;
+    /** Link para criar a senha (convite). null = o admin definiu a senha inicial */
+    setPasswordUrl: string | null;
+    expiresInDays: number | null;
+  };
   [MailTemplate.NEW_LOGIN]: {
     name: string;
     when: string;

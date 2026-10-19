@@ -32,7 +32,8 @@
     "cannotChangeOwnRole": "Você não pode alterar o seu próprio perfil de acesso",
     "cannotDeleteSelf": "Você não pode remover a sua própria conta",
     "sameEmail": "Este já é o seu e-mail",
-    "anonymized": "Esta conta foi apagada definitivamente e não pode mais ser restaurada"
+    "anonymized": "Esta conta foi apagada definitivamente e não pode mais ser restaurada",
+    "alreadyHasPassword": "Este usuário já tem senha — não é preciso convite"
   },
   "account": {
     "passwordRequired": "Confirme sua senha atual para continuar",
@@ -140,7 +141,8 @@
       "twoFactorDisabled": "Verificação em duas etapas desativada",
       "socialLinked": "{provider} foi vinculado à sua conta",
       "emailChanged": "O e-mail da sua conta foi alterado",
-      "accountDeleted": "Sua conta foi excluída"
+      "accountDeleted": "Sua conta foi excluída",
+      "accountCreated": "Sua conta no {appName} foi criada"
     }
   },
   "roles": {

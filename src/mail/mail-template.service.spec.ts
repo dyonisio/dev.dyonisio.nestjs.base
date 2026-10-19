@@ -26,6 +26,12 @@ const contexts: { [K in MailTemplate]: MailTemplateContextMap[K] } = {
   },
   [MailTemplate.PASSWORD_CHANGED]: { name: 'Maria', changedAt: '14/10/2026 10:00' },
   [MailTemplate.ROLE_CHANGED]: { name: 'Maria', oldRole: 'Usuário', newRole: 'Gerente' },
+  [MailTemplate.ACCOUNT_CREATED]: {
+    name: 'Maria',
+    loginUrl: 'http://front.test/login',
+    setPasswordUrl: 'http://front.test/reset-password?token=abc',
+    expiresInDays: 7,
+  },
   [MailTemplate.NEW_LOGIN]: {
     name: 'Maria',
     when: '14/10/2026 10:00',

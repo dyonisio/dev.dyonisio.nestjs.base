@@ -5,6 +5,7 @@ import { App } from 'supertest/types';
 import { AppModule } from '../src/app.module';
 import { configureApp } from '../src/app.setup';
 import { Role } from '../src/common/enums/role.enum';
+import { MailService } from '../src/mail/mail.service';
 import { UsersService } from '../src/users/users.service';
 
 /** Busca/ordenação, soft delete + restauração e trilha de auditoria. */
@@ -198,6 +199,81 @@ describe('Administração de usuários (e2e)', () => {
     it('só admin consulta a auditoria', async () => {
       const diego = (await login('diego_souza@empresa.com').expect(200)).body.accessToken;
       await http().get('/api/v1/audit-logs').set('Authorization', `Bearer ${diego}`).expect(403);
+    });
+  });
+
+  describe('conta criada pelo admin (convite)', () => {
+    const tokenOf = (url: string) => new URL(url).searchParams.get('token')!;
+    let inviteUrl: string;
+    let invitedId: string;
+
+    afterEach(() => jest.restoreAllMocks());
+
+    it('sem senha: a pessoa recebe o convite com o link para criar a senha', async () => {
+      const mail = jest.spyOn(app.get(MailService), 'sendAccountCreated');
+      const res = await asAdmin(http().post('/api/v1/users'))
+        .send({ name: 'Convidada', email: 'convidada@empresa.com' })
+        .expect(201);
+      invitedId = res.body.id;
+
+      expect(res.body.emailVerifiedAt).toEqual(expect.any(String));
+      expect(mail).toHaveBeenCalledWith(
+        expect.objectContaining({ email: 'convidada@empresa.com' }),
+        { url: expect.stringContaining('/reset-password?token='), expiresInDays: 7 },
+      );
+      inviteUrl = mail.mock.calls[0][1]!.url;
+      // sem senha ainda: login não funciona
+      await login('convidada@empresa.com').expect(401);
+    });
+
+    it('o link do convite cria a senha (sem e-mail de "senha alterada") e vale uma vez só', async () => {
+      const changed = jest.spyOn(app.get(MailService), 'sendPasswordChanged');
+      await http()
+        .post('/api/v1/auth/password/reset')
+        .send({ token: tokenOf(inviteUrl), password: 'MinhaSenha1' })
+        .expect(200);
+
+      expect(changed).not.toHaveBeenCalled(); // é a 1ª senha, não uma troca
+      await login('convidada@empresa.com', 'MinhaSenha1').expect(200);
+      await http()
+        .post('/api/v1/auth/password/reset')
+        .send({ token: tokenOf(inviteUrl), password: 'OutraSenha1' })
+        .expect(400);
+    });
+
+    it('reenviar convite para quem já tem senha -> 400', async () => {
+      const res = await asAdmin(http().post(`/api/v1/users/${invitedId}/invite`)).expect(400);
+      expect(res.body.code).toBe('users.alreadyHasPassword');
+    });
+
+    it('reenviar convite para quem ainda não criou a senha manda um link novo', async () => {
+      const created = await asAdmin(http().post('/api/v1/users'))
+        .send({ name: 'Atrasada', email: 'atrasada@empresa.com' })
+        .expect(201);
+      const mail = jest.spyOn(app.get(MailService), 'sendAccountCreated');
+
+      await asAdmin(http().post(`/api/v1/users/${created.body.id}/invite`)).expect(204);
+      expect(mail).toHaveBeenCalledWith(
+        expect.objectContaining({ email: 'atrasada@empresa.com' }),
+        expect.objectContaining({ url: expect.any(String) }),
+      );
+    });
+
+    it('com senha definida pelo admin: só o aviso, sem link e sem a senha', async () => {
+      const mail = jest.spyOn(app.get(MailService), 'sendAccountCreated');
+      await asAdmin(http().post('/api/v1/users'))
+        .send({ name: 'Com Senha', email: 'comsenha@empresa.com', password: 'Senha123' })
+        .expect(201);
+
+      expect(mail).toHaveBeenCalledWith(
+        expect.objectContaining({ email: 'comsenha@empresa.com' }),
+        null,
+      );
+      await login('comsenha@empresa.com').expect(200);
+    });
+
+    it('só quem tem users:create convida', async () => {
+      await http().post(`/api/v1/users/${invitedId}/invite`).expect(401);
     });
   });
 });

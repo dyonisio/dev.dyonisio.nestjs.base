@@ -1,4 +1,4 @@
-import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
+import { ApiProperty, ApiPropertyOptional, OmitType } from '@nestjs/swagger';
 import { Transform } from 'class-transformer';
 import {
   IsEmail,
@@ -51,4 +51,19 @@ export class CreateUserDto {
   @IsOptional()
   @IsIn(SUPPORTED_LANGUAGES, { message: i18nValidationMessage() })
   locale?: string;
+}
+
+/**
+ * Criação pelo admin. Sem `password` (recomendado), a pessoa recebe um convite para criar a
+ * própria senha. Com `password`, recebe só o aviso de que a conta existe.
+ */
+export class AdminCreateUserDto extends OmitType(CreateUserDto, ['password'] as const) {
+  @ApiPropertyOptional({
+    example: 'Password123',
+    description:
+      'Optional. Leave it out (recommended) and the user gets an email to create their own password.',
+  })
+  @IsOptional()
+  @IsStrongPassword()
+  password?: string;
 }

@@ -27,6 +27,7 @@ const SUBJECT_KEYS: Record<MailTemplate, string> = {
   [MailTemplate.FORGOT_PASSWORD]: 'forgotPassword',
   [MailTemplate.PASSWORD_CHANGED]: 'passwordChanged',
   [MailTemplate.ROLE_CHANGED]: 'roleChanged',
+  [MailTemplate.ACCOUNT_CREATED]: 'accountCreated',
   [MailTemplate.NEW_LOGIN]: 'newLogin',
   [MailTemplate.TWO_FACTOR_CHANGED]: 'twoFactorDisabled',
   [MailTemplate.SOCIAL_LINKED]: 'socialLinked',
@@ -56,6 +57,12 @@ function samples(lang: string): { [K in MailTemplate]: MailTemplateContextMap[K]
       name: 'Maria Silva',
       oldRole: lookup(lang, 'roles.user') ?? 'user',
       newRole: lookup(lang, 'roles.manager') ?? 'manager',
+    },
+    [MailTemplate.ACCOUNT_CREATED]: {
+      name: 'Maria Silva',
+      loginUrl: 'http://localhost:5173/login',
+      setPasswordUrl: `http://localhost:5173/reset-password?token=${LONG_TOKEN}`,
+      expiresInDays: 7,
     },
     [MailTemplate.NEW_LOGIN]: {
       name: 'Maria Silva',

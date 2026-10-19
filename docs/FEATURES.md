@@ -8,7 +8,8 @@ Rotas sob `/api/v1`. Autenticação e conta estão em [AUTH.md](AUTH.md).
 | --- | --- |
 | `GET /users?search=ana&sortBy=name&order=asc&role=manager&page=1&limit=20` | `users:read` |
 | `GET /users/:id` | `users:read` |
-| `POST /users` (cria já com e-mail confirmado, qualquer role) | `users:create` |
+| `POST /users` (cria já com e-mail confirmado, qualquer role; sem `password` = convite) | `users:create` |
+| `POST /users/:id/invite` (reenvia o convite, se a pessoa ainda não criou a senha) | `users:create` |
 | `PATCH /users/:id` (nome, e-mail, idioma, ativo) | `users:update` |
 | `PATCH /users/:id/role` | `users:manage-roles` |
 | `DELETE /users/:id` / `PATCH /users/:id/restore` | `users:delete` |
@@ -17,6 +18,10 @@ Rotas sob `/api/v1`. Autenticação e conta estão em [AUTH.md](AUTH.md).
 - **Ordenação:** `createdAt` (padrão), `name` ou `email`, com desempate pelo `id`, então a paginação não repete nem pula registros. `page` vai até 10 000.
 - **Exclusão reversível:** o usuário some, as sessões caem e o e-mail fica livre. `?deleted=true` lista os excluídos.
   Depois de 30 dias os dados são anonimizados (ver [AUTH.md](AUTH.md#excluir-a-conta)) e não dá mais para restaurar.
+- **Conta criada pelo admin:** o recomendado é **não informar a senha**. A pessoa recebe o e-mail "Sua conta foi criada" com
+  um link para **criar a própria senha** (uso único, `INVITE_EXPIRES_IN`, padrão 7 dias), que abre a mesma tela do front de
+  redefinir senha (`/reset-password`). Se o admin informar uma senha, o e-mail só avisa que a conta existe — **a senha nunca
+  vai por e-mail**. Expirou? `POST /users/:id/invite` manda um link novo.
 - Um admin não pode mudar a própria role nem se excluir por aqui.
 - Admin que troca o e-mail de alguém: o novo endereço precisa ser confirmado, e o antigo é avisado.
 
@@ -90,6 +95,7 @@ Cada e-mail é um arquivo `.hbs` **por idioma** em `src/mail/templates/<idioma>/
 | `forgot-password` | "Esqueci minha senha" |
 | `password-changed` | Senha trocada/redefinida |
 | `role-changed` | Admin mudou a role |
+| `account-created` | Admin criou a conta (com o link para criar a senha, quando a conta foi criada sem senha) |
 | `new-login`, `two-factor-changed`, `social-linked`, `email-changed`, `account-deleted` | Alertas de segurança ([AUTH.md](AUTH.md#alertas-de-segurança-por-e-mail)) |
 
 - **Idioma:** os e-mails saem no idioma salvo do usuário (`locale`), não no da requisição que os disparou. Assuntos em `src/i18n/locales/*.json` (`mail.subjects.*`).

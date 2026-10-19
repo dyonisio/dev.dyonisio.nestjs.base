@@ -32,7 +32,8 @@
     "cannotChangeOwnRole": "You cannot change your own role",
     "cannotDeleteSelf": "You cannot delete your own account",
     "sameEmail": "This is already your email",
-    "anonymized": "This account was permanently erased and can no longer be restored"
+    "anonymized": "This account was permanently erased and can no longer be restored",
+    "alreadyHasPassword": "This user already has a password — no invite needed"
   },
   "account": {
     "passwordRequired": "Confirm your current password to continue",
@@ -140,7 +141,8 @@
       "twoFactorDisabled": "Two-step verification turned off",
       "socialLinked": "{provider} was linked to your account",
       "emailChanged": "Your account email was changed",
-      "accountDeleted": "Your account was deleted"
+      "accountDeleted": "Your account was deleted",
+      "accountCreated": "Your {appName} account is ready"
     }
   },
   "roles": {

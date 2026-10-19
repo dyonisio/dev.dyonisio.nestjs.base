@@ -68,7 +68,9 @@ senha com 8+ caracteres, letra e número.
 | `POST /auth/password/reset { token, password }` | Define a nova senha. O link vale **uma vez**: o segredo dele depende do hash da senha atual |
 | `POST /auth/password/change { currentPassword, newPassword }` | Troca estando logado |
 
-Contas criadas pelo Google/Apple não têm senha. Para criar uma, usam o "esqueci minha senha".
+Contas sem senha — criadas pelo Google/Apple, ou por um admin sem informar a senha (convite) — criam a primeira pelo
+mesmo link (`/reset-password`): o convite já chega por e-mail; quem entrou com Google/Apple usa o "esqueci minha senha".
+A primeira senha não gera o e-mail de "senha alterada".
 
 ## 2FA (verificação em duas etapas)
 

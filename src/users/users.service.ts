@@ -150,7 +150,7 @@ export class UsersService {
    * @param options.audit false quando quem chama registra a auditoria (ex.: auto-cadastro).
    */
   async create(
-    dto: CreateUserDto,
+    dto: Omit<CreateUserDto, 'password'> & { password?: string },
     options: { emailVerified?: boolean; audit?: boolean } = {},
   ): Promise<User> {
     const email = dto.email.trim().toLowerCase();
@@ -161,7 +161,8 @@ export class UsersService {
         name: dto.name,
         email,
         role: dto.role ?? Role.USER,
-        password: await hashPassword(dto.password),
+        // Sem senha = convite: a pessoa cria a senha pelo link enviado por e-mail
+        password: dto.password ? await hashPassword(dto.password) : null,
         emailVerifiedAt: options.emailVerified ? new Date() : null,
         // Idioma dos e-mails: o informado ou o da requisição (Accept-Language)
         locale: dto.locale ?? RequestContext.get()?.lang ?? null,

@@ -156,6 +156,26 @@ export class MailService {
     });
   }
 
+  /**
+   * Conta criada por um admin. Com `invite`, leva o link para a pessoa criar a própria senha;
+   * sem, só avisa que a conta existe. A senha NUNCA vai no e-mail.
+   */
+  sendAccountCreated(user: MailRecipient, invite: { url: string; expiresInDays: number } | null) {
+    const lang = this.resolveLang(user.locale);
+    return this.send({
+      to: user.email,
+      lang,
+      subject: this.subject('accountCreated', lang),
+      template: MailTemplate.ACCOUNT_CREATED,
+      context: {
+        name: user.name,
+        loginUrl: `${this.frontendUrl}/login`,
+        setPasswordUrl: invite?.url ?? null,
+        expiresInDays: invite?.expiresInDays ?? null,
+      },
+    });
+  }
+
   // ---------- Alertas de segurança ----------
   // Avisam o dono da conta de mudanças sensíveis: se não foi ele, dá tempo de reagir.
 

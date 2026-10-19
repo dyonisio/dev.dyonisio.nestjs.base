@@ -138,6 +138,8 @@ export default () => {
       expiresIn: toInt(process.env.JWT_EXPIRES_IN, 900),
       refreshExpiresIn: toInt(process.env.REFRESH_TOKEN_EXPIRES_IN, 2592000),
       resetPasswordExpiresIn: toInt(process.env.RESET_PASSWORD_EXPIRES_IN, 900),
+      /** Validade (s) do link de convite para criar a senha (conta criada por admin). 7 dias */
+      inviteExpiresIn: toInt(process.env.INVITE_EXPIRES_IN, 604800),
       emailVerificationExpiresIn: toInt(process.env.EMAIL_VERIFICATION_EXPIRES_IN, 86400),
     },
     mail: {

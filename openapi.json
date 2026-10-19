@@ -54,6 +54,7 @@
                 "auth.social_unlinked",
                 "user.registered",
                 "user.created",
+                "user.invitation_sent",
                 "user.updated",
                 "user.role_changed",
                 "user.deleted",
@@ -800,7 +801,7 @@
         ]
       },
       "post": {
-        "description": "The email is considered verified (the admin vouches for it). Permission: `users:create`.",
+        "description": "The email is considered verified (the admin vouches for it). **Without `password` (recommended)** the user receives an email with a single-use link to create their own password (valid for INVITE_EXPIRES_IN, default 7 days). With `password`, the email only says the account exists — the password is never emailed. Permission: `users:create`.",
         "operationId": "UsersController_create_v1",
         "parameters": [
           {
@@ -823,7 +824,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/CreateUserDto"
+                "$ref": "#/components/schemas/AdminCreateUserDto"
               }
             }
           }
@@ -1168,6 +1169,90 @@
           }
         ],
         "summary": "Delete a user",
+        "tags": [
+          "Users"
+        ]
+      }
+    },
+    "/api/v1/users/{id}/invite": {
+      "post": {
+        "description": "For users created without a password whose link expired. Fails with 400 if the user already has a password. Permission: `users:create`.",
+        "operationId": "UsersController_resendInvite_v1",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "header",
+            "name": "Accept-Language",
+            "required": false,
+            "description": "Language for error messages",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "en",
+                "pt-BR"
+              ],
+              "default": "en"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": ""
+          },
+          "400": {
+            "description": "Invalid id or user already has a password",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing, invalid or expired token, or the session was ended",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Requires the permission(s): users:create",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "User not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Resend the invite to create a password",
         "tags": [
           "Users"
         ]
@@ -3263,6 +3348,7 @@
               "auth.social_unlinked",
               "user.registered",
               "user.created",
+              "user.invitation_sent",
               "user.updated",
               "user.role_changed",
               "user.deleted",
@@ -3691,7 +3777,7 @@
           "meta"
         ]
       },
-      "CreateUserDto": {
+      "AdminCreateUserDto": {
         "type": "object",
         "properties": {
           "name": {
@@ -3703,13 +3789,6 @@
             "type": "string",
             "example": "jane@example.com",
             "maxLength": 180
-          },
-          "password": {
-            "type": "string",
-            "example": "Password123",
-            "minLength": 8,
-            "maxLength": 72,
-            "description": "At least 8 characters, with at least one letter and one number"
           },
           "role": {
             "type": "string",
@@ -3727,12 +3806,16 @@
               "pt-BR"
             ],
             "description": "Preferred language for emails. Default: the request Accept-Language"
+          },
+          "password": {
+            "type": "string",
+            "example": "Password123",
+            "description": "Optional. Leave it out (recommended) and the user gets an email to create their own password."
           }
         },
         "required": [
           "name",
-          "email",
-          "password"
+          "email"
         ]
       },
       "UpdateUserDto": {

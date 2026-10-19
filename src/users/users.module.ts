@@ -13,6 +13,7 @@ import { ReauthService } from './account/reauth.service';
 import { EmailVerificationService } from './email-verification.service';
 import { User } from './entities/user.entity';
 import { UsersController } from './users.controller';
+import { UserInvitationService } from './user-invitation.service';
 import { UsersService } from './users.service';
 
 @Module({
@@ -30,6 +31,7 @@ import { UsersService } from './users.service';
   controllers: [AccountController, UsersController],
   providers: [
     UsersService,
+    UserInvitationService,
     EmailVerificationService,
     AccountService,
     ReauthService,

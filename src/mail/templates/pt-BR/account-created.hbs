@@ -1,0 +1,12 @@
+<h1>Olá, {{name}}! 👋</h1>
+<p>Uma conta foi criada para você no <strong>{{appName}}</strong>, com este e-mail.</p>
+{{#if setPasswordUrl}}
+<p>Para começar, crie a sua senha. O link vale por <strong>{{expiresInDays}} dias</strong> e só pode ser usado uma vez.</p>
+{{> button url=setPasswordUrl label="Criar minha senha"}}
+<p class="muted">Se o link expirar, use "Esqueci minha senha" na tela de login ou peça um novo convite a quem criou a sua conta.</p>
+{{else}}
+<p>Quem criou a sua conta vai te passar a senha inicial. No primeiro acesso, troque-a por uma senha só sua.</p>
+{{> button url=loginUrl label="Acessar minha conta"}}
+<p class="muted">Prefere definir a senha agora? Use "Esqueci minha senha" na tela de login.</p>
+{{/if}}
+<p class="muted">Não esperava este e-mail? Fale com <a href="mailto:{{supportEmail}}">{{supportEmail}}</a>.</p>

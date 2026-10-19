@@ -27,12 +27,13 @@ import { Authorize } from '../common/decorators/authorize.decorator';
 import { CurrentUser } from '../common/decorators/current-user.decorator';
 import { Permission } from '../common/enums/permission.enum';
 import { i18nKey } from '../i18n/translations';
-import { CreateUserDto } from './dto/create-user.dto';
+import { AdminCreateUserDto } from './dto/create-user.dto';
 import { ListUsersQueryDto, PaginatedUsersDto } from './dto/list-users-query.dto';
 import { UpdateRoleDto } from './dto/update-role.dto';
 import { UpdateProfileDto, UpdateUserDto } from './dto/update-user.dto';
 import { SetAvatarDto } from '../files/dto/files.dto';
 import { User } from './entities/user.entity';
+import { UserInvitationService } from './user-invitation.service';
 import { UsersService } from './users.service';
 
 /** :id deve ser UUID — com mensagem traduzível em vez da padrão do Nest. */
@@ -43,7 +44,10 @@ const UuidParam = new ParseUUIDPipe({
 @ApiTags('Users')
 @Controller('users')
 export class UsersController {
-  constructor(private readonly usersService: UsersService) {}
+  constructor(
+    private readonly usersService: UsersService,
+    private readonly invitations: UserInvitationService,
+  ) {}
 
   // Rotas "/me" vêm antes de "/:id" para não colidirem
   @Get('me')
@@ -117,12 +121,26 @@ export class UsersController {
   @ApiOperation({
     summary: 'Create a user with any role',
     description:
-      'The email is considered verified (the admin vouches for it). Permission: `users:create`.',
+      'The email is considered verified (the admin vouches for it). **Without `password` (recommended)** the user receives an email with a single-use link to create their own password (valid for INVITE_EXPIRES_IN, default 7 days). With `password`, the email only says the account exists — the password is never emailed. Permission: `users:create`.',
   })
   @ApiCreatedResponse({ type: User })
   @ApiErrors([400, 'Validation failed'], [409, 'Email already registered'])
-  create(@Body() dto: CreateUserDto) {
-    return this.usersService.create(dto, { emailVerified: true });
+  create(@Body() dto: AdminCreateUserDto) {
+    return this.invitations.createByAdmin(dto);
+  }
+
+  @Post(':id/invite')
+  @Authorize(Permission.USERS_CREATE)
+  @HttpCode(HttpStatus.NO_CONTENT)
+  @ApiOperation({
+    summary: 'Resend the invite to create a password',
+    description:
+      'For users created without a password whose link expired. Fails with 400 if the user already has a password. Permission: `users:create`.',
+  })
+  @ApiNoContentResponse()
+  @ApiErrors([400, 'Invalid id or user already has a password'], [404, 'User not found'])
+  async resendInvite(@Param('id', UuidParam) id: string): Promise<void> {
+    await this.invitations.resend(id);
   }
 
   @Patch(':id')
