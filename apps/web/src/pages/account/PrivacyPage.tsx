@@ -1,8 +1,8 @@
-import { useState, type FormEvent } from 'react';
+import { useState } from 'react';
 import { api } from '../../api/client';
 import { session } from '../../auth/session';
-import { emptyReauth, reauthBody, ReauthFields, useLoginMethods } from '../../components/Reauth';
-import { Checkbox, ErrorAlert, FormError, PageHeader, Section } from '../../components/ui';
+import { ReauthDialog, type ReauthProof } from '../../components/Reauth';
+import { ErrorAlert, PageHeader, Section } from '../../components/ui';
 import { useI18n } from '../../i18n/I18nProvider';
 import { flash } from '../../lib/flash';
 import { downloadJson } from '../../lib/format';
@@ -33,58 +33,47 @@ function ExportSection() {
 
   return (
     <Section title={m.privacy.exportTitle} help={m.privacy.exportHelp}>
-      <p className="muted">{m.privacy.exportDetail}</p>
-      <ErrorAlert error={error} />
-      <div className="panel-actions">
+      <div className="status-line">
+        <span>{m.privacy.exportDetail}</span>
         <button type="button" disabled={busy} onClick={exportData}>
           {m.privacy.export}
         </button>
       </div>
+      <ErrorAlert error={error} />
     </Section>
   );
 }
 
 function DeleteSection() {
   const { m } = useI18n();
-  const methods = useLoginMethods();
-  const [reauth, setReauth] = useState(emptyReauth);
-  const [confirmed, setConfirmed] = useState(false);
-  const { run, busy, error } = useAction();
+  const [confirming, setConfirming] = useState(false);
 
-  function submit(e: FormEvent) {
-    e.preventDefault();
-    void run(async () => {
-      const { error: apiError } = await api.DELETE('/api/v1/users/me', {
-        body: reauthBody(reauth),
-      });
-      if (apiError) throw apiError;
-      // A API já encerrou todas as sessões; limpar a local leva ao login, que mostra o aviso
-      flash.set('accountDeleted');
-      session.clear();
-    });
-  }
+  const remove = async (proof: ReauthProof) => {
+    const { error: apiError } = await api.DELETE('/api/v1/users/me', { body: proof });
+    if (apiError) throw apiError;
+    // A API já encerrou todas as sessões; limpar a local leva ao login, que mostra o aviso
+    flash.set('accountDeleted');
+    session.clear();
+  };
 
   return (
     <Section title={m.privacy.deleteTitle} help={m.privacy.deleteHelp} danger>
-      <form onSubmit={submit} noValidate>
-        <ReauthFields
-          value={reauth}
-          onChange={setReauth}
-          error={error}
-          hasPassword={methods.data?.hasPassword ?? true}
+      <div className="status-line">
+        <span>{m.privacy.deleteShort}</span>
+        <button type="button" className="danger" onClick={() => setConfirming(true)}>
+          {m.privacy.delete}
+        </button>
+      </div>
+      {confirming && (
+        <ReauthDialog
+          title={m.privacy.deleteDialogTitle}
+          text={m.privacy.deleteHelp}
+          confirmLabel={m.privacy.delete}
+          danger
+          onConfirm={remove}
+          onClose={() => setConfirming(false)}
         />
-        <Checkbox
-          label={m.privacy.deleteConfirm}
-          checked={confirmed}
-          onChange={(e) => setConfirmed(e.target.checked)}
-        />
-        <FormError error={error} />
-        <div className="panel-actions">
-          <button type="submit" className="danger" disabled={busy || !confirmed}>
-            {m.privacy.delete}
-          </button>
-        </div>
-      </form>
+      )}
     </Section>
   );
 }

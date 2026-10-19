@@ -2,6 +2,7 @@ import {
   useEffect,
   useId,
   useRef,
+  useState,
   type InputHTMLAttributes,
   type ReactNode,
   type SelectHTMLAttributes,
@@ -12,6 +13,7 @@ import { useAuth } from '../auth/AuthProvider';
 import type { User } from '../auth/session';
 import { useI18n } from '../i18n/I18nProvider';
 import { LANGUAGES, type Language } from '../i18n/language';
+import { getTheme, setTheme, THEMES, type Theme } from '../lib/theme';
 import { ProductMark } from './Icon';
 
 /** Página de formulário centralizada (login, cadastro, senha...). */
@@ -27,8 +29,42 @@ export function AuthCard({ title, children }: { title: string; children: ReactNo
         <h1>{title}</h1>
         {children}
       </div>
-      <LanguageSwitch />
+      <Preferences />
     </main>
+  );
+}
+
+/** Idioma e tema, lado a lado (barra superior e telas públicas). */
+export function Preferences() {
+  return (
+    <div className="prefs">
+      <ThemeSwitch />
+      <LanguageSwitch />
+    </div>
+  );
+}
+
+export function ThemeSwitch() {
+  const { m } = useI18n();
+  const [theme, setLocal] = useState<Theme>(getTheme);
+  return (
+    <div className="lang">
+      <select
+        aria-label={m.theme.label}
+        value={theme}
+        onChange={(e) => {
+          const next = e.target.value as Theme;
+          setTheme(next);
+          setLocal(next);
+        }}
+      >
+        {THEMES.map((t) => (
+          <option key={t} value={t}>
+            {m.theme[t]}
+          </option>
+        ))}
+      </select>
+    </div>
   );
 }
 

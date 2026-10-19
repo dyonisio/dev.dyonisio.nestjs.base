@@ -3,7 +3,7 @@ import { api } from '../../api/client';
 import { FILE_LIMITS, uploadFile } from '../../api/upload';
 import { useAuth } from '../../auth/AuthProvider';
 import { session } from '../../auth/session';
-import { emptyReauth, reauthBody, ReauthFields, useLoginMethods } from '../../components/Reauth';
+import { ReauthDialog, useLoginMethods, type ReauthProof } from '../../components/Reauth';
 import {
   Avatar,
   ErrorAlert,
@@ -40,7 +40,7 @@ export function ProfilePage() {
       />
       <PhotoSection />
       <DetailsSection />
-      <EmailSection hasPassword={hasPassword} />
+      <EmailSection />
       <PasswordSection hasPassword={hasPassword} onCreated={methods.reload} />
     </>
   );
@@ -172,29 +172,31 @@ function DetailsSection() {
   );
 }
 
-function EmailSection({ hasPassword }: { hasPassword: boolean }) {
+function EmailSection() {
   const { m, f } = useI18n();
   const { user } = useAuth();
   const [newEmail, setNewEmail] = useState('');
-  const [reauth, setReauth] = useState(emptyReauth);
+  const [confirming, setConfirming] = useState(false);
   const [sentTo, setSentTo] = useState<string | null>(null);
-  const { run, busy, error } = useAction();
 
   if (!user) return null;
 
-  function submit(e: FormEvent) {
+  const submit = (e: FormEvent) => {
     e.preventDefault();
-    void run(async () => {
-      const { data, error: apiError } = await api.POST('/api/v1/users/me/email', {
-        body: { newEmail, ...reauthBody(reauth) },
-      });
-      if (apiError || !data) throw apiError;
-      session.setUser({ ...user!, pendingEmail: data.pendingEmail });
-      setSentTo(data.pendingEmail);
-      setNewEmail('');
-      setReauth(emptyReauth);
+    setSentTo(null);
+    if (newEmail.trim()) setConfirming(true);
+  };
+
+  const change = async (proof: ReauthProof) => {
+    const { data, error: apiError } = await api.POST('/api/v1/users/me/email', {
+      body: { newEmail, ...proof },
     });
-  }
+    if (apiError || !data) throw apiError;
+    session.setUser({ ...user, pendingEmail: data.pendingEmail });
+    setSentTo(data.pendingEmail);
+    setNewEmail('');
+    setConfirming(false);
+  };
 
   return (
     <Section title={m.profile.emailTitle} help={f(m.profile.currentEmail, { email: user.email })}>
@@ -202,7 +204,7 @@ function EmailSection({ hasPassword }: { hasPassword: boolean }) {
         <SuccessAlert>{f(m.profile.emailSent, { email: sentTo })}</SuccessAlert>
       ) : (
         user.pendingEmail && (
-          <p className="alert alert-warning">
+          <p className="alert alert-warning panel-alert">
             {f(m.profile.pendingEmail, { email: user.pendingEmail })}
           </p>
         )
@@ -214,17 +216,24 @@ function EmailSection({ hasPassword }: { hasPassword: boolean }) {
           autoComplete="email"
           value={newEmail}
           onChange={(e) => setNewEmail(e.target.value)}
+          hint={m.profile.newEmailHint}
           required
-          error={fieldError(error, 'newEmail')}
         />
-        <ReauthFields value={reauth} onChange={setReauth} error={error} hasPassword={hasPassword} />
-        <FormError error={error} />
         <div className="panel-actions">
-          <button type="submit" disabled={busy}>
+          <button type="submit" disabled={!newEmail.trim()}>
             {m.profile.changeEmail}
           </button>
         </div>
       </form>
+      {confirming && (
+        <ReauthDialog
+          title={m.profile.changeEmail}
+          text={f(m.profile.emailDialog, { email: newEmail })}
+          confirmLabel={m.profile.changeEmail}
+          onConfirm={change}
+          onClose={() => setConfirming(false)}
+        />
+      )}
     </Section>
   );
 }

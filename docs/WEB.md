@@ -114,7 +114,9 @@ marcações, e a ação principal de cada tela é o botão preto. Para adaptar �
 | `--primary` | O botão principal (preto no claro, branco no escuro) |
 | `--font`, `--mono` | As fontes (carregadas no `index.html`) |
 
-O tema escuro segue o sistema. `<html data-theme="light">` ou `"dark"` força um dos dois. A marca é o escudo com a
+O tema é **claro por padrão**. A pessoa troca para escuro ou "do sistema" no seletor ao lado do idioma (barra
+superior e telas públicas), e a escolha fica salva no navegador ([theme.ts](../apps/web/src/lib/theme.ts)). Ela vira
+`<html data-theme="light|dark">`; "do sistema" tira o atributo e o CSS segue o `prefers-color-scheme`. A marca é o escudo com a
 inicial ([Icon.tsx](../apps/web/src/components/Icon.tsx) → `ProductMark`): troque pelo logo do seu projeto.
 
 Padrões das telas:
@@ -123,6 +125,9 @@ Padrões das telas:
   direita, e a zona de exclusão vem sempre por último (`<Section danger>`).
 - **Listas** (usuários e auditoria): abas, uma barra de filtros e a tabela direto na folha, sem cartão em volta.
 - **Cor só no que pede atenção**: "e-mail não confirmado", "inativo", "alerta". O que está normal fica em cinza.
+- **Confirmação só na hora de agir**: trocar o e-mail e excluir a conta mostram no painel só o essencial. A senha (e o
+  código do 2FA) aparecem numa janela ao confirmar (`<ReauthDialog>` em [Reauth.tsx](../apps/web/src/components/Reauth.tsx)).
+  Se a API recusar, o erro aparece na própria janela.
 
 ## Como está organizado
 

@@ -17,6 +17,7 @@ import { AuthProvider } from '../auth/AuthProvider';
 import { session } from '../auth/session';
 import { I18nProvider } from '../i18n/I18nProvider';
 import { getLanguage, setLanguage, type Language } from '../i18n/language';
+import { applyTheme } from '../lib/theme';
 import '../styles.css';
 import { me } from './data';
 import { installMockApi } from './mock-api';
@@ -25,8 +26,10 @@ const params = new URLSearchParams(location.search);
 const as = params.get('as') ?? 'admin';
 const lang = params.get('lang') as Language | null;
 if (lang) setLanguage(lang);
+// ?theme= força só nesta visita (sem salvar); sem ele, vale o tema escolhido no app (claro por padrão)
 const theme = params.get('theme');
 if (theme === 'light' || theme === 'dark') document.documentElement.dataset.theme = theme;
+else applyTheme();
 document.documentElement.lang = getLanguage();
 
 session.clear();

@@ -246,6 +246,16 @@ button.danger:hover {
   background: var(--pill-negative-bg);
 }
 
+button.danger.solid {
+  border-color: var(--negative);
+  background: var(--negative);
+  color: #fff;
+}
+
+button.danger.solid:hover {
+  background: color-mix(in srgb, var(--negative) 88%, #000);
+}
+
 button.link {
   height: auto;
   padding: 0;
@@ -358,6 +368,22 @@ fieldset.reauth {
   padding: 16px 0 0;
   border: 0;
   border-top: 1px solid var(--rule);
+}
+
+/* primeiro do formulário (ex.: passo do 2FA) ou dentro de uma janela: sem linha e sem vão */
+form > fieldset.reauth:first-child,
+fieldset.reauth.bare {
+  margin-top: 0;
+  padding-top: 0;
+  border-top: 0;
+}
+
+.dialog-text {
+  margin-bottom: 16px;
+}
+
+.panel-alert {
+  margin: 0 0 16px;
 }
 
 fieldset.reauth legend {
@@ -680,6 +706,8 @@ fieldset.reauth > p {
 .setting {
   display: grid;
   grid-template-columns: minmax(0, 360px) minmax(0, 1fr);
+  /* cada painel com a própria altura: esticado ao texto da esquerda, sobrava um vão no pé */
+  align-items: start;
   gap: var(--gap);
   padding: 32px 0;
   border-top: 1px solid var(--rule);
@@ -1351,8 +1379,13 @@ a.plain:hover .row-title {
   font-weight: 500;
 }
 
-.auth .lang {
+.prefs {
   display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.auth .prefs {
   justify-content: center;
 }
 

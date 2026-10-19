@@ -8,6 +8,7 @@
 const en = {
   appName: 'NestJS Base',
   language: 'Language',
+  theme: { label: 'Theme', light: 'Light', dark: 'Dark', system: 'System' },
   common: {
     email: 'Email',
     password: 'Password',
@@ -152,6 +153,8 @@ const en = {
     currentEmail: 'Current email: {email}',
     pendingEmail: 'Waiting for confirmation of {email}. Open the link we sent to that address.',
     newEmail: 'New email',
+    newEmailHint: 'We send a link to the new address. The email only changes after you open it.',
+    emailDialog: 'Confirm it is you to send the link to {email}.',
     changeEmail: 'Change email',
     emailSent: 'We sent a confirmation link to {email}. Your email only changes after you open it.',
     passwordTitle: 'Password',
@@ -228,6 +231,9 @@ const en = {
       'You are signed out of every device and your email is freed right away. After 30 days, your personal data is permanently erased. Until then, an administrator can restore the account if you ask.',
     deleteConfirm: 'I understand that my account will be deleted.',
     delete: 'Delete my account',
+    deleteShort:
+      'Signs you out of every device right away. You confirm it is you in the next step.',
+    deleteDialogTitle: 'Delete your account?',
   },
   users: {
     title: 'Users',
@@ -378,6 +384,7 @@ type Dict = {
 const ptBR: Dict = {
   appName: 'NestJS Base',
   language: 'Idioma',
+  theme: { label: 'Tema', light: 'Claro', dark: 'Escuro', system: 'Do sistema' },
   common: {
     email: 'E-mail',
     password: 'Senha',
@@ -524,6 +531,9 @@ const ptBR: Dict = {
     pendingEmail:
       'Aguardando a confirmação de {email}. Abra o link que enviamos para esse endereço.',
     newEmail: 'Novo e-mail',
+    newEmailHint:
+      'Enviamos um link para o endereço novo. O e-mail só muda depois que você abrir o link.',
+    emailDialog: 'Confirme que é você para enviarmos o link para {email}.',
     changeEmail: 'Trocar e-mail',
     emailSent:
       'Enviamos um link de confirmação para {email}. O e-mail só muda depois que você abrir o link.',
@@ -603,6 +613,9 @@ const ptBR: Dict = {
       'Você sai de todos os dispositivos e seu e-mail fica livre na hora. Depois de 30 dias, seus dados pessoais são apagados de vez. Até lá, um administrador pode restaurar a conta se você pedir.',
     deleteConfirm: 'Entendo que minha conta será excluída.',
     delete: 'Excluir minha conta',
+    deleteShort:
+      'Você sai de todos os dispositivos na hora. Na sequência você confirma que é você.',
+    deleteDialogTitle: 'Excluir sua conta?',
   },
   users: {
     title: 'Usuários',

@@ -80,22 +80,41 @@ describe('segurança: ativar o 2FA', () => {
 });
 
 describe('privacidade: excluir a conta', () => {
-  it('exige marcar a confirmação e a senha; depois vai para o login', async () => {
+  it('confirma numa janela com a senha; cancelar não exclui; depois vai para o login', async () => {
     const fetch = renderApp('/account/privacy', makeUser(), {
       'DELETE /api/v1/users/me': () => new Response(null, { status: 204 }),
     });
+    const deleted = () => fetch.mock.calls.some((c) => requestOf(c).method === 'DELETE');
 
-    const button = await screen.findByRole('button', { name: 'Delete my account' });
-    expect(button).toBeDisabled();
+    // a senha não fica no painel: só aparece na janela de confirmação
+    await userEvent.click(await screen.findByRole('button', { name: 'Delete my account' }));
+    let dialog = screen.getByRole('dialog', { name: 'Delete your account?' });
+    await userEvent.click(within(dialog).getByRole('button', { name: 'Cancel' }));
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+    expect(deleted()).toBe(false);
 
-    await userEvent.type(screen.getByLabelText('Current password'), 'secret123');
-    await userEvent.click(screen.getByLabelText('I understand that my account will be deleted.'));
-    await userEvent.click(button);
+    await userEvent.click(screen.getByRole('button', { name: 'Delete my account' }));
+    dialog = screen.getByRole('dialog', { name: 'Delete your account?' });
+    await userEvent.type(within(dialog).getByLabelText('Current password'), 'secret123');
+    await userEvent.click(within(dialog).getByRole('button', { name: 'Delete my account' }));
 
     expect(await screen.findByText(/Your account was deleted/)).toBeInTheDocument();
     expect(await lastBody(fetch, 'DELETE', '/api/v1/users/me')).toEqual({
       currentPassword: 'secret123',
     });
+  });
+});
+
+describe('tema', () => {
+  it('claro por padrão; a escolha vale na hora e fica salva', async () => {
+    renderApp('/account', makeUser(), {});
+    const select = await screen.findByRole('combobox', { name: 'Theme' });
+
+    expect(select).toHaveValue('light');
+    await userEvent.selectOptions(select, 'dark');
+
+    expect(document.documentElement.dataset.theme).toBe('dark');
+    expect(localStorage.getItem('nb.theme')).toBe('dark');
   });
 });
 

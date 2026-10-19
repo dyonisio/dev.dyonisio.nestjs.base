@@ -1,8 +1,9 @@
+import { useState, type FormEvent, type ReactNode } from 'react';
 import { api, type ApiError } from '../api/client';
 import { useAuth } from '../auth/AuthProvider';
 import { useI18n } from '../i18n/I18nProvider';
-import { useQuery } from '../lib/hooks';
-import { Field, fieldError } from './ui';
+import { useAction, useQuery } from '../lib/hooks';
+import { Field, fieldError, FormError, Modal } from './ui';
 
 export interface ReauthValue {
   currentPassword: string;
@@ -16,8 +17,11 @@ export function useLoginMethods() {
   return useQuery(() => api.GET('/api/v1/users/me/identities'), []);
 }
 
+/** A "prova de identidade" no formato da API. */
+export type ReauthProof = { currentPassword?: string; code?: string };
+
 /** Corpo da "prova de identidade" no formato da API (só os campos preenchidos). */
-export function reauthBody(value: ReauthValue) {
+export function reauthBody(value: ReauthValue): ReauthProof {
   return {
     ...(value.currentPassword ? { currentPassword: value.currentPassword } : {}),
     ...(value.code.trim() ? { code: value.code.trim() } : {}),
@@ -37,6 +41,7 @@ export function ReauthFields({
   error,
   hasPassword,
   withCode = true,
+  legend = true,
 }: {
   value: ReauthValue;
   onChange: (value: ReauthValue) => void;
@@ -44,14 +49,16 @@ export function ReauthFields({
   hasPassword: boolean;
   /** false quando a ação nunca pede código (ex.: ativar o 2FA, que ainda está desligado) */
   withCode?: boolean;
+  /** false dentro de uma janela que já tem o próprio título */
+  legend?: boolean;
 }) {
   const { m } = useI18n();
   const { user } = useAuth();
   const needsCode = withCode && !!user?.twoFactorEnabledAt;
 
   return (
-    <fieldset className="reauth">
-      <legend>{m.reauth.title}</legend>
+    <fieldset className={legend ? 'reauth' : 'reauth bare'}>
+      {legend && <legend>{m.reauth.title}</legend>}
       {hasPassword ? (
         <Field
           label={m.reauth.currentPassword}
@@ -77,5 +84,60 @@ export function ReauthFields({
         />
       )}
     </fieldset>
+  );
+}
+
+/**
+ * Janela "confirme que é você" das ações sensíveis: o painel mostra só o essencial, e a senha
+ * (e o código do 2FA) só aparecem na hora de confirmar. `onConfirm` recebe a prova no formato
+ * da API; se a API recusar, o erro aparece na própria janela e ela continua aberta.
+ */
+export function ReauthDialog({
+  title,
+  text,
+  confirmLabel,
+  danger,
+  onConfirm,
+  onClose,
+}: {
+  title: string;
+  text?: ReactNode;
+  confirmLabel: string;
+  danger?: boolean;
+  onConfirm: (proof: ReauthProof) => Promise<void>;
+  onClose: () => void;
+}) {
+  const { m } = useI18n();
+  const methods = useLoginMethods();
+  const [value, setValue] = useState(emptyReauth);
+  const { run, busy, error } = useAction();
+
+  const submit = (e: FormEvent) => {
+    e.preventDefault();
+    void run(() => onConfirm(reauthBody(value)));
+  };
+
+  return (
+    <Modal title={title} onClose={onClose}>
+      <form onSubmit={submit} noValidate>
+        {text && <p className="muted dialog-text">{text}</p>}
+        <ReauthFields
+          value={value}
+          onChange={setValue}
+          error={error}
+          hasPassword={methods.data?.hasPassword ?? true}
+          legend={false}
+        />
+        <FormError error={error} />
+        <div className="panel-actions">
+          <button type="button" onClick={onClose}>
+            {m.common.cancel}
+          </button>
+          <button type="submit" className={danger ? 'danger solid' : 'primary'} disabled={busy}>
+            {confirmLabel}
+          </button>
+        </div>
+      </form>
+    </Modal>
   );
 }

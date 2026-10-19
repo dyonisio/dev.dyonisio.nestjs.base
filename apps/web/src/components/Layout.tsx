@@ -5,7 +5,7 @@ import { can, type Permission } from '../auth/permissions';
 import { useI18n } from '../i18n/I18nProvider';
 import { Icon, ProductMark, type IconName } from './Icon';
 import { useLoginMethods } from './Reauth';
-import { Avatar, LanguageSwitch } from './ui';
+import { Avatar, Preferences } from './ui';
 
 interface NavEntry {
   to: string;
@@ -145,7 +145,7 @@ export function AppLayout() {
           )}
         </div>
         <div className="topbar-actions">
-          <LanguageSwitch />
+          <Preferences />
         </div>
       </header>
 
