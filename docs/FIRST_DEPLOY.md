@@ -244,6 +244,7 @@ Repositório → **Settings → Environments → New environment** → `prod` (e
 | `ALARM_EMAIL` | não | quem recebe os alarmes |
 | `CORS_ORIGIN` | não | origens do front que chamam a API e enviam arquivos **pelo navegador**, separadas por vírgula e sem espaços (ex.: `https://app.seudominio.com.br,http://localhost:3000`). Padrão: `FRONTEND_URL` |
 | `GOOGLE_CLIENT_IDS` / `APPLE_CLIENT_IDS` | não | login social |
+| `SWAGGER_ENABLED` | não | `true` para manter a documentação (`/docs`) ligada neste environment. Padrão: ligada só no stage `dev` |
 
 No `prod`, marque **Required reviewers** com o seu usuário: todo deploy em produção espera a sua aprovação.
 

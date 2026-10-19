@@ -304,7 +304,7 @@ Não há chave de acesso (`AWS_ACCESS_KEY_ID`) guardada em lugar nenhum. Configu
    | `AWS_ROLE_ARN` | sim | ARN da role acima |
    | `FRONTEND_URL`, `MAIL_FROM`, `SUPPORT_EMAIL` | sim | os parâmetros obrigatórios (seção 4.2) |
    | `AWS_REGION` | se não for `us-east-1` | região do deploy — a mesma dos segredos (SSM) e do SES |
-   | `ALARM_EMAIL`, `CORS_ORIGIN`, `GOOGLE_CLIENT_IDS`, `APPLE_CLIENT_IDS` | não | opcionais (vazios não são enviados) |
+   | `ALARM_EMAIL`, `CORS_ORIGIN`, `SWAGGER_ENABLED`, `GOOGLE_CLIENT_IDS`, `APPLE_CLIENT_IDS` | não | opcionais (vazios não são enviados) |
 
    O workflow passa esses valores ao `serverless deploy` por variáveis de ambiente, sem interpolar no script (evita injeção de comandos).
 
