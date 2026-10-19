@@ -115,12 +115,9 @@ curl https://api.base.dyonisio.dev/api/health
 
 ## 6. Banco de dados
 
-Mudanças no banco não vão pelo deploy (o runner do GitHub não alcança um RDS privado). Antes ou logo depois de um
-deploy com migration nova, rode-as como no primeiro deploy ([FIRST_DEPLOY.md](FIRST_DEPLOY.md#5-criar-as-tabelas-e-o-administrador)):
-
-```bash
-npm run migration:run
-```
+As migrations vão **pelo deploy**: a Lambda `migrate` aplica as pendentes antes de o código novo entrar no ar (veja
+[DEPLOY_AWS_LAMBDA.md](DEPLOY_AWS_LAMBDA.md#5-migrations-e-admin-inicial)). Não há passo manual. O admin inicial (seed)
+continua sendo criado do seu computador, uma vez só.
 
 ## Erros comuns
 

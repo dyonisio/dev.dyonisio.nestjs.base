@@ -254,6 +254,10 @@ No `prod`, marque **Required reviewers** com o seu usuário: todo deploy em prod
 
 ## 5. Criar as tabelas e o administrador
 
+> **As tabelas são criadas pelo próprio deploy** (a Lambda `migrate`, no passo 6), e os deploys seguintes aplicam as
+> migrations novas sozinhos. Do seu computador, só falta criar o **administrador inicial** (5.5, o `npm run seed`). O
+> `npm run migration:run` abaixo continua valendo para rodar à mão, se precisar.
+
 Feito do seu computador, apontando para o banco da AWS. Use o **PowerShell** (VS Code: *Terminal → New Terminal*, ou
 botão direito na pasta do projeto → *Abrir no Terminal*). **Faça tudo no mesmo terminal**: as variáveis do passo 5.3
 só existem nele, de propósito (a senha some quando você fecha).

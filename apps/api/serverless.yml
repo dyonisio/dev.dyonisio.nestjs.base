@@ -153,6 +153,13 @@ functions:
           maximumBatchingWindow: 5
           functionResponseType: ReportBatchItemFailures
 
+  # Aplica as migrations pendentes. Sem evento: o deploy (GitHub Actions) a invoca antes de
+  # colocar o código novo no ar. Veja src/database/migrate-handler.ts.
+  migrate:
+    handler: dist/database/migrate-handler.handler
+    memorySize: 512
+    timeout: 300
+
   # Manutenção a cada 6 horas: anonimiza contas excluídas, apaga uploads abandonados,
   # sessões antigas, auditoria fora da retenção e contadores de rate limit expirados.
   maintenance:

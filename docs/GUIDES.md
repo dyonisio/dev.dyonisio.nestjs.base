@@ -131,6 +131,18 @@ e responda 404 (não 403) quando não for dele, para não revelar que o registro
 - **Sempre** escreva o `down()`. O `npm run test:pg` aplica tudo, compara com as entidades, desfaz e aplica de novo.
 - Migration que muda dados existentes: teste em `test/postgres/` (veja os exemplos lá).
 - **Nunca** edite uma migration que já foi para produção. Crie outra.
+- **Compatível com o código que está no ar.** O deploy aplica as migrations (Lambda `migrate`) **antes** de trocar o
+  código da API. Por alguns segundos, o código antigo roda sobre o banco novo, então a migration não pode quebrá-lo:
+
+  | Mudança | Como fazer |
+  | --- | --- |
+  | Coluna/tabela nova | Direto. Coluna nova em tabela existente: `NULL` ou com `DEFAULT` |
+  | Apagar coluna/tabela | Em **dois deploys**: primeiro o código para de usar; no deploy seguinte, a migration apaga |
+  | Renomear coluna | Em três: cria a nova (copiando os dados) → o código passa a usar a nova → apaga a antiga |
+  | Tornar `NOT NULL` | Primeiro preencha os vazios (migration de dados); depois a restrição |
+
+  Se uma migration falhar, ela é desfeita (uma transação para todas as do deploy), o deploy para e a API continua na
+  versão anterior.
 
 ## Novo e-mail
 

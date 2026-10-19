@@ -85,18 +85,6 @@ jobs:
           role-to-assume: ${{ vars.AWS_ROLE_ARN }}
           aws-region: ${{ vars.AWS_REGION || 'us-east-1' }}
 
-      # Migrations: só funciona se o runner do GitHub alcançar o banco. Com o RDS em
-      # subnet privada (recomendado), rode-as por outro caminho — veja a documentação.
-      # - name: Migrations
-      #   run: npm run migration:run
-      #   env:
-      #     DB_HOST: ${{ secrets.DB_HOST }}
-      #     DB_NAME: ${{ secrets.DB_NAME }}
-      #     DB_USERNAME: ${{ secrets.DB_USERNAME }}
-      #     DB_PASSWORD: ${{ secrets.DB_PASSWORD }}
-      #     DB_SSL: 'true'
-      #     JWT_SECRET: ${{ secrets.JWT_SECRET }}
-
       - name: Build + deploy
         env:
           FRONTEND_URL: ${{ vars.FRONTEND_URL }}
@@ -141,8 +129,36 @@ jobs:
           fi
 
           npm run build
+          service=$(awk '/^service:/ {print $2}' serverless.yml)
+          migrate_fn="$service-$STAGE-migrate"
           # --region explícito: a mesma região da credencial, dos segredos (SSM) e do SES
-          npx serverless deploy --stage "$STAGE" --region "$REGION" "${params[@]}"
+          deploy() { npx serverless deploy --stage "$STAGE" --region "$REGION" "${params[@]}"; }
+
+          # Migrations pela Lambda "migrate" (ela alcança o banco; o runner do GitHub não).
+          # Uma migration que falha para o deploy e a API continua na versão anterior.
+          migrate() {
+            echo "::group::Migrations"
+            aws lambda invoke --function-name "$migrate_fn" --cli-read-timeout 330 \
+              /tmp/migrate.json > /tmp/invoke.json
+            cat /tmp/invoke.json /tmp/migrate.json; echo
+            echo "::endgroup::"
+            if grep -q FunctionError /tmp/invoke.json; then
+              echo "::error::As migrations falharam (veja o grupo Migrations acima e os logs da função $migrate_fn). A API não foi atualizada."
+              exit 1
+            fi
+          }
+
+          if aws lambda get-function --function-name "$migrate_fn" > /dev/null 2>&1; then
+            # Normal: atualiza só a função migrate com o código novo, aplica as migrations,
+            # e só então troca o código da API (que já encontra o banco pronto)
+            npx serverless deploy function -f migrate --stage "$STAGE" --region "$REGION" "${params[@]}"
+            migrate
+            deploy
+          else
+            # Primeira vez (a função ainda não existe): deploy completo e migrations logo depois
+            deploy
+            migrate
+          fi
 
       # ---------------------------------------------------------------- front (apps/web)
 

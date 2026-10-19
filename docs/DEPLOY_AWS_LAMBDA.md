@@ -151,13 +151,29 @@ Se o seu Postgres não for o RDS, aponte `DB_SSL_CA_FILE` para a CA dele.
 
 ## 5. Migrations e admin inicial
 
-O deploy **não** roda migrations (rodar DDL no cold start de várias Lambdas em paralelo é arriscado).
-Rode-as a partir da sua máquina, apontando para o banco da AWS — o passo a passo no Windows (PowerShell, certificado,
-variáveis só no terminal, criação do banco) está em [FIRST_DEPLOY.md → 5](FIRST_DEPLOY.md#5-criar-as-tabelas-e-o-administrador):
+**As migrations rodam pelo deploy.** A função `migrate` (sem evento: só roda quando invocada) aplica as pendentes,
+de dentro da AWS, com os mesmos segredos e o mesmo TLS da API. O runner do GitHub não precisa alcançar o banco. A ordem,
+no workflow:
+
+1. `serverless deploy function -f migrate`: atualiza **só** a função `migrate` com o código novo (as migrations novas);
+2. invoca a `migrate` e espera. Se falhar, o deploy **para** e a API continua na versão anterior (as migrations do
+   deploy rodam numa transação só, então nada fica pela metade);
+3. `serverless deploy`: troca o código da API, que já encontra o banco pronto.
+
+No primeiro deploy (a função ainda não existe), a ordem é deploy completo e migrations logo depois: num banco vazio, é
+assim que as tabelas são criadas. Por que não rodar no cold start da API: várias Lambdas subindo juntas tentariam migrar
+ao mesmo tempo.
+
+Toda migration precisa ser compatível com o código que ainda está no ar: veja [GUIDES.md → Migration](GUIDES.md#migration).
+
+Para rodar à mão (ex.: banco local, ou uma emergência), do seu computador, apontando para o banco da AWS: o passo a passo
+no Windows está em [FIRST_DEPLOY.md → 5](FIRST_DEPLOY.md#5-criar-as-tabelas-e-o-administrador).
 
 ```bash
 npm run migration:run
 ```
+
+O **admin inicial** (seed) continua sendo criado do seu computador, uma vez só:
 
 ```bash
 npm run seed
@@ -311,9 +327,8 @@ Não há chave de acesso (`AWS_ACCESS_KEY_ID`) guardada em lugar nenhum. Configu
 
    O workflow passa esses valores ao `serverless deploy` por variáveis de ambiente, sem interpolar no script (evita injeção de comandos).
 
-**Migrations no deploy:** o runner do GitHub roda fora da sua VPC. Se o RDS estiver em subnet privada (recomendado), ele não
-alcança o banco — rode as migrations por um caminho com acesso (máquina com VPN/bastion, CodeBuild na VPC ou uma Lambda de
-migração). Se o banco for acessível, descomente o passo "Migrations" no workflow e cadastre os segredos `DB_*` e `JWT_SECRET`.
+**Migrations no deploy:** feitas pela Lambda `migrate` (seção 5), que roda dentro da AWS. Funciona com o RDS em subnet
+privada também: basta a `migrate` estar na mesma VPC da API (o bloco `vpc:` do `serverless.yml` vale para todas as funções).
 
 ### Alternativa: AWS SAM / console
 
