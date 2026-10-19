@@ -9,6 +9,7 @@ import {
   type ReactNode,
 } from 'react';
 import { api, refreshSession, type ApiError } from '../api/client';
+import { signWithPasskey } from './passkey';
 import type { components } from '../api/schema';
 import { session, type User } from './session';
 
@@ -29,6 +30,11 @@ interface AuthValue {
     provider: 'google' | 'apple',
     body: components['schemas']['SocialLoginDto'],
   ): Promise<LoginResult>;
+  /**
+   * Login com passkey (sem e-mail nem senha). `false` = a pessoa cancelou no navegador.
+   * Não tem passo do 2FA: a passkey já vale como dois fatores.
+   */
+  passkeyLogin(): Promise<boolean>;
   register(input: components['schemas']['RegisterDto']): Promise<void>;
   logout(): Promise<void>;
   reloadUser(): Promise<void>;
@@ -102,6 +108,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         });
         if (error || !data) fail(error);
         session.start(data);
+      },
+      async passkeyLogin() {
+        const { data: start, error } = await api.POST('/api/v1/auth/passkeys/login/options');
+        if (error || !start) fail(error);
+        const response = await signWithPasskey(start.options);
+        if (!response) return false;
+        const { data, error: loginError } = await api.POST('/api/v1/auth/passkeys/login', {
+          body: { challengeToken: start.challengeToken, response },
+        });
+        if (loginError || !data) fail(loginError);
+        session.start(data);
+        return true;
       },
       async register(input) {
         const { data, error } = await api.POST('/api/v1/auth/register', { body: input });

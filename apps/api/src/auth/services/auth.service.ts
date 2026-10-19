@@ -60,6 +60,14 @@ export class AuthService {
     return this.openSession(user, method);
   }
 
+  /**
+   * Login com passkey já conferida: abre a sessão direto. A passkey (com verificação do usuário)
+   * já vale como dois fatores — o aparelho e a biometria/PIN —, então o 2FA não é pedido.
+   */
+  signInWithPasskey(user: User): Promise<AuthResponseDto> {
+    return this.openSession(user, 'passkey');
+  }
+
   /** Segundo passo do login com 2FA: código do app (ou de recuperação) -> tokens. */
   async verifyTwoFactor(twoFactorToken: string, code: string): Promise<AuthResponseDto> {
     const { user, method, usedRecoveryCode } = await this.twoFactor.completeChallenge(

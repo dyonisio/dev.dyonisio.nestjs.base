@@ -1,5 +1,6 @@
 import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
+import { Passkey } from '../auth/passkeys/entities/passkey.entity';
 import { UserIdentity } from '../auth/social/entities/user-identity.entity';
 import { TwoFactorModule } from '../auth/two-factor/two-factor.module';
 import { FilesModule } from '../files/files.module';
@@ -18,7 +19,7 @@ import { UsersService } from './users.service';
 
 @Module({
   imports: [
-    TypeOrmModule.forFeature([User, UserIdentity]),
+    TypeOrmModule.forFeature([User, UserIdentity, Passkey]),
     MailModule,
     // encerrar sessões ao excluir/desativar + JwtService (links de confirmação)
     SessionsModule,

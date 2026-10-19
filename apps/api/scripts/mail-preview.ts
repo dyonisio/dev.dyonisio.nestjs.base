@@ -32,6 +32,7 @@ const SUBJECT_KEYS: Record<MailTemplate, string> = {
   [MailTemplate.NEW_LOGIN]: 'newLogin',
   [MailTemplate.TWO_FACTOR_CHANGED]: 'twoFactorDisabled',
   [MailTemplate.SOCIAL_LINKED]: 'socialLinked',
+  [MailTemplate.PASSKEY_ADDED]: 'passkeyAdded',
   [MailTemplate.EMAIL_CHANGED]: 'emailChanged',
   [MailTemplate.ACCOUNT_DELETED]: 'accountDeleted',
 };
@@ -89,6 +90,12 @@ function samples(lang: string): { [K in MailTemplate]: MailTemplateContextMap[K]
     [MailTemplate.SOCIAL_LINKED]: {
       name: 'Maria Silva',
       provider: 'Google',
+      when: new Date().toLocaleString(lang, { dateStyle: 'short', timeStyle: 'short' }),
+      securityUrl: 'http://localhost:5173/account/security',
+    },
+    [MailTemplate.PASSKEY_ADDED]: {
+      name: 'Maria Silva',
+      passkey: 'Safari · iOS',
       when: new Date().toLocaleString(lang, { dateStyle: 'short', timeStyle: 'short' }),
       securityUrl: 'http://localhost:5173/account/security',
     },

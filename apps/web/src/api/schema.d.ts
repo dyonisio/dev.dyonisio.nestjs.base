@@ -798,6 +798,124 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/auth/passkeys/login/options": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Start signing in with a passkey
+         * @description Step 1 of 2. No email needed: the browser lists the passkeys saved for this site and the person picks one (fingerprint, face or device PIN).
+         */
+        post: operations["PasskeysController_loginOptions_v1"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/auth/passkeys/login": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Sign in with a passkey
+         * @description Step 2 of 2: send what the browser returned. Returns the session directly — a passkey already proves two factors (the device and the fingerprint/PIN), so there is no 2FA step.
+         */
+        post: operations["PasskeysController_login_v1"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/auth/passkeys/register/options": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Start adding a passkey
+         * @description Step 1 of 2. A passkey is a new way into the account, so it asks to confirm it is you: the password (accounts without one: signed in recently) and, with 2FA on, the code.
+         */
+        post: operations["PasskeysController_registrationOptions_v1"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/auth/passkeys/register": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Add a passkey
+         * @description Step 2 of 2: send what the browser returned. The account email gets a notice.
+         */
+        post: operations["PasskeysController_register_v1"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/users/me/passkeys": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** My passkeys */
+        get: operations["PasskeysController_list_v1"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/users/me/passkeys/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /**
+         * Remove a passkey
+         * @description It stops working on this site right away. The copy saved on the device or password manager stays there; the person can delete it there too.
+         */
+        delete: operations["PasskeysController_remove_v1"];
+        options?: never;
+        head?: never;
+        /** Rename a passkey */
+        patch: operations["PasskeysController_rename_v1"];
+        trace?: never;
+    };
     "/api/health": {
         parameters: {
             query?: never;
@@ -829,7 +947,7 @@ export interface components {
              * @example user.role_changed
              * @enum {string}
              */
-            action: "auth.login" | "auth.login_failed" | "auth.logout" | "auth.refresh_token_reuse" | "auth.password_changed" | "auth.password_reset" | "auth.magic_link_sent" | "auth.email_verified" | "auth.2fa_enabled" | "auth.2fa_disabled" | "auth.2fa_failed" | "auth.2fa_recovery_code_used" | "auth.2fa_recovery_codes_regenerated" | "auth.2fa_reset_by_admin" | "auth.social_linked" | "auth.social_unlinked" | "user.registered" | "user.created" | "user.invitation_sent" | "user.updated" | "user.role_changed" | "user.deleted" | "user.restored" | "user.avatar_changed" | "user.email_change_requested" | "user.email_changed" | "user.self_deleted" | "user.data_exported" | "user.anonymized" | "session.revoked";
+            action: "auth.login" | "auth.login_failed" | "auth.logout" | "auth.refresh_token_reuse" | "auth.password_changed" | "auth.password_reset" | "auth.magic_link_sent" | "auth.email_verified" | "auth.2fa_enabled" | "auth.2fa_disabled" | "auth.2fa_failed" | "auth.2fa_recovery_code_used" | "auth.2fa_recovery_codes_regenerated" | "auth.2fa_reset_by_admin" | "auth.social_linked" | "auth.social_unlinked" | "auth.passkey_added" | "auth.passkey_removed" | "user.registered" | "user.created" | "user.invitation_sent" | "user.updated" | "user.role_changed" | "user.deleted" | "user.restored" | "user.avatar_changed" | "user.email_change_requested" | "user.email_changed" | "user.self_deleted" | "user.data_exported" | "user.anonymized" | "session.revoked";
             /**
              * Format: uuid
              * @description Who performed the action (null = anonymous, e.g. failed login)
@@ -1342,6 +1460,58 @@ export interface components {
             /** @description false for accounts created via social login that never set a password */
             hasPassword: boolean;
             identities: components["schemas"]["IdentityDto"][];
+            /** @description How many passkeys the account has */
+            passkeys: number;
+        };
+        PasskeyOptionsDto: {
+            /** @description WebAuthn options (JSON). Pass `options` as-is to the browser (`navigator.credentials` / `@simplewebauthn/browser`) and send `challengeToken` back with the result. Valid for 5 minutes, once. */
+            options: {
+                [key: string]: unknown;
+            };
+            /** @description Signed, single-use challenge to send back with the response */
+            challengeToken: string;
+        };
+        PasskeyLoginDto: {
+            /** @description Signed challenge received with the options */
+            challengeToken: string;
+            /** @description What the browser returned (the JSON of the credential), as-is */
+            response: {
+                [key: string]: unknown;
+            };
+        };
+        RegisterPasskeyDto: {
+            /** @description Signed challenge received with the options */
+            challengeToken: string;
+            /** @description What the browser returned (the JSON of the credential), as-is */
+            response: {
+                [key: string]: unknown;
+            };
+            /**
+             * @description Defaults to the browser and system (e.g. "Chrome · Windows")
+             * @example MacBook
+             */
+            name?: string;
+        };
+        PasskeyDto: {
+            /** Format: uuid */
+            id: string;
+            /** @example Chrome · Windows */
+            name: string;
+            /**
+             * @description multiDevice = synced by a password manager (iCloud Keychain, Google...)
+             * @enum {string}
+             */
+            deviceType: "singleDevice" | "multiDevice";
+            /** @description The passkey is backed up (synced), so losing one device does not lose it */
+            backedUp: boolean;
+            /** Format: date-time */
+            createdAt: string;
+            /** Format: date-time */
+            lastUsedAt: string | null;
+        };
+        RenamePasskeyDto: {
+            /** @example Work laptop */
+            name: string;
         };
     };
     responses: never;
@@ -1359,7 +1529,7 @@ export interface operations {
                 page?: number;
                 /** @description Items per page */
                 limit?: number;
-                action?: "auth.login" | "auth.login_failed" | "auth.logout" | "auth.refresh_token_reuse" | "auth.password_changed" | "auth.password_reset" | "auth.magic_link_sent" | "auth.email_verified" | "auth.2fa_enabled" | "auth.2fa_disabled" | "auth.2fa_failed" | "auth.2fa_recovery_code_used" | "auth.2fa_recovery_codes_regenerated" | "auth.2fa_reset_by_admin" | "auth.social_linked" | "auth.social_unlinked" | "user.registered" | "user.created" | "user.invitation_sent" | "user.updated" | "user.role_changed" | "user.deleted" | "user.restored" | "user.avatar_changed" | "user.email_change_requested" | "user.email_changed" | "user.self_deleted" | "user.data_exported" | "user.anonymized" | "session.revoked";
+                action?: "auth.login" | "auth.login_failed" | "auth.logout" | "auth.refresh_token_reuse" | "auth.password_changed" | "auth.password_reset" | "auth.magic_link_sent" | "auth.email_verified" | "auth.2fa_enabled" | "auth.2fa_disabled" | "auth.2fa_failed" | "auth.2fa_recovery_code_used" | "auth.2fa_recovery_codes_regenerated" | "auth.2fa_reset_by_admin" | "auth.social_linked" | "auth.social_unlinked" | "auth.passkey_added" | "auth.passkey_removed" | "user.registered" | "user.created" | "user.invitation_sent" | "user.updated" | "user.role_changed" | "user.deleted" | "user.restored" | "user.avatar_changed" | "user.email_change_requested" | "user.email_changed" | "user.self_deleted" | "user.data_exported" | "user.anonymized" | "session.revoked";
                 /** @description Who performed the actions */
                 actorId?: string;
                 /** @description Affected record (e.g. a user id) */
@@ -3680,6 +3850,317 @@ export interface operations {
                 };
             };
             /** @description Provider not linked */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponseDto"];
+                };
+            };
+        };
+    };
+    PasskeysController_loginOptions_v1: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Language for error messages */
+                "Accept-Language"?: "en" | "pt-BR";
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PasskeyOptionsDto"];
+                };
+            };
+            /** @description Too many attempts — see the Retry-After header */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponseDto"];
+                };
+            };
+        };
+    };
+    PasskeysController_login_v1: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Language for error messages */
+                "Accept-Language"?: "en" | "pt-BR";
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PasskeyLoginDto"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AuthResponseDto"];
+                };
+            };
+            /** @description Challenge expired or already used */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponseDto"];
+                };
+            };
+            /** @description Unknown passkey, invalid signature or inactive account */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponseDto"];
+                };
+            };
+            /** @description Too many attempts — see the Retry-After header */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponseDto"];
+                };
+            };
+        };
+    };
+    PasskeysController_registrationOptions_v1: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Language for error messages */
+                "Accept-Language"?: "en" | "pt-BR";
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ReauthDto"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PasskeyOptionsDto"];
+                };
+            };
+            /** @description Missing/wrong password or code, or the passkey limit was reached */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponseDto"];
+                };
+            };
+            /**
+             * @description Sign in again to confirm it is you (accounts without a password)
+             *
+             *     Missing, invalid or expired token, or the session was ended
+             */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponseDto"];
+                };
+            };
+        };
+    };
+    PasskeysController_register_v1: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Language for error messages */
+                "Accept-Language"?: "en" | "pt-BR";
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RegisterPasskeyDto"];
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PasskeyDto"];
+                };
+            };
+            /** @description Challenge expired, invalid response or passkey already added */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponseDto"];
+                };
+            };
+            /** @description Missing, invalid or expired token, or the session was ended */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponseDto"];
+                };
+            };
+        };
+    };
+    PasskeysController_list_v1: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Language for error messages */
+                "Accept-Language"?: "en" | "pt-BR";
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PasskeyDto"][];
+                };
+            };
+            /** @description Missing, invalid or expired token, or the session was ended */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponseDto"];
+                };
+            };
+        };
+    };
+    PasskeysController_remove_v1: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Language for error messages */
+                "Accept-Language"?: "en" | "pt-BR";
+            };
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Invalid id */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponseDto"];
+                };
+            };
+            /** @description Missing, invalid or expired token, or the session was ended */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponseDto"];
+                };
+            };
+            /** @description Passkey not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponseDto"];
+                };
+            };
+        };
+    };
+    PasskeysController_rename_v1: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Language for error messages */
+                "Accept-Language"?: "en" | "pt-BR";
+            };
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RenamePasskeyDto"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PasskeyDto"];
+                };
+            };
+            /** @description Invalid id or name */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponseDto"];
+                };
+            };
+            /** @description Missing, invalid or expired token, or the session was ended */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponseDto"];
+                };
+            };
+            /** @description Passkey not found */
             404: {
                 headers: {
                     [name: string]: unknown;

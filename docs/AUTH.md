@@ -11,6 +11,7 @@ cadastro ─▶ e-mail "confirme" ─▶ /auth/email/verify ─▶ conta confirm
                                                             │
 login (senha, link mágico ou Google/Apple) ──┬── sem 2FA ─▶ tokens
                                              └── com 2FA ─▶ desafio ─▶ /auth/2fa/verify ─▶ tokens
+login com passkey ─────────────────────────────────────────▶ tokens (já vale como 2 fatores)
 tokens ─▶ usa o accessToken ─▶ expirou (401) ─▶ /auth/refresh ─▶ novo par
 ```
 
@@ -190,6 +191,39 @@ app é recusado), a validade e o nonce. Depois:
 Ligar: `GOOGLE_CLIENT_IDS` e/ou `APPLE_CLIENT_IDS` (separados por vírgula: web, iOS, Android). Vazio = desligado.
 Gestão: `GET /users/me/identities` e `DELETE /users/me/identities/:provider` (não deixa remover a última forma de entrar).
 
+## Passkeys (digital, rosto ou PIN do aparelho)
+
+A pessoa entra **sem e-mail e sem senha**: o navegador mostra as passkeys salvas para o site e ela confirma com a
+digital, o rosto ou o PIN. A chave privada fica no aparelho (ou no gerenciador de senhas: iCloud, Google, 1Password…);
+a API guarda só a chave pública (tabela `passkeys`). Biblioteca: `@simplewebauthn/server` e, no front, `/browser`.
+
+| Rota | O que faz |
+| --- | --- |
+| `POST /auth/passkeys/login/options` | Público. Devolve as opções para o navegador e um `challengeToken` |
+| `POST /auth/passkeys/login { challengeToken, response }` | Público. Confere a assinatura e abre a sessão |
+| `POST /auth/passkeys/register/options` + "confirme que é você" | Logado. Opções para criar a passkey |
+| `POST /auth/passkeys/register { challengeToken, response, name? }` | Salva a passkey e manda o e-mail `passkey-added` |
+| `GET /users/me/passkeys`, `PATCH`/`DELETE /users/me/passkeys/:id` | Listar, renomear, remover |
+
+Regras:
+
+- **Sem passo de 2FA** no login com passkey: ela exige verificação do usuário (biometria/PIN), então já prova dois
+  fatores (o aparelho e a pessoa). Senha e link mágico continuam pedindo o código.
+- **Cadastrar pede "confirme que é você"** (senha e 2FA), como trocar o e-mail: com um access token roubado não dá
+  para plantar uma passkey e manter acesso. E o dono recebe um e-mail.
+- **Desafio de uso único**: vai num JWT de 5 min (sem tabela) e é "queimado" no `rate_limits` ao ser usado; a mesma
+  resposta não entra duas vezes. Contador de assinaturas que volta para trás (credencial clonada) é recusado.
+- **Presa ao domínio do front**: `rpId` = domínio do `FRONTEND_URL` (ex.: `base.dyonisio.dev`), e só respostas
+  vindas do `FRONTEND_URL` são aceitas. Um site falso não consegue usá-la (por isso passkey não cai em phishing).
+  Para outro domínio/origem: `WEBAUTHN_RP_ID` e `WEBAUTHN_ORIGINS` (separadas por vírgula). **Trocar o domínio do
+  front invalida as passkeys existentes.**
+- Conta excluída ou desativada não entra; ao anonimizar a conta, as passkeys são apagadas. Elas também contam como
+  forma de entrar ao desvincular o Google/Apple.
+- Limite de 20 passkeys por conta.
+
+No front: botão "Entrar com passkey" no login (some se o navegador não suporta) e a seção "Passkeys" em Segurança.
+Em desenvolvimento funciona em `http://localhost` (o navegador aceita localhost sem HTTPS).
+
 ## Minha conta
 
 ### Confirmar que é você (reautenticação)
@@ -254,6 +288,7 @@ Avisam o dono quando algo sensível acontece, para ele reagir se não foi ele:
 | `email-changed` | E-mail trocado (vai para o endereço **antigo**) |
 | `two-factor-changed` | 2FA ligado ou desligado (inclusive pelo admin) |
 | `social-linked` | Google/Apple vinculado a uma conta existente |
+| `passkey-added` | Passkey adicionada à conta |
 | `account-deleted` | Conta excluída, com a data da exclusão definitiva |
 
 Os botões levam a `FRONTEND_URL/account/security`.

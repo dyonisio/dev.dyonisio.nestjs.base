@@ -15,6 +15,15 @@ const toList = (value: string | undefined): string[] =>
 export type DatabaseType = 'postgres' | 'sqljs';
 export type MailTransportType = 'smtp' | 'ses' | 'json';
 
+/** Domínio de uma URL ("https://app.exemplo.com/x" -> "app.exemplo.com"). */
+function hostOf(url: string): string {
+  try {
+    return new URL(url).hostname;
+  } catch {
+    return 'localhost';
+  }
+}
+
 export default () => {
   const env = process.env.NODE_ENV ?? 'development';
 
@@ -55,6 +64,18 @@ export default () => {
        * (só login social) precisam ter entrado há no máximo este tempo (segundos).
        */
       reauthWindow: toInt(process.env.REAUTH_WINDOW_SECONDS, 600),
+    },
+    /**
+     * Passkeys (WebAuthn). A passkey fica presa ao domínio do FRONT (é lá que o navegador a cria):
+     * rpId = domínio do FRONTEND_URL; origins = endereços do front aceitos nas respostas.
+     */
+    webauthn: {
+      rpId:
+        process.env.WEBAUTHN_RP_ID || hostOf(process.env.FRONTEND_URL ?? 'http://localhost:5173'),
+      origins: (process.env.WEBAUTHN_ORIGINS || process.env.FRONTEND_URL || 'http://localhost:5173')
+        .split(',')
+        .map((o) => o.trim().replace(/\/$/, ''))
+        .filter(Boolean),
     },
     session: {
       /** Idade máxima de uma sessão, mesmo usada todo dia (depois disso, login de novo). */

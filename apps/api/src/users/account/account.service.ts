@@ -5,6 +5,7 @@ import { instanceToPlain } from 'class-transformer';
 import { Not, Repository } from 'typeorm';
 import { AuditAction } from '../../audit/audit-action.enum';
 import { AuditService } from '../../audit/audit.service';
+import { Passkey } from '../../auth/passkeys/entities/passkey.entity';
 import { UserIdentity } from '../../auth/social/entities/user-identity.entity';
 import { Role } from '../../common/enums/role.enum';
 import { FilesService } from '../../files/files.service';
@@ -27,6 +28,7 @@ export class AccountService {
   constructor(
     @InjectRepository(User) private readonly repo: Repository<User>,
     @InjectRepository(UserIdentity) private readonly identities: Repository<UserIdentity>,
+    @InjectRepository(Passkey) private readonly passkeys: Repository<Passkey>,
     private readonly users: UsersService,
     private readonly reauth: ReauthService,
     private readonly emailVerification: EmailVerificationService,
@@ -74,14 +76,17 @@ export class AccountService {
 
   /** Tudo o que a API guarda sobre o usuário, num JSON legível (sem segredos). */
   async exportData(userId: string): Promise<AccountExportDto> {
-    const [user, withPassword, identities, sessions, files, activity] = await Promise.all([
-      this.users.getById(userId),
-      this.users.findByIdWithPassword(userId),
-      this.identities.find({ where: { userId }, order: { createdAt: 'ASC' } }),
-      this.sessions.listAllForUser(userId),
-      this.files.listForOwner(userId),
-      this.audit.listForUser(userId),
-    ]);
+    const [user, withPassword, identities, passkeys, sessions, files, activity] = await Promise.all(
+      [
+        this.users.getById(userId),
+        this.users.findByIdWithPassword(userId),
+        this.identities.find({ where: { userId }, order: { createdAt: 'ASC' } }),
+        this.passkeys.find({ where: { userId }, order: { createdAt: 'ASC' } }),
+        this.sessions.listAllForUser(userId),
+        this.files.listForOwner(userId),
+        this.audit.listForUser(userId),
+      ],
+    );
     await this.audit.record(AuditAction.USER_DATA_EXPORTED, { actorId: userId });
 
     return {
@@ -94,6 +99,12 @@ export class AccountService {
           provider,
           email,
           createdAt,
+        })),
+        // Sem a chave pública nem o id da credencial: só o que a pessoa reconhece
+        passkeys: passkeys.map(({ name, createdAt, lastUsedAt }) => ({
+          name,
+          createdAt,
+          lastUsedAt,
         })),
       },
       sessions: sessions.map((s) => ({

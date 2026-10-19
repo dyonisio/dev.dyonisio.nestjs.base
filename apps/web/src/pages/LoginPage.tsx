@@ -2,6 +2,7 @@ import { useEffect, useState, type FormEvent } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router';
 import { api, toApiError, type ApiError } from '../api/client';
 import { useAuth, type LoginResult } from '../auth/AuthProvider';
+import { PasskeyBrowserError, passkeysSupported } from '../auth/passkey';
 import { SocialLogin } from '../components/SocialLogin';
 import { AuthCard, ErrorAlert, Field, fieldError, SuccessAlert } from '../components/ui';
 import { useI18n } from '../i18n/I18nProvider';
@@ -14,7 +15,7 @@ import { flash } from '../lib/flash';
  */
 export function LoginPage() {
   const { m } = useI18n();
-  const { login, verifyTwoFactor } = useAuth();
+  const { login, verifyTwoFactor, passkeyLogin } = useAuth();
   const navigate = useNavigate();
   const state = useLocation().state as {
     from?: string;
@@ -71,6 +72,16 @@ export function LoginPage() {
       setLinkSent(data.message); // a mesma mensagem exista o e-mail ou não
     });
   };
+
+  const signInWithPasskey = () =>
+    void run(async () => {
+      try {
+        if (await passkeyLogin()) navigate(from, { replace: true });
+      } catch (e) {
+        if (!(e instanceof PasskeyBrowserError)) throw e;
+        throw { statusCode: 0, code: 'client', message: m.passkeys.failed } satisfies ApiError;
+      }
+    });
 
   const switchMode = (next: 'password' | 'link') => {
     setError(null);
@@ -176,6 +187,16 @@ export function LoginPage() {
       <button type="button" className="wide-secondary" onClick={() => switchMode('link')}>
         {m.login.useLink}
       </button>
+      {passkeysSupported() && (
+        <button
+          type="button"
+          className="wide-secondary"
+          disabled={busy}
+          onClick={signInWithPasskey}
+        >
+          {m.login.usePasskey}
+        </button>
+      )}
       <SocialLogin onResult={handleResult} />
       <p className="links">
         <Link to="/forgot-password">{m.login.forgot}</Link>

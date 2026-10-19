@@ -90,6 +90,14 @@
     "identityNotFound": "This sign-in method is not linked to your account",
     "lastLoginMethod": "You cannot remove your only sign-in method. Set a password first"
   },
+  "passkeys": {
+    "challengeExpired": "This passkey request expired. Please try again",
+    "verificationFailed": "The passkey could not be verified. Please try again",
+    "alreadyRegistered": "This passkey is already on your account",
+    "limit": "You can have at most {max} passkeys. Remove one first",
+    "invalid": "This passkey is not valid for this site",
+    "notFound": "Passkey not found"
+  },
   "validation": {
     "isEmail": "{field} must be a valid email",
     "isNotEmpty": "{field} must not be empty",
@@ -145,6 +153,7 @@
       "twoFactorEnabled": "Two-step verification turned on",
       "twoFactorDisabled": "Two-step verification turned off",
       "socialLinked": "{provider} was linked to your account",
+      "passkeyAdded": "A passkey was added to your account",
       "emailChanged": "Your account email was changed",
       "accountDeleted": "Your account was deleted",
       "accountCreated": "Your {appName} account is ready",

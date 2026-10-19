@@ -17,6 +17,8 @@ export enum AuditAction {
   AUTH_2FA_RESET_BY_ADMIN = 'auth.2fa_reset_by_admin',
   AUTH_SOCIAL_LINKED = 'auth.social_linked',
   AUTH_SOCIAL_UNLINKED = 'auth.social_unlinked',
+  AUTH_PASSKEY_ADDED = 'auth.passkey_added',
+  AUTH_PASSKEY_REMOVED = 'auth.passkey_removed',
 
   // Usuários
   USER_REGISTERED = 'user.registered',

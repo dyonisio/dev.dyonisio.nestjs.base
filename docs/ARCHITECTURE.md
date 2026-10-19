@@ -118,9 +118,9 @@ export const ROLE_PERMISSIONS: Record<Role, readonly Permission[]> = {
 
 | Rotas | Acesso |
 | --- | --- |
-| `POST /auth/login`, `/auth/refresh`, `/auth/logout`, `/auth/register`, `/auth/password/forgot`, `/auth/password/reset`, `/auth/email/verify`, `/auth/2fa/verify`, `/auth/social/:provider` | público (com rate limit) |
-| `GET/PATCH /users/me`, `/users/me/email`, `DELETE /users/me`, `/users/me/export`, `/users/me/sessions`, `/users/me/identities`, `/auth/password/change`, `/auth/email/resend` | logado (mesmo sem e-mail confirmado) |
-| `/auth/2fa/*`, `/files/*`, `/users/me/avatar` | logado com e-mail confirmado |
+| `POST /auth/login`, `/auth/refresh`, `/auth/logout`, `/auth/register`, `/auth/password/forgot`, `/auth/password/reset`, `/auth/email/verify`, `/auth/2fa/verify`, `/auth/social/:provider`, `/auth/passkeys/login[/options]` | público (com rate limit) |
+| `GET/PATCH /users/me`, `/users/me/email`, `DELETE /users/me`, `/users/me/export`, `/users/me/sessions`, `/users/me/identities`, `GET /users/me/passkeys`, `/auth/password/change`, `/auth/email/resend` | logado (mesmo sem e-mail confirmado) |
+| `/auth/2fa/*`, `/auth/passkeys/register*`, `/users/me/passkeys/:id`, `/files/*`, `/users/me/avatar` | logado com e-mail confirmado |
 | `/users`, `/users/:id/*`, `/audit-logs` | permissões da tabela acima |
 
 ## Formato dos erros

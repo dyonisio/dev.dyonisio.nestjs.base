@@ -1,14 +1,26 @@
 import QRCode from 'qrcode';
 import { useState, type FormEvent } from 'react';
-import { api } from '../../api/client';
+import { api, type ApiError } from '../../api/client';
+import type { components } from '../../api/schema';
 import { useAuth } from '../../auth/AuthProvider';
-import { emptyReauth, reauthBody, ReauthFields, useLoginMethods } from '../../components/Reauth';
+import { createPasskey, passkeysSupported } from '../../auth/passkey';
+import {
+  emptyReauth,
+  reauthBody,
+  ReauthDialog,
+  ReauthFields,
+  refreshLoginMethods,
+  useLoginMethods,
+  type ReauthProof,
+} from '../../components/Reauth';
 import {
   Badge,
+  ConfirmDialog,
   ErrorAlert,
   Field,
   fieldError,
   FormError,
+  Modal,
   PageHeader,
   Section,
   SuccessAlert,
@@ -30,6 +42,7 @@ export function SecurityPage() {
         subtitle={user?.twoFactorEnabledAt ? m.security.subtitleOn : m.security.subtitleOff}
       />
       <TwoFactorSection hasPassword={methods.data?.hasPassword ?? true} />
+      <PasskeysSection />
       <SessionsSection />
       <MethodsSection methods={methods} />
     </>
@@ -282,6 +295,183 @@ function RecoveryCodes({ codes, onDone }: { codes: string[]; onDone: () => void 
         </button>
       </div>
     </div>
+  );
+}
+
+// ---------------------------------------------------------------- passkeys
+
+type PasskeyDialog =
+  | { kind: 'add' }
+  | { kind: 'rename' | 'remove'; passkey: components['schemas']['PasskeyDto'] }
+  | null;
+
+/**
+ * Passkeys: entrar com a digital, o rosto ou o PIN do aparelho. Adicionar pede "confirme que é
+ * você" (é uma nova forma de entrar na conta); a API avisa por e-mail.
+ */
+function PasskeysSection() {
+  const { m, f, lang } = useI18n();
+  const passkeys = useQuery(() => api.GET('/api/v1/users/me/passkeys'), []);
+  const [dialog, setDialog] = useState<PasskeyDialog>(null);
+  const [name, setName] = useState('');
+  const [notice, setNotice] = useState<string | null>(null);
+  const { run, busy, error, setError } = useAction();
+  const supported = passkeysSupported();
+
+  const open = (next: PasskeyDialog) => {
+    setError(null);
+    setNotice(null);
+    if (next && next.kind === 'rename') setName(next.passkey.name);
+    setDialog(next);
+  };
+
+  const done = (message: string | null) => {
+    setDialog(null);
+    setNotice(message);
+    passkeys.reload();
+    refreshLoginMethods();
+  };
+
+  async function add(proof: ReauthProof) {
+    const { data: start, error: apiError } = await api.POST(
+      '/api/v1/auth/passkeys/register/options',
+      { body: proof },
+    );
+    if (apiError || !start) throw apiError;
+    let response;
+    try {
+      response = await createPasskey(start.options);
+    } catch {
+      throw { statusCode: 0, code: 'client', message: m.passkeys.failed } satisfies ApiError;
+    }
+    if (!response) return setDialog(null); // cancelou no navegador
+    const { error: saveError } = await api.POST('/api/v1/auth/passkeys/register', {
+      body: { challengeToken: start.challengeToken, response },
+    });
+    if (saveError) throw saveError;
+    done(m.passkeys.added);
+  }
+
+  const rename = (e: FormEvent) => {
+    e.preventDefault();
+    if (dialog?.kind !== 'rename') return;
+    void run(async () => {
+      const { error: apiError } = await api.PATCH('/api/v1/users/me/passkeys/{id}', {
+        params: { path: { id: dialog.passkey.id } },
+        body: { name: name.trim() },
+      });
+      if (apiError) throw apiError;
+      done(null);
+    });
+  };
+
+  const remove = () =>
+    void run(async () => {
+      if (dialog?.kind !== 'remove') return;
+      const { error: apiError } = await api.DELETE('/api/v1/users/me/passkeys/{id}', {
+        params: { path: { id: dialog.passkey.id } },
+      });
+      if (apiError) throw apiError;
+      done(m.passkeys.removed);
+    });
+
+  const list = passkeys.data ?? [];
+
+  return (
+    <Section title={m.passkeys.title} help={m.passkeys.help}>
+      {passkeys.loading && !passkeys.data && <p className="muted">{m.common.loading}</p>}
+      <ErrorAlert error={passkeys.error} />
+      {list.length > 0 && (
+        <ul className="rows">
+          {list.map((p) => (
+            <li key={p.id}>
+              <div className="row-main">
+                <span className="row-title">
+                  {p.name}
+                  {p.backedUp && <Badge>{m.passkeys.synced}</Badge>}
+                </span>
+                <span className="row-meta">
+                  {[
+                    f(m.passkeys.createdAt, { date: formatDate(lang, p.createdAt) }),
+                    p.lastUsedAt
+                      ? f(m.security.lastUsed, { date: formatDateTime(lang, p.lastUsedAt) })
+                      : m.passkeys.neverUsed,
+                  ].join(' · ')}
+                </span>
+              </div>
+              <div className="row-actions">
+                <button type="button" onClick={() => open({ kind: 'rename', passkey: p })}>
+                  {m.passkeys.rename}
+                </button>
+                <button type="button" onClick={() => open({ kind: 'remove', passkey: p })}>
+                  {m.passkeys.remove}
+                </button>
+              </div>
+            </li>
+          ))}
+        </ul>
+      )}
+      {passkeys.data && list.length === 0 && (
+        <p className="muted">{supported ? m.passkeys.empty : m.passkeys.unsupported}</p>
+      )}
+      {notice && <SuccessAlert>{notice}</SuccessAlert>}
+      {supported && (
+        <div className="panel-actions">
+          <button type="button" className="primary" onClick={() => open({ kind: 'add' })}>
+            {m.passkeys.add}
+          </button>
+        </div>
+      )}
+
+      {dialog?.kind === 'add' && (
+        <ReauthDialog
+          title={m.passkeys.add}
+          text={m.passkeys.addText}
+          confirmLabel={m.passkeys.continue}
+          onConfirm={add}
+          onClose={() => setDialog(null)}
+        />
+      )}
+      {dialog?.kind === 'rename' && (
+        <Modal title={m.passkeys.renameTitle} onClose={() => setDialog(null)}>
+          <form onSubmit={rename} noValidate>
+            <Field
+              label={m.common.name}
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              maxLength={100}
+              autoFocus
+              required
+              error={fieldError(error, 'name')}
+            />
+            <FormError error={error} />
+            <div className="panel-actions">
+              <button type="button" onClick={() => setDialog(null)}>
+                {m.common.cancel}
+              </button>
+              <button
+                type="submit"
+                className="primary"
+                disabled={busy || !name.trim() || name.trim() === dialog.passkey.name}
+              >
+                {m.common.save}
+              </button>
+            </div>
+          </form>
+        </Modal>
+      )}
+      {dialog?.kind === 'remove' && (
+        <ConfirmDialog
+          title={f(m.passkeys.removeConfirm, { name: dialog.passkey.name })}
+          text={m.passkeys.removeText}
+          confirmLabel={m.passkeys.remove}
+          busy={busy}
+          error={error}
+          onConfirm={remove}
+          onClose={() => setDialog(null)}
+        />
+      )}
+    </Section>
   );
 }
 

@@ -4,6 +4,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { IsNull, LessThan, Repository } from 'typeorm';
 import { AuditAction } from '../../audit/audit-action.enum';
 import { AuditService } from '../../audit/audit.service';
+import { Passkey } from '../../auth/passkeys/entities/passkey.entity';
 import { UserIdentity } from '../../auth/social/entities/user-identity.entity';
 import { FilesService } from '../../files/files.service';
 import { SessionService } from '../../sessions/session.service';
@@ -27,6 +28,7 @@ export class AccountPurgeService {
   constructor(
     @InjectRepository(User) private readonly repo: Repository<User>,
     @InjectRepository(UserIdentity) private readonly identities: Repository<UserIdentity>,
+    @InjectRepository(Passkey) private readonly passkeys: Repository<Passkey>,
     private readonly files: FilesService,
     private readonly sessions: SessionService,
     private readonly audit: AuditService,
@@ -61,6 +63,7 @@ export class AccountPurgeService {
   private async anonymize(userId: string, now: Date): Promise<void> {
     await this.files.removeAllForOwner(userId);
     await this.identities.delete({ userId });
+    await this.passkeys.delete({ userId });
     await this.sessions.deleteAllForUser(userId);
     await this.audit.anonymizeForUser(userId);
     await this.repo.update(userId, {

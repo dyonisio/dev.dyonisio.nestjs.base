@@ -1,6 +1,7 @@
 import { ConfigService } from '@nestjs/config';
 import { Repository } from 'typeorm';
 import { AuditService } from '../../audit/audit.service';
+import { Passkey } from '../../auth/passkeys/entities/passkey.entity';
 import { UserIdentity } from '../../auth/social/entities/user-identity.entity';
 import { Role } from '../../common/enums/role.enum';
 import { FilesService } from '../../files/files.service';
@@ -16,6 +17,7 @@ import { ReauthService } from './reauth.service';
 describe('AccountService', () => {
   const repo = { exists: jest.fn(), count: jest.fn(), softDelete: jest.fn() };
   const identities = { find: jest.fn() };
+  const passkeys = { find: jest.fn() };
   const users = { getById: jest.fn(), findByIdWithPassword: jest.fn() };
   const reauth = { confirm: jest.fn() };
   const emailVerification = { requestChange: jest.fn() };
@@ -26,6 +28,7 @@ describe('AccountService', () => {
   const service = new AccountService(
     repo as unknown as Repository<User>,
     identities as unknown as Repository<UserIdentity>,
+    passkeys as unknown as Repository<Passkey>,
     users as unknown as UsersService,
     reauth as unknown as ReauthService,
     emailVerification as unknown as EmailVerificationService,
@@ -90,6 +93,9 @@ describe('AccountService', () => {
     identities.find.mockResolvedValue([
       { provider: 'google', email: 'ana@gmail.com', createdAt: at, providerUserId: 'segredo' },
     ]);
+    passkeys.find.mockResolvedValue([
+      { name: 'iPhone', createdAt: at, lastUsedAt: null, publicKey: 'chave', credentialId: 'cred' },
+    ]);
     sessions.listAllForUser.mockResolvedValue([
       { userAgent: 'Chrome', ip: '1.1.1.1', createdAt: at, tokens: ['x'] },
     ]);
@@ -104,12 +110,14 @@ describe('AccountService', () => {
       hasPassword: true,
       twoFactorEnabled: true,
       identities: [{ provider: 'google', email: 'ana@gmail.com', createdAt: at }],
+      passkeys: [{ name: 'iPhone', createdAt: at, lastUsedAt: null }],
     });
     expect(data.sessions[0]).toMatchObject({ userAgent: 'Chrome', ip: '1.1.1.1' });
     expect(data.sessions[0]).not.toHaveProperty('tokens');
     expect(data.files[0]).not.toHaveProperty('key');
     expect(data.activity[0]).toMatchObject({ action: 'auth.login' });
     expect(JSON.stringify(data)).not.toContain('hash');
+    expect(JSON.stringify(data)).not.toContain('chave');
     expect(audit.record).toHaveBeenCalledWith('user.data_exported', { actorId: 'u' });
   });
 });

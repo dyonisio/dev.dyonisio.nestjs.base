@@ -3,6 +3,7 @@ import { AuditService } from '../../audit/audit.service';
 import { MailService } from '../../mail/mail.service';
 import { UsersService } from '../../users/users.service';
 import { AuthService } from '../services/auth.service';
+import { Passkey } from '../passkeys/entities/passkey.entity';
 import { UserIdentity } from './entities/user-identity.entity';
 import { JwksResolver, OidcVerifier, SocialProfile } from './oidc-verifier.service';
 import { SocialAuthService } from './social-auth.service';
@@ -34,6 +35,7 @@ describe('SocialAuthService', () => {
   const audit = { record: jest.fn() };
   const service = new SocialAuthService(
     identities as unknown as Repository<UserIdentity>,
+    { count: jest.fn().mockResolvedValue(0) } as unknown as Repository<Passkey>,
     verifier as unknown as OidcVerifier,
     users as unknown as UsersService,
     auth as unknown as AuthService,

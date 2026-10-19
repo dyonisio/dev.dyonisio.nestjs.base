@@ -3,7 +3,7 @@
  * Cobre as leituras das telas e responde "ok" às ações (sem gravar nada de verdade, exceto em memória).
  */
 import type { User } from '../auth/session';
-import { auditLogs, identities, sessions, users } from './data';
+import { auditLogs, identities, passkeys, sessions, users } from './data';
 
 const json = (status: number, body: unknown) =>
   new Response(body === null ? null : JSON.stringify(body), {
@@ -74,6 +74,7 @@ export function installMockApi(me: User) {
       return json(200, current);
     }
     if (route === 'GET /users/me/sessions') return json(200, sessions);
+    if (route === 'GET /users/me/passkeys') return json(200, passkeys);
     // Sessões de outro usuário (admin): as mesmas do exemplo, sem a "deste dispositivo"
     if (req.method === 'GET' && /^\/users\/[^/]+\/sessions$/.test(path)) {
       return json(

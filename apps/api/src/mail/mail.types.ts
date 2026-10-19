@@ -19,6 +19,7 @@ export enum MailTemplate {
   NEW_LOGIN = 'new-login',
   TWO_FACTOR_CHANGED = 'two-factor-changed',
   SOCIAL_LINKED = 'social-linked',
+  PASSKEY_ADDED = 'passkey-added',
   EMAIL_CHANGED = 'email-changed',
   ACCOUNT_DELETED = 'account-deleted',
 }
@@ -61,6 +62,12 @@ export interface MailTemplateContextMap {
   [MailTemplate.SOCIAL_LINKED]: {
     name: string;
     provider: string;
+    when: string;
+    securityUrl: string;
+  };
+  [MailTemplate.PASSKEY_ADDED]: {
+    name: string;
+    passkey: string;
     when: string;
     securityUrl: string;
   };

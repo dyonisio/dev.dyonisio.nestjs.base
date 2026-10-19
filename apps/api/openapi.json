@@ -53,6 +53,8 @@
                 "auth.2fa_reset_by_admin",
                 "auth.social_linked",
                 "auth.social_unlinked",
+                "auth.passkey_added",
+                "auth.passkey_removed",
                 "user.registered",
                 "user.created",
                 "user.invitation_sent",
@@ -3733,6 +3735,498 @@
         ]
       }
     },
+    "/api/v1/auth/passkeys/login/options": {
+      "post": {
+        "description": "Step 1 of 2. No email needed: the browser lists the passkeys saved for this site and the person picks one (fingerprint, face or device PIN).",
+        "operationId": "PasskeysController_loginOptions_v1",
+        "parameters": [
+          {
+            "in": "header",
+            "name": "Accept-Language",
+            "required": false,
+            "description": "Language for error messages",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "en",
+                "pt-BR"
+              ],
+              "default": "en"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PasskeyOptionsDto"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too many attempts — see the Retry-After header",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "summary": "Start signing in with a passkey",
+        "tags": [
+          "Auth / Passkeys"
+        ]
+      }
+    },
+    "/api/v1/auth/passkeys/login": {
+      "post": {
+        "description": "Step 2 of 2: send what the browser returned. Returns the session directly — a passkey already proves two factors (the device and the fingerprint/PIN), so there is no 2FA step.",
+        "operationId": "PasskeysController_login_v1",
+        "parameters": [
+          {
+            "in": "header",
+            "name": "Accept-Language",
+            "required": false,
+            "description": "Language for error messages",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "en",
+                "pt-BR"
+              ],
+              "default": "en"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PasskeyLoginDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AuthResponseDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Challenge expired or already used",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unknown passkey, invalid signature or inactive account",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too many attempts — see the Retry-After header",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "summary": "Sign in with a passkey",
+        "tags": [
+          "Auth / Passkeys"
+        ]
+      }
+    },
+    "/api/v1/auth/passkeys/register/options": {
+      "post": {
+        "description": "Step 1 of 2. A passkey is a new way into the account, so it asks to confirm it is you: the password (accounts without one: signed in recently) and, with 2FA on, the code.",
+        "operationId": "PasskeysController_registrationOptions_v1",
+        "parameters": [
+          {
+            "in": "header",
+            "name": "Accept-Language",
+            "required": false,
+            "description": "Language for error messages",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "en",
+                "pt-BR"
+              ],
+              "default": "en"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ReauthDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PasskeyOptionsDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Missing/wrong password or code, or the passkey limit was reached",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sign in again to confirm it is you (accounts without a password)\n\nMissing, invalid or expired token, or the session was ended",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Start adding a passkey",
+        "tags": [
+          "Auth / Passkeys"
+        ]
+      }
+    },
+    "/api/v1/auth/passkeys/register": {
+      "post": {
+        "description": "Step 2 of 2: send what the browser returned. The account email gets a notice.",
+        "operationId": "PasskeysController_register_v1",
+        "parameters": [
+          {
+            "in": "header",
+            "name": "Accept-Language",
+            "required": false,
+            "description": "Language for error messages",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "en",
+                "pt-BR"
+              ],
+              "default": "en"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RegisterPasskeyDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PasskeyDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Challenge expired, invalid response or passkey already added",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing, invalid or expired token, or the session was ended",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Add a passkey",
+        "tags": [
+          "Auth / Passkeys"
+        ]
+      }
+    },
+    "/api/v1/users/me/passkeys": {
+      "get": {
+        "operationId": "PasskeysController_list_v1",
+        "parameters": [
+          {
+            "in": "header",
+            "name": "Accept-Language",
+            "required": false,
+            "description": "Language for error messages",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "en",
+                "pt-BR"
+              ],
+              "default": "en"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/PasskeyDto"
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing, invalid or expired token, or the session was ended",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "My passkeys",
+        "tags": [
+          "Auth / Passkeys",
+          "Users"
+        ]
+      }
+    },
+    "/api/v1/users/me/passkeys/{id}": {
+      "patch": {
+        "operationId": "PasskeysController_rename_v1",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "header",
+            "name": "Accept-Language",
+            "required": false,
+            "description": "Language for error messages",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "en",
+                "pt-BR"
+              ],
+              "default": "en"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RenamePasskeyDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PasskeyDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid id or name",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing, invalid or expired token, or the session was ended",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Passkey not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Rename a passkey",
+        "tags": [
+          "Auth / Passkeys",
+          "Users"
+        ]
+      },
+      "delete": {
+        "description": "It stops working on this site right away. The copy saved on the device or password manager stays there; the person can delete it there too.",
+        "operationId": "PasskeysController_remove_v1",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "header",
+            "name": "Accept-Language",
+            "required": false,
+            "description": "Language for error messages",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "en",
+                "pt-BR"
+              ],
+              "default": "en"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": ""
+          },
+          "400": {
+            "description": "Invalid id",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing, invalid or expired token, or the session was ended",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Passkey not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Remove a passkey",
+        "tags": [
+          "Auth / Passkeys",
+          "Users"
+        ]
+      }
+    },
     "/api/health": {
       "get": {
         "description": "Checks the API and the database.",
@@ -3832,6 +4326,8 @@
               "auth.2fa_reset_by_admin",
               "auth.social_linked",
               "auth.social_unlinked",
+              "auth.passkey_added",
+              "auth.passkey_removed",
               "user.registered",
               "user.created",
               "user.invitation_sent",
@@ -4919,11 +5415,131 @@
             "items": {
               "$ref": "#/components/schemas/IdentityDto"
             }
+          },
+          "passkeys": {
+            "type": "number",
+            "description": "How many passkeys the account has"
           }
         },
         "required": [
           "hasPassword",
-          "identities"
+          "identities",
+          "passkeys"
+        ]
+      },
+      "PasskeyOptionsDto": {
+        "type": "object",
+        "properties": {
+          "options": {
+            "type": "object",
+            "additionalProperties": true,
+            "description": "WebAuthn options (JSON). Pass `options` as-is to the browser (`navigator.credentials` / `@simplewebauthn/browser`) and send `challengeToken` back with the result. Valid for 5 minutes, once."
+          },
+          "challengeToken": {
+            "type": "string",
+            "description": "Signed, single-use challenge to send back with the response"
+          }
+        },
+        "required": [
+          "options",
+          "challengeToken"
+        ]
+      },
+      "PasskeyLoginDto": {
+        "type": "object",
+        "properties": {
+          "challengeToken": {
+            "type": "string",
+            "description": "Signed challenge received with the options"
+          },
+          "response": {
+            "type": "object",
+            "additionalProperties": true,
+            "description": "What the browser returned (the JSON of the credential), as-is"
+          }
+        },
+        "required": [
+          "challengeToken",
+          "response"
+        ]
+      },
+      "RegisterPasskeyDto": {
+        "type": "object",
+        "properties": {
+          "challengeToken": {
+            "type": "string",
+            "description": "Signed challenge received with the options"
+          },
+          "response": {
+            "type": "object",
+            "additionalProperties": true,
+            "description": "What the browser returned (the JSON of the credential), as-is"
+          },
+          "name": {
+            "type": "string",
+            "example": "MacBook",
+            "maxLength": 100,
+            "description": "Defaults to the browser and system (e.g. \"Chrome · Windows\")"
+          }
+        },
+        "required": [
+          "challengeToken",
+          "response"
+        ]
+      },
+      "PasskeyDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "name": {
+            "type": "string",
+            "example": "Chrome · Windows"
+          },
+          "deviceType": {
+            "type": "string",
+            "enum": [
+              "singleDevice",
+              "multiDevice"
+            ],
+            "description": "multiDevice = synced by a password manager (iCloud Keychain, Google...)"
+          },
+          "backedUp": {
+            "type": "boolean",
+            "description": "The passkey is backed up (synced), so losing one device does not lose it"
+          },
+          "createdAt": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "lastUsedAt": {
+            "format": "date-time",
+            "type": "string",
+            "nullable": true
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "deviceType",
+          "backedUp",
+          "createdAt",
+          "lastUsedAt"
+        ]
+      },
+      "RenamePasskeyDto": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "example": "Work laptop",
+            "maxLength": 100
+          }
+        },
+        "required": [
+          "name"
         ]
       }
     }

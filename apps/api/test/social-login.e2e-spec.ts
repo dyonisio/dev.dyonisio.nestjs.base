@@ -87,6 +87,7 @@ describe('Login social (e2e)', () => {
       expect(methods.body).toEqual({
         hasPassword: false,
         identities: [{ provider: 'google', email: 'ana@gmail.com', createdAt: expect.any(String) }],
+        passkeys: 0,
       });
 
       const res = await as(token, http().post('/api/v1/auth/password/change'))

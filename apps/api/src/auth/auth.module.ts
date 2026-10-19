@@ -5,6 +5,10 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 import { MailModule } from '../mail/mail.module';
 import { SessionsModule } from '../sessions/sessions.module';
 import { User } from '../users/entities/user.entity';
+import { RateLimitStorageModule } from '../rate-limit/rate-limit.module';
+import { Passkey } from './passkeys/entities/passkey.entity';
+import { PasskeyService } from './passkeys/passkey.service';
+import { PasskeysController } from './passkeys/passkeys.controller';
 import { UserIdentity } from './social/entities/user-identity.entity';
 import { JwksResolver, OidcVerifier } from './social/oidc-verifier.service';
 import { SocialAuthController } from './social/social-auth.controller';
@@ -27,12 +31,13 @@ import { TwoFactorModule } from './two-factor/two-factor.module';
 @Module({
   // SessionsModule também exporta o JwtModule (usado pelo PasswordService nos tokens de reset)
   imports: [
-    TypeOrmModule.forFeature([User, UserIdentity]),
+    TypeOrmModule.forFeature([User, UserIdentity, Passkey]),
     UsersModule,
     SessionsModule,
     MailModule,
     PassportModule,
     TwoFactorModule,
+    RateLimitStorageModule, // desafios de passkey de uso único
   ],
   controllers: [
     AuthController,
@@ -43,6 +48,7 @@ import { TwoFactorModule } from './two-factor/two-factor.module';
     TwoFactorController,
     AdminTwoFactorController,
     SocialAuthController,
+    PasskeysController,
   ],
   providers: [
     AuthService,
@@ -52,6 +58,7 @@ import { TwoFactorModule } from './two-factor/two-factor.module';
     SessionCookie,
     { provide: APP_INTERCEPTOR, useClass: SessionCookieInterceptor },
     SocialAuthService,
+    PasskeyService,
     OidcVerifier,
     JwksResolver,
     JwtStrategy,

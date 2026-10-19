@@ -59,6 +59,12 @@ const contexts: { [K in MailTemplate]: MailTemplateContextMap[K] } = {
     when: '14/10/2026 10:00',
     securityUrl: 'http://front.test/account/security',
   },
+  [MailTemplate.PASSKEY_ADDED]: {
+    name: 'Maria',
+    passkey: 'Safari · iOS',
+    when: '14/10/2026 10:00',
+    securityUrl: 'http://front.test/account/security',
+  },
   [MailTemplate.EMAIL_CHANGED]: { name: 'Maria', newEmail: 'nova@x.com', when: '14/10/2026 10:00' },
   [MailTemplate.ACCOUNT_DELETED]: { name: 'Maria', purgeDate: '13 de novembro de 2026' },
 };

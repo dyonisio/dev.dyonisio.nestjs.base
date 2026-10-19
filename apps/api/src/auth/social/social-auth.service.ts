@@ -15,6 +15,7 @@ import { User } from '../../users/entities/user.entity';
 import { UsersService } from '../../users/users.service';
 import { AuthService, LoginResult } from '../services/auth.service';
 import { LoginMethodsDto, SocialLoginDto } from './dto/social.dto';
+import { Passkey } from '../passkeys/entities/passkey.entity';
 import { UserIdentity } from './entities/user-identity.entity';
 import { OidcVerifier, SocialProfile, SocialProvider } from './oidc-verifier.service';
 
@@ -22,6 +23,7 @@ import { OidcVerifier, SocialProfile, SocialProvider } from './oidc-verifier.ser
 export class SocialAuthService {
   constructor(
     @InjectRepository(UserIdentity) private readonly identities: Repository<UserIdentity>,
+    @InjectRepository(Passkey) private readonly passkeys: Repository<Passkey>,
     private readonly verifier: OidcVerifier,
     private readonly users: UsersService,
     private readonly auth: AuthService,
@@ -44,9 +46,10 @@ export class SocialAuthService {
   }
 
   async loginMethods(userId: string): Promise<LoginMethodsDto> {
-    const [user, identities] = await Promise.all([
+    const [user, identities, passkeys] = await Promise.all([
       this.users.findByIdWithPassword(userId),
       this.identities.find({ where: { userId }, order: { createdAt: 'ASC' } }),
+      this.passkeys.count({ where: { userId } }),
     ]);
     return {
       hasPassword: !!user?.password,
@@ -55,16 +58,17 @@ export class SocialAuthService {
         email,
         createdAt,
       })),
+      passkeys,
     };
   }
 
-  /** Desvincula um provedor — sem deixar a conta sem nenhuma forma de login. */
+  /** Desvincula um provedor — sem deixar a conta sem nenhuma forma de login (senha ou passkey). */
   async unlink(userId: string, provider: string): Promise<void> {
     const methods = await this.loginMethods(userId);
     if (!methods.identities.some((i) => i.provider === provider)) {
       throw new NotFoundException(i18nKey('social.identityNotFound'));
     }
-    if (!methods.hasPassword && methods.identities.length === 1) {
+    if (!methods.hasPassword && !methods.passkeys && methods.identities.length === 1) {
       throw new BadRequestException(i18nKey('social.lastLoginMethod'));
     }
     await this.identities.delete({ userId, provider });

@@ -120,7 +120,27 @@ export const sessions: Session[] = [
 export const identities = {
   hasPassword: true,
   identities: [{ provider: 'google', email: 'mateus@dyonisio.dev', createdAt: days(58) }],
+  passkeys: 2,
 };
+
+export const passkeys: components['schemas']['PasskeyDto'][] = [
+  {
+    id: '7d1c0001-0000-4000-8000-000000000001',
+    name: 'iCloud · iPhone',
+    deviceType: 'multiDevice',
+    backedUp: true,
+    createdAt: days(40),
+    lastUsedAt: minutes(95),
+  },
+  {
+    id: '7d1c0002-0000-4000-8000-000000000002',
+    name: 'Chave de segurança',
+    deviceType: 'singleDevice',
+    backedUp: false,
+    createdAt: days(12),
+    lastUsedAt: null,
+  },
+];
 
 // Cada dispositivo sai sempre do mesmo IP (o mesmo das sessões acima)
 const ipOf: Record<string, string> = {};

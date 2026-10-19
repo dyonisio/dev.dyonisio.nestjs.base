@@ -19,13 +19,13 @@ só com as regras do seu negócio.
 
 | Área | O que tem |
 | --- | --- |
-| **Autenticação** | Cadastro com confirmação de e-mail, login por senha ou por **link mágico** (sem senha, 2FA mantido), JWT curto + refresh token com rotação e detecção de roubo, sessões revogáveis ("meus dispositivos"), esqueci/troca de senha |
+| **Autenticação** | Cadastro com confirmação de e-mail, login por senha, por **link mágico** (sem senha, 2FA mantido) ou por **passkey** (digital/rosto/PIN, à prova de phishing), JWT curto + refresh token com rotação e detecção de roubo, sessões revogáveis ("meus dispositivos"), esqueci/troca de senha |
 | **Segundo fator** | 2FA por app autenticador (TOTP) com códigos de recuperação |
 | **Login social** | Google e Apple, com proteção contra sequestro de conta |
 | **Permissões** | Roles (`admin`, `manager`, `user`) como pacotes de **permissões** (`users:read`, `audit:read`...); tudo fechado por padrão |
 | **Minha conta (LGPD)** | Troca de e-mail confirmada pelo novo endereço, exclusão da conta com anonimização após 30 dias, exportação dos dados |
 | **Alertas de segurança** | E-mail ao dono em login de dispositivo novo, troca de senha/e-mail, 2FA ligado/desligado, Google/Apple vinculado |
-| **Usuários (admin)** | CRUD com busca, ordenação e paginação; exclusão reversível; trilha de auditoria |
+| **Usuários (admin)** | CRUD com busca, ordenação e paginação; exclusão reversível; ver e encerrar as sessões de um usuário; trilha de auditoria |
 | **Arquivos** | Upload genérico direto para o S3 (URL pré-assinada), validação do conteúdo real, avatar como primeiro uso, limpeza automática |
 | **E-mails** | Templates separados por e-mail **e por idioma**, SMTP ou Amazon SES, envio síncrono ou por fila (SQS + DLQ) |
 | **Idiomas** | Erros traduzidos pelo `Accept-Language` (`pt-BR`, `en`); e-mails no idioma do usuário |

@@ -57,4 +57,7 @@ export class LoginMethodsDto {
 
   @ApiProperty({ type: [IdentityDto] })
   identities: IdentityDto[];
+
+  @ApiProperty({ description: 'How many passkeys the account has' })
+  passkeys: number;
 }

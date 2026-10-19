@@ -252,6 +252,22 @@ export class MailService {
     });
   }
 
+  sendPasskeyAdded(user: MailRecipient, passkey: string) {
+    const lang = this.resolveLang(user.locale);
+    return this.send({
+      to: user.email,
+      lang,
+      subject: this.subject('passkeyAdded', lang),
+      template: MailTemplate.PASSKEY_ADDED,
+      context: {
+        name: user.name,
+        passkey,
+        when: this.formatDate(new Date(), lang),
+        securityUrl: this.securityUrl,
+      },
+    });
+  }
+
   /** Vai para o endereço ANTIGO (`user.email`), avisando qual é o novo. */
   sendEmailChanged(user: MailRecipient, newEmail: string) {
     const lang = this.resolveLang(user.locale);
