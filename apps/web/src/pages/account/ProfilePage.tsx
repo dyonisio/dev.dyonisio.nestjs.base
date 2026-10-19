@@ -126,9 +126,10 @@ function DetailsSection() {
   const [locale, setLocale] = useState<Language>((user?.locale as Language | null) ?? lang);
   const [saved, setSaved] = useState(false);
   const { run, busy, error } = useAction();
-  // Salvar só acende quando algo mudou (e o nome não está vazio)
-  const changed =
-    name.trim() !== (user?.name ?? '') || locale !== ((user?.locale as Language | null) ?? lang);
+  // Salvar só acende quando algo mudou (e o nome não está vazio). Conta sem idioma salvo conta
+  // como mudança: o seletor mostra o idioma da tela, mas os e-mails ainda saem no padrão.
+  const localeSaved = !!user?.locale;
+  const changed = name.trim() !== (user?.name ?? '') || locale !== user?.locale;
 
   function submit(e: FormEvent) {
     e.preventDefault();
@@ -158,7 +159,7 @@ function DetailsSection() {
         />
         <SelectField
           label={m.profile.preferredLanguage}
-          hint={m.profile.preferredLanguageHint}
+          hint={localeSaved ? m.profile.preferredLanguageHint : m.profile.localeNotSaved}
           value={locale}
           onChange={(e) => setLocale(e.target.value as Language)}
           options={languages}

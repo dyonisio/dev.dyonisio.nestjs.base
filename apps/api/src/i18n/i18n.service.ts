@@ -44,18 +44,24 @@ export class I18nService {
   }
 
   resolve(req: Request): string {
+    return this.requested(req) ?? this.fallbackLanguage;
+  }
+
+  /** O idioma suportado que o cliente pediu no Accept-Language, ou null se nenhum. */
+  requested(req: Request): string | null {
     for (const candidate of parseAcceptLanguage(req.headers['accept-language'])) {
       const lang = matchLanguage(candidate);
       if (lang) return lang;
     }
-    return this.fallbackLanguage;
+    return null;
   }
 
   /** Middleware: resolve o idioma uma vez por requisição e devolve Content-Language. */
   middleware() {
     return (req: I18nRequest, res: Response, next: NextFunction) => {
-      req.lang = this.resolve(req);
-      RequestContext.set({ lang: req.lang });
+      const requested = this.requested(req);
+      req.lang = requested ?? this.fallbackLanguage;
+      RequestContext.set({ lang: req.lang, ...(requested ? { requestedLang: requested } : {}) });
       res.setHeader('Content-Language', req.lang);
       next();
     };

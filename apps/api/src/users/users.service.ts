@@ -5,7 +5,7 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { IsNull, Repository } from 'typeorm';
 import { AuditAction } from '../audit/audit-action.enum';
 import { AuditService } from '../audit/audit.service';
 import { hashPassword } from '../common/crypto/password-hash';
@@ -74,6 +74,15 @@ export class UsersService {
   }
 
   /** Retorna null se não existir (ou se foi excluído). */
+  /**
+   * Conta sem idioma salvo (ex.: o admin do seed) passa a usar o idioma em que a pessoa entrou.
+   * Só preenche se estiver vazio: nunca sobrescreve uma escolha feita em "Minha conta".
+   */
+  async adoptLocale(id: string, lang: string): Promise<boolean> {
+    const result = await this.repo.update({ id, locale: IsNull() }, { locale: lang });
+    return !!result.affected;
+  }
+
   findById(id: string): Promise<User | null> {
     return this.repo.findOne({ where: { id } });
   }

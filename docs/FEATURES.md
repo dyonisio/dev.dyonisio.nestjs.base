@@ -12,7 +12,7 @@ Rotas sob `/api/v1`. Autenticação e conta estão em [AUTH.md](AUTH.md).
 | `GET /users/:id` | `users:read` |
 | `POST /users` (cria já com e-mail confirmado; sem `password` = convite) | `users:create` (+ `users:manage-roles` para role acima de `user`) |
 | `POST /users/:id/invite` (reenvia o convite, se a pessoa ainda não criou a senha) | `users:create` |
-| `PATCH /users/:id` (nome, e-mail, idioma, ativo) | `users:update` |
+| `PATCH /users/:id` (nome, e-mail, idioma, ativo; o e-mail novo só vale depois de confirmado pelo link, veja [AUTH.md](AUTH.md#trocar-o-e-mail)) | `users:update` |
 | `PATCH /users/:id/role` | `users:manage-roles` |
 | `DELETE /users/:id` / `PATCH /users/:id/restore` | `users:delete` |
 
@@ -122,6 +122,18 @@ Cada e-mail é um arquivo `.hbs` **por idioma** em `src/mail/templates/<idioma>/
 O cliente envia o header `Accept-Language`. Erros e validações voltam traduzidos (`en`, `pt-BR`). Variações caem no idioma base
 (`pt-PT` → `pt-BR`), e sem header vale `FALLBACK_LANGUAGE`. Traduções em `src/i18n/locales/*.json`; um teste garante que todos os
 idiomas têm as mesmas chaves e os mesmos `{placeholders}`. Novo idioma: [GUIDES.md](GUIDES.md#novo-idioma).
+
+**Idioma dos e-mails**, nesta ordem:
+
+1. o salvo na conta (`locale`: escolhido no cadastro ou em "Minha conta");
+2. sem ele, o idioma em que a pessoa está usando o site (o `Accept-Language` da requisição que disparou o e-mail, como
+   o link mágico ou o "esqueci a senha");
+3. por último, `FALLBACK_LANGUAGE` (e-mails do worker e do job de manutenção, que não vêm de uma requisição).
+
+Conta sem idioma salvo (o admin criado pelo seed, por exemplo) **adota no login** o idioma em que a pessoa entrou. Só
+preenche o que está vazio: uma escolha feita em "Minha conta" nunca é sobrescrita, e uma requisição sem `Accept-Language`
+não grava o padrão como se fosse escolha. Em produção, `FALLBACK_LANGUAGE` vem da variável de mesmo nome no environment
+do GitHub (padrão `en`).
 
 ## Rate limiting
 

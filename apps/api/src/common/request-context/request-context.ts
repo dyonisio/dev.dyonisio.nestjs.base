@@ -12,6 +12,8 @@ export interface RequestContextData {
   userAgent?: string;
   /** Preenchido pelo middleware de i18n. */
   lang?: string;
+  /** Idioma que o cliente PEDIU (Accept-Language suportado); vazio quando caiu no padrão */
+  requestedLang?: string;
   /** Preenchidos pelo JwtStrategy quando a requisição é autenticada. */
   userId?: string;
   sessionId?: string;

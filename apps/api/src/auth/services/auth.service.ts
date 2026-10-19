@@ -86,6 +86,13 @@ export class AuthService {
     extra: Record<string, unknown> = {},
   ): Promise<AuthResponseDto> {
     const ctx = RequestContext.get();
+    // Conta sem idioma salvo: adota o idioma em que a pessoa está usando o site (antes do
+    // e-mail de "novo acesso", para ele já sair no idioma certo)
+    if (!user.locale && ctx?.requestedLang) {
+      if (await this.usersService.adoptLocale(user.id, ctx.requestedLang)) {
+        user.locale = ctx.requestedLang;
+      }
+    }
     const newDevice = await this.sessionService.isNewDevice(user.id, ctx?.userAgent);
     const tokens = await this.sessionService.create(user);
     await this.audit.record(AuditAction.AUTH_LOGIN, {

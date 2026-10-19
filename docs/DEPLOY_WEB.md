@@ -66,6 +66,7 @@ Em **Settings → Environments → prod → Environment variables**:
 | `API_CERTIFICATE_ARN` | o ARN do certificado da API (o da região da API) |
 | `FRONTEND_URL` | `https://base.dyonisio.dev` (links dos e-mails) |
 | `CORS_ORIGIN` | `https://base.dyonisio.dev` (quem pode chamar a API e enviar uploads; mais de um, separe por vírgula) |
+| `FALLBACK_LANGUAGE` | `pt-BR` (opcional): idioma de quem ainda não escolheu um. Padrão `en` |
 
 Opcionais, para o login social no front: `WEB_GOOGLE_CLIENT_ID`, `WEB_APPLE_CLIENT_ID` e `WEB_APPLE_REDIRECT_URI`
 (os mesmos client IDs de `GOOGLE_CLIENT_IDS` / `APPLE_CLIENT_IDS`; veja [WEB.md](WEB.md#login-social-google-e-apple)).
@@ -131,6 +132,8 @@ npm run migration:run
 | `Caller does not have permissions to create a Service Linked Role` no `ApiCustomDomain` | Falta o bloco `ApiGatewayServiceLinkedRole` na política (passo 2). O stack volta sozinho à versão anterior (a API continua no ar); atualize a política e rode o deploy de novo |
 | `CNAMEAlreadyExists` | O domínio já está em outra distribuição do CloudFront (nesta ou em outra conta). Remova-o de lá |
 | Certificado parado em *Pending validation* | O CNAME de validação está errado: confira o *Name* sem o `.dyonisio.dev` final e o proxy desligado |
+| Certificado em *Failed*: `CAA error` | O domínio tem registros **CAA** (quem pode emitir certificados) sem a Amazon. No Cloudflare, acrescente no `@` quatro registros CAA, *Tag* "Only allow specific hostnames" (`issue`), com `amazon.com`, `amazontrust.com`, `awstrust.com` e `amazonaws.com`. Não apague os que já existem. Um certificado que falhou não revalida: apague-o e peça outro |
+| `CAA error` mesmo com a Amazon liberada | O nome (ou o "pai" dele: o `base` para o `api.base`) **já é um CNAME para outro serviço** (Vercel, Netlify...). A AWS segue o CNAME e lê o CAA **do destino**, que não libera a Amazon. Remova o CNAME antigo (o site anterior sai do ar até o deploy) ou use outro nome. Para conferir: `https://dns.google/resolve?name=base.seudominio.com&type=CAA` |
 | Site abre, mas "Failed to fetch" nas telas | `CORS_ORIGIN`/`FRONTEND_URL` sem o endereço do site: corrija e rode o deploy de novo |
 | Erro 525, "too many redirects" | Proxy do Cloudflare ligado: deixe os CNAMEs em "DNS only" |
 | Página em branco e erro de CSP no console | Algo de fora que a CSP não libera (ex.: um script novo). Ajuste a `ContentSecurityPolicy` em [web.yml](../apps/web/infra/web.yml) |

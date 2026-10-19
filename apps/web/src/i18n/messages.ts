@@ -149,6 +149,7 @@ const en = {
     details: 'Personal details',
     preferredLanguage: 'Language',
     preferredLanguageHint: 'Used in the emails we send you.',
+    localeNotSaved: 'Not saved yet: save to receive our emails in this language.',
     emailTitle: 'Email',
     currentEmail: 'Current email: {email}',
     pendingEmail: 'Waiting for confirmation of {email}. Open the link we sent to that address.',
@@ -528,6 +529,7 @@ const ptBR: Dict = {
     details: 'Dados pessoais',
     preferredLanguage: 'Idioma',
     preferredLanguageHint: 'Usado nos e-mails que enviamos para você.',
+    localeNotSaved: 'Ainda não salvo: salve para receber nossos e-mails neste idioma.',
     emailTitle: 'E-mail',
     currentEmail: 'E-mail atual: {email}',
     pendingEmail:

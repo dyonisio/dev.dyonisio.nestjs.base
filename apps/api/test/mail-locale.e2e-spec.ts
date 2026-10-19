@@ -4,7 +4,9 @@ import request from 'supertest';
 import { App } from 'supertest/types';
 import { AppModule } from '../src/app.module';
 import { configureApp } from '../src/app.setup';
+import { Role } from '../src/common/enums/role.enum';
 import { MailService } from '../src/mail/mail.service';
+import { UsersService } from '../src/users/users.service';
 
 /** E-mails saem no idioma SALVO do usuário — não no da requisição que os disparou. */
 describe('Idioma dos e-mails (e2e)', () => {
@@ -95,5 +97,66 @@ describe('Idioma dos e-mails (e2e)', () => {
     const send = jest.spyOn(mail, 'send');
     await http().post('/api/v1/auth/password/forgot').send({ email: 'maria@test.com' }).expect(200);
     expect(lastMail(send)).toMatchObject({ lang: 'en', subject: 'Reset your password' });
+  });
+
+  describe('conta sem idioma salvo (ex.: o admin criado pelo seed)', () => {
+    const noLocale = (email: string) =>
+      app
+        .get(UsersService)
+        .create(
+          { name: 'Sem Idioma', email, password: 'Senha123', role: Role.USER },
+          { emailVerified: true },
+        );
+    const login = (email: string, lang?: string) => {
+      const req = http().post('/api/v1/auth/login');
+      if (lang) req.set('Accept-Language', lang);
+      return req.send({ email, password: 'Senha123' });
+    };
+
+    it('e-mails disparados pela pessoa saem no idioma em que ela está usando o site', async () => {
+      await noLocale('semidioma1@test.com');
+      const send = jest.spyOn(mail, 'send');
+
+      await http()
+        .post('/api/v1/auth/password/forgot')
+        .set('Accept-Language', 'pt-BR')
+        .send({ email: 'semidioma1@test.com' })
+        .expect(200);
+
+      expect(lastMail(send)).toMatchObject({ lang: 'pt-BR', subject: 'Redefinição de senha' });
+    });
+
+    it('no login, a conta adota o idioma do site (e os próximos e-mails seguem ele)', async () => {
+      await noLocale('semidioma2@test.com');
+
+      const res = await login('semidioma2@test.com', 'pt-BR').expect(200);
+
+      expect(res.body.user.locale).toBe('pt-BR');
+      const me = await http()
+        .get('/api/v1/users/me')
+        .set('Authorization', `Bearer ${res.body.accessToken}`)
+        .expect(200);
+      expect(me.body.locale).toBe('pt-BR');
+    });
+
+    it('sem Accept-Language, não grava o idioma padrão como se fosse escolha da pessoa', async () => {
+      await noLocale('semidioma3@test.com');
+
+      const res = await login('semidioma3@test.com').expect(200);
+
+      expect(res.body.user.locale).toBeNull();
+    });
+
+    it('um idioma já escolhido nunca é sobrescrito pelo do login', async () => {
+      // escolheu pt-BR no cadastro e entra de um computador em inglês
+      await register('escolheu@test.com', 'pt-BR', { locale: 'pt-BR' }).expect(201);
+      const res = await http()
+        .post('/api/v1/auth/login')
+        .set('Accept-Language', 'en')
+        .send({ email: 'escolheu@test.com', password: 'Senha123' })
+        .expect(200);
+
+      expect(res.body.user.locale).toBe('pt-BR');
+    });
   });
 });

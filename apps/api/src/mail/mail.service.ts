@@ -1,6 +1,7 @@
 import { Inject, Injectable, Logger, Optional } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import type { Transporter } from 'nodemailer';
+import { RequestContext } from '../common/request-context/request-context';
 import { I18nService } from '../i18n/i18n.service';
 import { matchLanguage, TranslationKey } from '../i18n/translations';
 import { MAIL_QUEUE, MAIL_TRANSPORTER } from './mail.constants';
@@ -281,8 +282,17 @@ export class MailService {
   }
 
   /** Idioma suportado mais próximo do pedido; senão, o idioma padrão. */
+  /**
+   * Idioma do e-mail: o salvo na conta; sem ele, o que a pessoa está usando agora (o
+   * Accept-Language da requisição que disparou o e-mail, ex.: link mágico, esqueci a senha);
+   * por último, o FALLBACK_LANGUAGE (e-mails do worker e do job de manutenção).
+   */
   private resolveLang(lang?: string | null): string {
-    return matchLanguage(lang ?? undefined) ?? this.i18n.fallbackLanguage;
+    return (
+      matchLanguage(lang ?? undefined) ??
+      RequestContext.get()?.requestedLang ??
+      this.i18n.fallbackLanguage
+    );
   }
 
   private subject(key: string, lang: string, args: Record<string, string> = {}): string {
