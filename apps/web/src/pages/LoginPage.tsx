@@ -1,6 +1,6 @@
 import { useEffect, useState, type FormEvent } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router';
-import { toApiError, type ApiError } from '../api/client';
+import { api, toApiError, type ApiError } from '../api/client';
 import { useAuth, type LoginResult } from '../auth/AuthProvider';
 import { SocialLogin } from '../components/SocialLogin';
 import { AuthCard, ErrorAlert, Field, fieldError, SuccessAlert } from '../components/ui';
@@ -29,6 +29,9 @@ export function LoginPage() {
   // Aviso deixado pela tela anterior (ex.: conta excluída); lido uma vez
   const [notice] = useState(flash.peek);
   useEffect(() => flash.clear(), []);
+  // "password": e-mail e senha; "link": só o e-mail, entra pelo link que chega nele
+  const [mode, setMode] = useState<'password' | 'link'>('password');
+  const [linkSent, setLinkSent] = useState<string | null>(null);
   const [twoFactorToken, setTwoFactorToken] = useState<string | null>(
     state?.twoFactorToken ?? null,
   );
@@ -56,6 +59,23 @@ export function LoginPage() {
   const submitPassword = (e: FormEvent) => {
     e.preventDefault();
     void run(async () => handleResult(await login(email, password)));
+  };
+
+  const submitLink = (e: FormEvent) => {
+    e.preventDefault();
+    void run(async () => {
+      const { data, error: apiError } = await api.POST('/api/v1/auth/magic-link', {
+        body: { email },
+      });
+      if (apiError || !data) throw apiError;
+      setLinkSent(data.message); // a mesma mensagem exista o e-mail ou não
+    });
+  };
+
+  const switchMode = (next: 'password' | 'link') => {
+    setError(null);
+    setLinkSent(null);
+    setMode(next);
   };
 
   const submitCode = (e: FormEvent) => {
@@ -90,6 +110,42 @@ export function LoginPage() {
     );
   }
 
+  if (mode === 'link') {
+    return (
+      <AuthCard title={m.login.linkTitle}>
+        {linkSent ? (
+          <>
+            <SuccessAlert>{linkSent}</SuccessAlert>
+            <p className="muted step-gap">{m.login.linkSentHelp}</p>
+          </>
+        ) : (
+          <form onSubmit={submitLink} noValidate>
+            <p className="muted form-intro">{m.login.linkHelp}</p>
+            <Field
+              label={m.common.email}
+              type="email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              autoComplete="email"
+              autoFocus
+              required
+              error={fieldError(error, 'email')}
+            />
+            <ErrorAlert error={error?.errors ? null : error} />
+            <button type="submit" disabled={busy}>
+              {m.login.sendLink}
+            </button>
+          </form>
+        )}
+        <p className="links">
+          <button type="button" className="link" onClick={() => switchMode('password')}>
+            {m.login.usePassword}
+          </button>
+        </p>
+      </AuthCard>
+    );
+  }
+
   return (
     <AuthCard title={m.login.title}>
       {notice === 'accountDeleted' && <SuccessAlert>{m.login.accountDeleted}</SuccessAlert>}
@@ -117,6 +173,9 @@ export function LoginPage() {
           {m.login.title}
         </button>
       </form>
+      <button type="button" className="wide-secondary" onClick={() => switchMode('link')}>
+        {m.login.useLink}
+      </button>
       <SocialLogin onResult={handleResult} />
       <p className="links">
         <Link to="/forgot-password">{m.login.forgot}</Link>

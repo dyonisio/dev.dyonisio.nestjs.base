@@ -477,6 +477,66 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/auth/password/set": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Create the first password
+         * @description For a signed-in account that has no password yet (invited by an admin and signed in with the email link, or created with Google/Apple). Requires a recent sign-in (REAUTH_WINDOW_SECONDS) and, with 2FA, the `code`. Ends all sessions and returns a new token pair for the current client.
+         */
+        post: operations["PasswordController_setFirst_v1"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/auth/magic-link": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Email me a sign-in link
+         * @description Sends a single-use sign-in link (valid for MAGIC_LINK_EXPIRES_IN, default 15 min) to the account’s email. Never signs in by itself, and always returns 200, so it does not reveal whether the email is registered. Asking again invalidates the previous link.
+         */
+        post: operations["MagicLinkController_request_v1"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/auth/magic-link/verify": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Sign in with the link
+         * @description Exchanges the token from the link for a session. Single use. If the user has 2FA enabled, returns `{ twoFactorRequired: true, twoFactorToken }` — complete it at POST /api/v1/auth/2fa/verify. The front calls this from a button on its /magic-link page (a POST, so email scanners that open links do not use it up).
+         */
+        post: operations["MagicLinkController_verify_v1"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/auth/email/verify": {
         parameters: {
             query?: never;
@@ -725,7 +785,7 @@ export interface components {
              * @example user.role_changed
              * @enum {string}
              */
-            action: "auth.login" | "auth.login_failed" | "auth.logout" | "auth.refresh_token_reuse" | "auth.password_changed" | "auth.password_reset" | "auth.email_verified" | "auth.2fa_enabled" | "auth.2fa_disabled" | "auth.2fa_failed" | "auth.2fa_recovery_code_used" | "auth.2fa_recovery_codes_regenerated" | "auth.2fa_reset_by_admin" | "auth.social_linked" | "auth.social_unlinked" | "user.registered" | "user.created" | "user.invitation_sent" | "user.updated" | "user.role_changed" | "user.deleted" | "user.restored" | "user.avatar_changed" | "user.email_change_requested" | "user.email_changed" | "user.self_deleted" | "user.data_exported" | "user.anonymized" | "session.revoked";
+            action: "auth.login" | "auth.login_failed" | "auth.logout" | "auth.refresh_token_reuse" | "auth.password_changed" | "auth.password_reset" | "auth.magic_link_sent" | "auth.email_verified" | "auth.2fa_enabled" | "auth.2fa_disabled" | "auth.2fa_failed" | "auth.2fa_recovery_code_used" | "auth.2fa_recovery_codes_regenerated" | "auth.2fa_reset_by_admin" | "auth.social_linked" | "auth.social_unlinked" | "user.registered" | "user.created" | "user.invitation_sent" | "user.updated" | "user.role_changed" | "user.deleted" | "user.restored" | "user.avatar_changed" | "user.email_change_requested" | "user.email_changed" | "user.self_deleted" | "user.data_exported" | "user.anonymized" | "session.revoked";
             /**
              * Format: uuid
              * @description Who performed the action (null = anonymous, e.g. failed login)
@@ -1151,6 +1211,23 @@ export interface components {
              */
             refreshExpiresIn: number;
         };
+        SetPasswordDto: {
+            /**
+             * @description At least 8 characters, with at least one letter and one number
+             * @example NewPassword123
+             */
+            newPassword: string;
+            /** @description Required if 2FA is enabled: authenticator code or a recovery code */
+            code?: string;
+        };
+        RequestMagicLinkDto: {
+            /** @example jane@example.com */
+            email: string;
+        };
+        VerifyMagicLinkDto: {
+            /** @description Token from the sign-in link in the email */
+            token: string;
+        };
         VerifyEmailDto: {
             /** @description Token received in the confirmation email link */
             token: string;
@@ -1238,7 +1315,7 @@ export interface operations {
                 page?: number;
                 /** @description Items per page */
                 limit?: number;
-                action?: "auth.login" | "auth.login_failed" | "auth.logout" | "auth.refresh_token_reuse" | "auth.password_changed" | "auth.password_reset" | "auth.email_verified" | "auth.2fa_enabled" | "auth.2fa_disabled" | "auth.2fa_failed" | "auth.2fa_recovery_code_used" | "auth.2fa_recovery_codes_regenerated" | "auth.2fa_reset_by_admin" | "auth.social_linked" | "auth.social_unlinked" | "user.registered" | "user.created" | "user.invitation_sent" | "user.updated" | "user.role_changed" | "user.deleted" | "user.restored" | "user.avatar_changed" | "user.email_change_requested" | "user.email_changed" | "user.self_deleted" | "user.data_exported" | "user.anonymized" | "session.revoked";
+                action?: "auth.login" | "auth.login_failed" | "auth.logout" | "auth.refresh_token_reuse" | "auth.password_changed" | "auth.password_reset" | "auth.magic_link_sent" | "auth.email_verified" | "auth.2fa_enabled" | "auth.2fa_disabled" | "auth.2fa_failed" | "auth.2fa_recovery_code_used" | "auth.2fa_recovery_codes_regenerated" | "auth.2fa_reset_by_admin" | "auth.social_linked" | "auth.social_unlinked" | "user.registered" | "user.created" | "user.invitation_sent" | "user.updated" | "user.role_changed" | "user.deleted" | "user.restored" | "user.avatar_changed" | "user.email_change_requested" | "user.email_changed" | "user.self_deleted" | "user.data_exported" | "user.anonymized" | "session.revoked";
                 /** @description Who performed the actions */
                 actorId?: string;
                 /** @description Affected record (e.g. a user id) */
@@ -2699,6 +2776,142 @@ export interface operations {
             };
             /** @description Missing, invalid or expired token, or the session was ended */
             401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponseDto"];
+                };
+            };
+        };
+    };
+    PasswordController_setFirst_v1: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Language for error messages */
+                "Accept-Language"?: "en" | "pt-BR";
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SetPasswordDto"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AuthTokensDto"];
+                };
+            };
+            /** @description Validation failed, the account already has a password, or the 2FA code is missing/wrong */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponseDto"];
+                };
+            };
+            /**
+             * @description `account.reauthRequired`: the sign-in is too old, sign in again
+             *
+             *     Missing, invalid or expired token, or the session was ended
+             */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponseDto"];
+                };
+            };
+        };
+    };
+    MagicLinkController_request_v1: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Language for error messages */
+                "Accept-Language"?: "en" | "pt-BR";
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RequestMagicLinkDto"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageResponseDto"];
+                };
+            };
+            /** @description Validation failed */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponseDto"];
+                };
+            };
+            /** @description Too many attempts — see the Retry-After header */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponseDto"];
+                };
+            };
+        };
+    };
+    MagicLinkController_verify_v1: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Language for error messages */
+                "Accept-Language"?: "en" | "pt-BR";
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["VerifyMagicLinkDto"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AuthResponseDto"] | components["schemas"]["TwoFactorChallengeDto"];
+                };
+            };
+            /** @description Invalid, expired or already used link */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponseDto"];
+                };
+            };
+            /** @description Too many attempts — see the Retry-After header */
+            429: {
                 headers: {
                     [name: string]: unknown;
                 };

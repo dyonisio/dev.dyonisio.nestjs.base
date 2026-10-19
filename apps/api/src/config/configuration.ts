@@ -140,6 +140,8 @@ export default () => {
       resetPasswordExpiresIn: toInt(process.env.RESET_PASSWORD_EXPIRES_IN, 900),
       /** Validade (s) do link de convite para criar a senha (conta criada por admin). 7 dias */
       inviteExpiresIn: toInt(process.env.INVITE_EXPIRES_IN, 604800),
+      /** Validade (s) do link mágico de login. 15 min */
+      magicLinkExpiresIn: toInt(process.env.MAGIC_LINK_EXPIRES_IN, 900),
       emailVerificationExpiresIn: toInt(process.env.EMAIL_VERIFICATION_EXPIRES_IN, 86400),
     },
     mail: {

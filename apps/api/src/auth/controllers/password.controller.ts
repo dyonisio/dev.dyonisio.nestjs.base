@@ -9,6 +9,7 @@ import { AuthRateLimit } from '../../rate-limit/auth-rate-limit.decorator';
 import { I18nService } from '../../i18n/i18n.service';
 import { Lang } from '../../i18n/lang.decorator';
 import { AuthTokensDto, MessageResponseDto } from '../dto/auth-response.dto';
+import { SetPasswordDto } from '../dto/magic-link.dto';
 import { ChangePasswordDto, ForgotPasswordDto, ResetPasswordDto } from '../dto/password.dto';
 import { PasswordService } from '../services/password.service';
 
@@ -65,5 +66,25 @@ export class PasswordController {
   @ApiErrors([400, 'Validation failed, or the current password is incorrect'])
   change(@CurrentUser('id') userId: string, @Body() dto: ChangePasswordDto) {
     return this.passwordService.change(userId, dto.currentPassword, dto.newPassword);
+  }
+
+  @Post('set')
+  @Auth()
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({
+    summary: 'Create the first password',
+    description:
+      'For a signed-in account that has no password yet (invited by an admin and signed in with the email link, or created with Google/Apple). Requires a recent sign-in (REAUTH_WINDOW_SECONDS) and, with 2FA, the `code`. Ends all sessions and returns a new token pair for the current client.',
+  })
+  @ApiOkResponse({ type: AuthTokensDto })
+  @ApiErrors(
+    [
+      400,
+      'Validation failed, the account already has a password, or the 2FA code is missing/wrong',
+    ],
+    [401, '`account.reauthRequired`: the sign-in is too old, sign in again'],
+  )
+  setFirst(@CurrentUser('id') userId: string, @Body() dto: SetPasswordDto) {
+    return this.passwordService.setFirst(userId, dto.newPassword, dto.code);
   }
 }

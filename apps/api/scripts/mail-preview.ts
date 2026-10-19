@@ -28,6 +28,7 @@ const SUBJECT_KEYS: Record<MailTemplate, string> = {
   [MailTemplate.PASSWORD_CHANGED]: 'passwordChanged',
   [MailTemplate.ROLE_CHANGED]: 'roleChanged',
   [MailTemplate.ACCOUNT_CREATED]: 'accountCreated',
+  [MailTemplate.MAGIC_LINK]: 'magicLink',
   [MailTemplate.NEW_LOGIN]: 'newLogin',
   [MailTemplate.TWO_FACTOR_CHANGED]: 'twoFactorDisabled',
   [MailTemplate.SOCIAL_LINKED]: 'socialLinked',
@@ -63,6 +64,13 @@ function samples(lang: string): { [K in MailTemplate]: MailTemplateContextMap[K]
       loginUrl: 'http://localhost:5173/login',
       setPasswordUrl: `http://localhost:5173/reset-password?token=${LONG_TOKEN}`,
       expiresInDays: 7,
+    },
+    [MailTemplate.MAGIC_LINK]: {
+      name: 'Maria Silva',
+      loginUrl: `http://localhost:5173/magic-link?token=${LONG_TOKEN}`,
+      expiresInMinutes: 15,
+      device: 'Chrome · Windows',
+      ip: '203.0.113.10',
     },
     [MailTemplate.NEW_LOGIN]: {
       name: 'Maria Silva',

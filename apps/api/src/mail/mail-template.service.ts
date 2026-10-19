@@ -4,6 +4,8 @@ import Handlebars from 'handlebars';
 import { basename, join } from 'path';
 import { MailTemplate } from './mail.types';
 
+const ENTITIES = { quot: '"', lt: '<', gt: '>' } as const;
+
 interface LanguageTemplates {
   hbs: typeof Handlebars;
   layout: Handlebars.TemplateDelegate;
@@ -47,15 +49,23 @@ export class MailTemplateService {
 
   /** Versão texto simples do HTML (fallback para clientes sem HTML). */
   toText(html: string): string {
-    return html
-      .replace(/<(head|style)[^>]*>[\s\S]*?<\/\1>/gi, '')
-      .replace(/<a [^>]*href="([^"]+)"[^>]*>([\s\S]*?)<\/a>/gi, '$2 ($1)')
-      .replace(/<(br|\/p|\/h[1-6]|\/tr|\/li)[^>]*>/gi, '\n')
-      .replace(/<[^>]+>/g, '')
-      .replace(/&nbsp;/g, ' ')
-      .replace(/[ \t]+/g, ' ')
-      .replace(/\n\s*\n+/g, '\n\n')
-      .trim();
+    return (
+      html
+        .replace(/<(head|style)[^>]*>[\s\S]*?<\/\1>/gi, '')
+        .replace(/<a [^>]*href="([^"]+)"[^>]*>([\s\S]*?)<\/a>/gi, '$2 ($1)')
+        .replace(/<(br|\/p|\/h[1-6]|\/tr|\/li)[^>]*>/gi, '\n')
+        .replace(/<[^>]+>/g, '')
+        .replace(/&nbsp;/g, ' ')
+        // O Handlebars escapa o que interpola (= vira &#x3D;, & vira &amp;): no texto puro isso
+        // quebrava os links ("token&#x3D;..."). Decodifica as entidades, com o &amp; por último.
+        .replace(/&#x([0-9a-f]+);/gi, (_, hex: string) => String.fromCodePoint(parseInt(hex, 16)))
+        .replace(/&#(\d+);/g, (_, dec: string) => String.fromCodePoint(Number(dec)))
+        .replace(/&(quot|lt|gt);/g, (_, name: 'quot' | 'lt' | 'gt') => ENTITIES[name])
+        .replace(/&amp;/g, '&')
+        .replace(/[ \t]+/g, ' ')
+        .replace(/\n\s*\n+/g, '\n\n')
+        .trim()
+    );
   }
 
   private forLanguage(lang: string): LanguageTemplates {

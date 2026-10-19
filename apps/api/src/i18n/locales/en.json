@@ -24,7 +24,9 @@
     "invalidRefreshToken": "Invalid or expired refresh token",
     "sessionExpired": "Your session has ended. Please sign in again",
     "forbidden": "You do not have permission to access this resource",
-    "emailNotVerified": "Please confirm your email address to continue"
+    "emailNotVerified": "Please confirm your email address to continue",
+    "magicLinkSent": "If this email has an account, the sign-in link is on its way. Check your inbox.",
+    "invalidMagicLink": "Invalid, expired or already used link. Ask for a new one."
   },
   "users": {
     "notFound": "User not found",
@@ -60,7 +62,8 @@
     "wrongCurrentPassword": "The current password is incorrect",
     "forgotRequested": "If the email is registered, you will receive the instructions shortly.",
     "resetDone": "Password reset successfully.",
-    "notSet": "Your account has no password yet. Use \"forgot password\" to create one"
+    "notSet": "Your account has no password yet. Use \"forgot password\" to create one",
+    "alreadySet": "Your account already has a password. To change it, use the current one."
   },
   "emailVerification": {
     "invalidToken": "Invalid or expired confirmation link",
@@ -142,7 +145,8 @@
       "socialLinked": "{provider} was linked to your account",
       "emailChanged": "Your account email was changed",
       "accountDeleted": "Your account was deleted",
-      "accountCreated": "Your {appName} account is ready"
+      "accountCreated": "Your {appName} account is ready",
+      "magicLink": "Your sign-in link for {appName}"
     }
   },
   "roles": {

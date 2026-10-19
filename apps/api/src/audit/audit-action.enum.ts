@@ -7,6 +7,7 @@ export enum AuditAction {
   AUTH_REFRESH_TOKEN_REUSE = 'auth.refresh_token_reuse',
   AUTH_PASSWORD_CHANGED = 'auth.password_changed',
   AUTH_PASSWORD_RESET = 'auth.password_reset',
+  AUTH_MAGIC_LINK_SENT = 'auth.magic_link_sent',
   AUTH_EMAIL_VERIFIED = 'auth.email_verified',
   AUTH_2FA_ENABLED = 'auth.2fa_enabled',
   AUTH_2FA_DISABLED = 'auth.2fa_disabled',

@@ -11,9 +11,11 @@ import { SocialAuthService } from './social/social-auth.service';
 import { UsersModule } from '../users/users.module';
 import { AuthController } from './controllers/auth.controller';
 import { EmailVerificationController } from './controllers/email-verification.controller';
+import { MagicLinkController } from './controllers/magic-link.controller';
 import { PasswordController } from './controllers/password.controller';
 import { RegistrationController } from './controllers/registration.controller';
 import { AuthService } from './services/auth.service';
+import { MagicLinkService } from './services/magic-link.service';
 import { PasswordService } from './services/password.service';
 import { RegistrationService } from './services/registration.service';
 import { JwtStrategy } from './strategies/jwt.strategy';
@@ -34,6 +36,7 @@ import { TwoFactorModule } from './two-factor/two-factor.module';
     AuthController,
     RegistrationController,
     PasswordController,
+    MagicLinkController,
     EmailVerificationController,
     TwoFactorController,
     AdminTwoFactorController,
@@ -43,6 +46,7 @@ import { TwoFactorModule } from './two-factor/two-factor.module';
     AuthService,
     RegistrationService,
     PasswordService,
+    MagicLinkService,
     SocialAuthService,
     OidcVerifier,
     JwksResolver,

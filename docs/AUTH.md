@@ -9,8 +9,8 @@ Todas as rotas abaixo estão sob `/api/v1`. Os exemplos completos (corpo, respos
 ```
 cadastro ─▶ e-mail "confirme" ─▶ /auth/email/verify ─▶ conta confirmada
                                                             │
-login (senha ou Google/Apple) ──┬── sem 2FA ──────────────▶ tokens
-                                └── com 2FA ─▶ desafio ─▶ /auth/2fa/verify ─▶ tokens
+login (senha, link mágico ou Google/Apple) ──┬── sem 2FA ─▶ tokens
+                                             └── com 2FA ─▶ desafio ─▶ /auth/2fa/verify ─▶ tokens
 tokens ─▶ usa o accessToken ─▶ expirou (401) ─▶ /auth/refresh ─▶ novo par
 ```
 
@@ -69,10 +69,45 @@ senha com 8+ caracteres, letra e número.
 | `POST /auth/password/forgot { email }` | Manda o link `FRONTEND_URL/reset-password?token=...` (15 min). Sempre responde 200, exista o e-mail ou não |
 | `POST /auth/password/reset { token, password }` | Define a nova senha. O link vale **uma vez**: o segredo dele depende do hash da senha atual |
 | `POST /auth/password/change { currentPassword, newPassword }` | Troca estando logado |
+| `POST /auth/password/set { newPassword, code? }` | **Primeira** senha de quem está logado sem ter uma (veja abaixo) |
 
-Contas sem senha — criadas pelo Google/Apple, ou por um admin sem informar a senha (convite) — criam a primeira pelo
-mesmo link (`/reset-password`): o convite já chega por e-mail; quem entrou com Google/Apple usa o "esqueci minha senha".
-A primeira senha não gera o e-mail de "senha alterada".
+Contas sem senha (criadas pelo Google/Apple, por um admin sem informar a senha, ou que entraram pelo link mágico antes de
+confirmar o e-mail) criam a primeira de dois jeitos:
+
+- pelo link do convite ou do "esqueci a senha" (`/reset-password`);
+- logadas, em `POST /auth/password/set`. Só vale para conta **sem** senha (trocar uma senha existente exige a atual), com
+  login recente (`REAUTH_WINDOW_SECONDS`) e, com 2FA, o código. Assim um token roubado não consegue "plantar" uma senha
+  para voltar depois. Encerra as outras sessões e devolve um par novo.
+
+A primeira senha não gera o e-mail de "senha alterada". Na conta convidada (criada por um admin) ela manda o
+**Bem-vindo**: essa conta já nasce com o e-mail confirmado e nunca passa pela confirmação, que é onde ele sai nas outras.
+
+## Link mágico (entrar sem senha)
+
+A pessoa informa só o e-mail e entra pelo link que chega nele:
+
+| Rota | Uso |
+| --- | --- |
+| `POST /auth/magic-link { email }` | Manda o link `FRONTEND_URL/magic-link?token=...` (15 min, `MAGIC_LINK_EXPIRES_IN`). Sempre 200, exista o e-mail ou não |
+| `POST /auth/magic-link/verify { token }` | Troca o link pela sessão, ou pelo desafio do 2FA |
+
+**Digitar o e-mail não basta para entrar.** O pedido nunca abre sessão: só manda o link para a caixa da conta, e a prova
+é ter acesso a ela. Além disso:
+
+- **Uso único:** o link carrega um *nonce* guardado no usuário, e usar o link o apaga numa UPDATE atômica. Dois cliques
+  ao mesmo tempo: só um entra.
+- **Um link por vez:** pedir outro troca o nonce e invalida o anterior. Trocar o e-mail da conta também.
+- **2FA continua valendo:** com 2FA ativo, o link leva ao código do app, como o login por senha.
+- **Sem revelar contas:** a resposta é a mesma exista o e-mail ou não. Conta desativada não recebe link.
+- **Sem lotar a caixa de ninguém:** `@AuthRateLimit` limita por IP e por e-mail (`RATE_LIMIT_AUTH_*`).
+- **Pré-sequestro:** se a conta nunca foi confirmada, abrir o link prova o e-mail, e a senha, o 2FA e as sessões de quem
+  a criou são descartados (como no login social). A pessoa cria a própria senha em seguida.
+- **Filtros de e-mail:** antivírus abrem os links para conferir. Por isso a tela `/magic-link` do front pede um clique
+  em "Entrar" (um POST), em vez de entrar sozinha ao abrir, e o filtro não gasta o link.
+- O e-mail mostra de qual dispositivo e IP o link foi pedido, e o "Novo acesso" continua saindo para dispositivo novo.
+
+Quem entrou pelo link numa conta sem senha e sem Google/Apple (o convidado, por exemplo) é levado pelo front para
+`/create-password` antes de usar o painel.
 
 ## 2FA (verificação em duas etapas)
 

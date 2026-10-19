@@ -20,7 +20,7 @@ import { DatabaseThrottlerStorage } from '../../rate-limit/database-throttler.st
 import { User } from '../../users/entities/user.entity';
 import { base32Encode, generateTotpSecret, otpauthUrl, verifyTotp } from './totp';
 
-export type LoginMethod = 'password' | 'google' | 'apple';
+export type LoginMethod = 'password' | 'magic-link' | 'google' | 'apple';
 
 interface ChallengePayload {
   sub: string;

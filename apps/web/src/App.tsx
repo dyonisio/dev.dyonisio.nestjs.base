@@ -9,6 +9,7 @@ import { UserDetailPage } from './pages/admin/UserDetailPage';
 import { UsersPage } from './pages/admin/UsersPage';
 import { HomePage, NotFoundPage } from './pages/HomePage';
 import { LoginPage } from './pages/LoginPage';
+import { CreatePasswordPage, MagicLinkPage } from './pages/MagicLinkPages';
 import { ForgotPasswordPage, ResetPasswordPage } from './pages/PasswordPages';
 import { RegisterPage } from './pages/RegisterPage';
 import { VerifyEmailPage } from './pages/VerifyEmailPage';
@@ -26,6 +27,15 @@ export function App() {
       <Route path="/forgot-password" element={<ForgotPasswordPage />} />
       <Route path="/reset-password" element={<ResetPasswordPage />} /> {/* (e-mail) */}
       <Route path="/verify-email" element={<VerifyEmailPage />} /> {/* (e-mail) */}
+      <Route path="/magic-link" element={<MagicLinkPage />} /> {/* (e-mail) */}
+      <Route
+        path="/create-password"
+        element={
+          <RequireAuth>
+            <CreatePasswordPage />
+          </RequireAuth>
+        }
+      />
       {/* Logadas: todas dentro do layout com o menu */}
       <Route
         element={

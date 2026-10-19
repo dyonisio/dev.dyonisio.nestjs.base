@@ -35,11 +35,13 @@ A API precisa aceitar a origem do front no CORS. Em desenvolvimento, o `.env.exa
 
 | Rota | Tela | Observação |
 | --- | --- | --- |
-| `/login` | Login | E-mail e senha, ou Google/Apple. Em dois passos quando a conta tem 2FA (código do app ou de recuperação) |
+| `/login` | Login | E-mail e senha, link por e-mail ("entrar sem senha") ou Google/Apple. Em dois passos quando a conta tem 2FA |
 | `/register` | Cadastro | Também com Google/Apple |
 | `/forgot-password` | Esqueci a senha | A API responde igual exista o e-mail ou não |
 | `/reset-password?token=` | Nova senha | Link do "esqueci a senha" **e** do convite do admin ("crie sua senha") |
 | `/verify-email?token=` | Confirmação de e-mail | Link do cadastro e da troca de e-mail; confirma sozinho ao abrir |
+| `/magic-link?token=` | Entrar pelo link | Link do "entrar sem senha". Pede um clique em "Entrar" (filtros de e-mail abrem links e gastariam o de uso único). Com 2FA, segue para o código |
+| `/create-password` | Crie sua senha | Exige login. Obrigatória para quem entrou pelo link sem ter senha nem Google/Apple (ex.: convidado) |
 
 ### Logadas (menu no topo)
 
@@ -60,7 +62,7 @@ Ações sensíveis (trocar e-mail, ativar 2FA, excluir a conta) pedem **confirma
 e, com 2FA ativo, o código do app. Isso fica no componente `ReauthFields`
 ([docs/AUTH.md → Confirmar que é você](AUTH.md#confirmar-que-é-você-reautenticação)).
 
-As rotas que recebem links dos e-mails (`/login`, `/reset-password`, `/verify-email`, `/account/security`) precisam
+As rotas que recebem links dos e-mails (`/login`, `/reset-password`, `/verify-email`, `/magic-link`, `/account/security`) precisam
 ter exatamente esses nomes: é a API que monta os links, com o `FRONTEND_URL` na frente.
 
 ## Login social (Google e Apple)

@@ -14,6 +14,7 @@ export enum MailTemplate {
   PASSWORD_CHANGED = 'password-changed',
   ROLE_CHANGED = 'role-changed',
   ACCOUNT_CREATED = 'account-created',
+  MAGIC_LINK = 'magic-link',
   // Alertas de segurança
   NEW_LOGIN = 'new-login',
   TWO_FACTOR_CHANGED = 'two-factor-changed',
@@ -34,6 +35,14 @@ export interface MailTemplateContextMap {
     /** Link para criar a senha (convite). null = o admin definiu a senha inicial */
     setPasswordUrl: string | null;
     expiresInDays: number | null;
+  };
+  [MailTemplate.MAGIC_LINK]: {
+    name: string;
+    loginUrl: string;
+    expiresInMinutes: number;
+    /** De onde o link foi pedido, para a pessoa reconhecer um pedido que não fez */
+    device: string;
+    ip: string;
   };
   [MailTemplate.NEW_LOGIN]: {
     name: string;

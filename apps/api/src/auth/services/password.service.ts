@@ -1,17 +1,21 @@
-import { BadRequestException, Injectable } from '@nestjs/common';
+import { BadRequestException, Injectable, UnauthorizedException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { JwtService } from '@nestjs/jwt';
+import { InjectRepository } from '@nestjs/typeorm';
+import { Repository } from 'typeorm';
 import { verifyPassword } from '../../common/crypto/password-hash';
 import { AuditAction } from '../../audit/audit-action.enum';
 import { AuditService } from '../../audit/audit.service';
 import { i18nKey } from '../../i18n/translations';
 import { MailService } from '../../mail/mail.service';
+import { ReauthService } from '../../users/account/reauth.service';
 import { User } from '../../users/entities/user.entity';
 import { passwordLinkSecret } from '../../users/password-link';
 import { UsersService } from '../../users/users.service';
 import { AuthTokensDto } from '../dto/auth-response.dto';
 import { ResetPasswordPayload } from '../interfaces/jwt-payload.interface';
 import { SessionService } from '../../sessions/session.service';
+import { UserIdentity } from '../social/entities/user-identity.entity';
 
 /** Esqueci a senha, redefinição por token e troca de senha. */
 @Injectable()
@@ -23,6 +27,8 @@ export class PasswordService {
     private readonly mailService: MailService,
     private readonly config: ConfigService,
     private readonly audit: AuditService,
+    private readonly reauth: ReauthService,
+    @InjectRepository(UserIdentity) private readonly identities: Repository<UserIdentity>,
   ) {}
 
   /**
@@ -65,7 +71,8 @@ export class PasswordService {
     const firstPassword = !user.password; // convite do admin ou conta só de login social
     await this.usersService.updatePassword(user.id, newPassword);
     await this.sessionService.revokeAllForUser(user.id);
-    if (!firstPassword) await this.mailService.sendPasswordChanged(user);
+    if (firstPassword) await this.welcomeIfInvited(user);
+    else await this.mailService.sendPasswordChanged(user);
     await this.audit.record(AuditAction.AUTH_PASSWORD_RESET, {
       actorId: user.id,
       ...(firstPassword ? { metadata: { firstPassword: true } } : {}),
@@ -95,6 +102,38 @@ export class PasswordService {
     await this.mailService.sendPasswordChanged(user);
     await this.audit.record(AuditAction.AUTH_PASSWORD_CHANGED, { actorId: user.id });
     return this.sessionService.create(user);
+  }
+
+  /**
+   * Primeira senha de quem está logado sem ter uma (convidado que entrou pelo link mágico, ou
+   * conta do Google/Apple). Só para conta SEM senha — trocar uma senha existente exige a atual.
+   * Prova de identidade: login recente (REAUTH_WINDOW_SECONDS) e, com 2FA, o código: um token
+   * roubado não consegue plantar uma senha para voltar depois.
+   */
+  async setFirst(userId: string, newPassword: string, code?: string): Promise<AuthTokensDto> {
+    const user = await this.usersService.findByIdWithPassword(userId);
+    if (!user) throw new UnauthorizedException(i18nKey('auth.sessionExpired'));
+    if (user.password) throw new BadRequestException(i18nKey('password.alreadySet'));
+    await this.reauth.confirm(userId, { code });
+
+    await this.usersService.updatePassword(user.id, newPassword);
+    await this.sessionService.revokeAllForUser(user.id);
+    await this.welcomeIfInvited(user);
+    await this.audit.record(AuditAction.AUTH_PASSWORD_CHANGED, {
+      actorId: user.id,
+      metadata: { firstPassword: true },
+    });
+    return this.sessionService.create(user);
+  }
+
+  /**
+   * A conta convidada (criada por um admin) já nasce com o e-mail confirmado, então nunca passa
+   * pela confirmação, que é onde o "Bem-vindo" sai. Ele vai junto com a primeira senha.
+   * Conta do Google/Apple já recebeu o dela ao ser criada.
+   */
+  private async welcomeIfInvited(user: User): Promise<void> {
+    const social = await this.identities.count({ where: { userId: user.id } });
+    if (!social) await this.mailService.sendWelcome(user);
   }
 
   private resetSecret(user: User): string {

@@ -130,6 +130,26 @@ export class MailService {
     });
   }
 
+  sendMagicLink(
+    user: MailRecipient,
+    link: { url: string; expiresInMinutes: number; device: string; ip: string | null },
+  ) {
+    const lang = this.resolveLang(user.locale);
+    return this.send({
+      to: user.email,
+      lang,
+      subject: this.subject('magicLink', lang),
+      template: MailTemplate.MAGIC_LINK,
+      context: {
+        name: user.name,
+        loginUrl: link.url,
+        expiresInMinutes: link.expiresInMinutes,
+        device: link.device,
+        ip: link.ip ?? '—',
+      },
+    });
+  }
+
   sendPasswordChanged(user: MailRecipient) {
     const lang = this.resolveLang(user.locale);
     return this.send({

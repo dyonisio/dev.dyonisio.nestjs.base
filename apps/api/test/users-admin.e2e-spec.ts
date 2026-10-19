@@ -226,14 +226,19 @@ describe('Administração de usuários (e2e)', () => {
       await login('convidada@empresa.com').expect(401);
     });
 
-    it('o link do convite cria a senha (sem e-mail de "senha alterada") e vale uma vez só', async () => {
+    it('o link do convite cria a senha, manda o Bem-vindo (sem "senha alterada") e vale uma vez só', async () => {
       const changed = jest.spyOn(app.get(MailService), 'sendPasswordChanged');
+      const welcome = jest.spyOn(app.get(MailService), 'sendWelcome');
       await http()
         .post('/api/v1/auth/password/reset')
         .send({ token: tokenOf(inviteUrl), password: 'MinhaSenha1' })
         .expect(200);
 
       expect(changed).not.toHaveBeenCalled(); // é a 1ª senha, não uma troca
+      // a conta convidada já nasce confirmada: o Bem-vindo vem junto com a primeira senha
+      expect(welcome).toHaveBeenCalledWith(
+        expect.objectContaining({ email: 'convidada@empresa.com' }),
+      );
       await login('convidada@empresa.com', 'MinhaSenha1').expect(200);
       await http()
         .post('/api/v1/auth/password/reset')

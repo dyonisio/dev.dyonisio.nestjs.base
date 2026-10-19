@@ -1310,7 +1310,7 @@ a.plain:hover .row-title {
   margin-bottom: 20px;
 }
 
-.auth-card > p.muted {
+.auth-card > h1 + p.muted {
   margin: -12px 0 16px;
 }
 
@@ -1325,6 +1325,16 @@ a.plain:hover .row-title {
 
 .auth-card button[type='submit']:hover {
   background: color-mix(in srgb, var(--primary) 86%, var(--surface));
+}
+
+.auth-card .wide-secondary {
+  width: 100%;
+  height: 40px;
+  margin-top: 10px;
+}
+
+.form-intro {
+  margin-bottom: 16px;
 }
 
 .auth .links {

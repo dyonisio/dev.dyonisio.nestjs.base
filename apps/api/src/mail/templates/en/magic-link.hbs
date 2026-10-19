@@ -1,0 +1,18 @@
+<h1>Your sign-in link</h1>
+<p>Hi, {{name}}.</p>
+<p>Click the button below to sign in to <strong>{{appName}}</strong> without typing your password:</p>
+{{> button url=loginUrl label="Sign in"}}
+<p>The link expires in <strong>{{expiresInMinutes}} minutes</strong> and works only once. If your account has two-step verification, you will still be asked for the code from your app.</p>
+<table role="presentation" cellspacing="0" cellpadding="8" style="margin:16px 0;border-collapse:collapse;">
+  <tr>
+    <td style="color:#6b7280;">Requested from</td>
+    <td><strong>{{device}}</strong></td>
+  </tr>
+  <tr>
+    <td style="color:#6b7280;">IP</td>
+    <td><strong>{{ip}}</strong></td>
+  </tr>
+</table>
+<p class="muted">If the button does not work, copy and paste this address into your browser:</p>
+<p class="muted break-all" style="word-break:break-all;overflow-wrap:anywhere;font-size:12px;"><a href="{{loginUrl}}" style="word-break:break-all;overflow-wrap:anywhere;">{{loginUrl}}</a></p>
+<p class="muted"><strong>Wasn't you?</strong> Ignore this email: nobody can sign in without opening this link. Never forward this email.</p>

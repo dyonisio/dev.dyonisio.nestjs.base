@@ -24,7 +24,9 @@
     "invalidRefreshToken": "Refresh token inválido ou expirado",
     "sessionExpired": "Sua sessão foi encerrada. Faça login novamente",
     "forbidden": "Você não tem permissão para acessar este recurso",
-    "emailNotVerified": "Confirme seu e-mail para continuar"
+    "emailNotVerified": "Confirme seu e-mail para continuar",
+    "magicLinkSent": "Se o e-mail tiver conta, o link para entrar chega em instantes. Confira a caixa de entrada.",
+    "invalidMagicLink": "Link inválido, expirado ou já usado. Peça um novo."
   },
   "users": {
     "notFound": "Usuário não encontrado",
@@ -60,7 +62,8 @@
     "wrongCurrentPassword": "A senha atual está incorreta",
     "forgotRequested": "Se o e-mail estiver cadastrado, você receberá as instruções em instantes.",
     "resetDone": "Senha redefinida com sucesso.",
-    "notSet": "Sua conta ainda não tem senha. Use \"esqueci a senha\" para criar uma"
+    "notSet": "Sua conta ainda não tem senha. Use \"esqueci a senha\" para criar uma",
+    "alreadySet": "Sua conta já tem senha. Para trocá-la, use a senha atual."
   },
   "emailVerification": {
     "invalidToken": "Link de confirmação inválido ou expirado",
@@ -142,7 +145,8 @@
       "socialLinked": "{provider} foi vinculado à sua conta",
       "emailChanged": "O e-mail da sua conta foi alterado",
       "accountDeleted": "Sua conta foi excluída",
-      "accountCreated": "Sua conta no {appName} foi criada"
+      "accountCreated": "Sua conta no {appName} foi criada",
+      "magicLink": "Seu link para entrar no {appName}"
     }
   },
   "roles": {

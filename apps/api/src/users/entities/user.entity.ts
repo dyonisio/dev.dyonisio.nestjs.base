@@ -108,6 +108,14 @@ export class User {
   @Column({ type: 'text', nullable: true, select: false })
   twoFactorSecret?: string | null;
 
+  /**
+   * Nonce do último link mágico enviado. O link só vale enquanto ele estiver aqui: usar o link
+   * apaga o nonce (uso único) e pedir outro o troca (só o link mais novo vale).
+   */
+  @Exclude({ toPlainOnly: true })
+  @Column({ type: 'varchar', length: 64, nullable: true, select: false })
+  magicLinkNonce?: string | null;
+
   /** Última janela TOTP aceita — impede reutilizar o mesmo código. */
   @Exclude({ toPlainOnly: true })
   @Column({ type: 'int', nullable: true, select: false })

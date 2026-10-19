@@ -19,6 +19,7 @@ import {
 import { useI18n } from '../../i18n/I18nProvider';
 import type { Language } from '../../i18n/language';
 import { formatBytes, formatDate } from '../../lib/format';
+import { CreatePasswordForm } from '../MagicLinkPages';
 import { useAction } from '../../lib/hooks';
 
 /** /account — foto, dados pessoais, e-mail e senha. */
@@ -244,27 +245,20 @@ function PasswordSection({
 
   if (!user) return null;
 
-  // Conta só com Google/Apple: a primeira senha é criada pelo link do e-mail
+  // Conta sem senha (Google/Apple, ou convite): cria a primeira senha aqui mesmo
   if (!hasPassword) {
-    const sendLink = () =>
-      void run(async () => {
-        const { error: apiError } = await api.POST('/api/v1/auth/password/forgot', {
-          body: { email: user.email },
-        });
-        if (apiError) throw apiError;
-        setDone(true);
-        onCreated();
-      });
     return (
       <Section title={m.profile.passwordTitle} help={m.profile.noPassword}>
         {done ? (
-          <SuccessAlert>{m.profile.passwordLinkSent}</SuccessAlert>
+          <SuccessAlert>{m.createPassword.done}</SuccessAlert>
         ) : (
-          <button type="button" disabled={busy} onClick={sendLink}>
-            {m.profile.sendPasswordLink}
-          </button>
+          <CreatePasswordForm
+            onDone={() => {
+              setDone(true);
+              onCreated();
+            }}
+          />
         )}
-        <ErrorAlert error={error} />
       </Section>
     );
   }

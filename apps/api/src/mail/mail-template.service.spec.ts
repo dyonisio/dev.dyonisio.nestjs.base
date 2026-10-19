@@ -32,6 +32,13 @@ const contexts: { [K in MailTemplate]: MailTemplateContextMap[K] } = {
     setPasswordUrl: 'http://front.test/reset-password?token=abc',
     expiresInDays: 7,
   },
+  [MailTemplate.MAGIC_LINK]: {
+    name: 'Maria',
+    loginUrl: 'http://front.test/magic-link?token=abc',
+    expiresInMinutes: 15,
+    device: 'Chrome · Windows',
+    ip: '203.0.113.10',
+  },
   [MailTemplate.NEW_LOGIN]: {
     name: 'Maria',
     when: '14/10/2026 10:00',
@@ -132,6 +139,18 @@ describe('MailTemplateService', () => {
     expect(text).not.toMatch(/<[^>]+>/);
     expect(text).toContain('Olá, Maria!');
     expect(text).toContain('Acessar minha conta (http://front.test/login)');
+  });
+
+  it('no texto puro os links saem inteiros (sem &#x3D; nem &amp; do escape do Handlebars)', () => {
+    const html = service.render(MailTemplate.MAGIC_LINK, 'pt-BR', {
+      ...globals,
+      ...contexts[MailTemplate.MAGIC_LINK],
+      loginUrl: 'http://front.test/magic-link?token=abc.def&lang=pt-BR',
+    });
+    const text = service.toText(html);
+
+    expect(text).toContain('(http://front.test/magic-link?token=abc.def&lang=pt-BR)');
+    expect(text).not.toMatch(/&#x3D;|&amp;/);
   });
 
   it('compila cada template uma única vez por idioma (cache)', () => {

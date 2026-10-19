@@ -22,6 +22,8 @@ interface AuthValue {
   user: User | null;
   login(email: string, password: string): Promise<LoginResult>;
   verifyTwoFactor(twoFactorToken: string, code: string): Promise<void>;
+  /** Login pelo link mágico do e-mail (veja pages/MagicLinkPages.tsx). */
+  magicLogin(token: string): Promise<LoginResult>;
   /** Login com o ID token do Google/Apple (veja components/SocialLogin.tsx). */
   socialLogin(
     provider: 'google' | 'apple',
@@ -76,6 +78,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       user,
       async login(email, password) {
         const { data, error } = await api.POST('/api/v1/auth/login', { body: { email, password } });
+        if (error || !data) fail(error);
+        return startOrChallenge(data);
+      },
+      async magicLogin(token) {
+        const { data, error } = await api.POST('/api/v1/auth/magic-link/verify', {
+          body: { token },
+        });
         if (error || !data) fail(error);
         return startOrChallenge(data);
       },

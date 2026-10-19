@@ -93,7 +93,8 @@ Cada e-mail é um arquivo `.hbs` **por idioma** em `src/mail/templates/<idioma>/
 | Template | Quando |
 | --- | --- |
 | `verify-email` | Cadastro, reenvio, troca de e-mail (vai para o endereço novo) |
-| `welcome` | Primeira confirmação de e-mail |
+| `welcome` | Primeira confirmação de e-mail, conta criada pelo Google/Apple, ou primeira senha de uma conta convidada |
+| `magic-link` | Link para entrar sem senha (15 min, uso único), com o dispositivo e o IP do pedido |
 | `forgot-password` | "Esqueci minha senha" |
 | `password-changed` | Senha trocada/redefinida |
 | `role-changed` | Admin mudou a role |

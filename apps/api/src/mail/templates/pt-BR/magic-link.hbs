@@ -1,0 +1,18 @@
+<h1>Seu link para entrar</h1>
+<p>Olá, {{name}}.</p>
+<p>Clique no botão abaixo para entrar no <strong>{{appName}}</strong> sem digitar a senha:</p>
+{{> button url=loginUrl label="Entrar"}}
+<p>O link expira em <strong>{{expiresInMinutes}} minutos</strong> e só pode ser usado uma vez. Se a sua conta tem verificação em duas etapas, o código do app ainda será pedido.</p>
+<table role="presentation" cellspacing="0" cellpadding="8" style="margin:16px 0;border-collapse:collapse;">
+  <tr>
+    <td style="color:#6b7280;">Pedido de</td>
+    <td><strong>{{device}}</strong></td>
+  </tr>
+  <tr>
+    <td style="color:#6b7280;">IP</td>
+    <td><strong>{{ip}}</strong></td>
+  </tr>
+</table>
+<p class="muted">Se o botão não funcionar, copie e cole este endereço no navegador:</p>
+<p class="muted break-all" style="word-break:break-all;overflow-wrap:anywhere;font-size:12px;"><a href="{{loginUrl}}" style="word-break:break-all;overflow-wrap:anywhere;">{{loginUrl}}</a></p>
+<p class="muted"><strong>Não foi você?</strong> Ignore este e-mail: sem abrir este link, ninguém entra na sua conta. Nunca encaminhe este e-mail.</p>

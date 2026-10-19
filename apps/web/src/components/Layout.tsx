@@ -1,9 +1,10 @@
 import { useEffect, useState, type ReactNode } from 'react';
-import { Link, NavLink, Outlet, useLocation, useNavigate } from 'react-router';
+import { Link, Navigate, NavLink, Outlet, useLocation, useNavigate } from 'react-router';
 import { useAuth } from '../auth/AuthProvider';
 import { can, type Permission } from '../auth/permissions';
 import { useI18n } from '../i18n/I18nProvider';
 import { Icon, ProductMark, type IconName } from './Icon';
+import { useLoginMethods } from './Reauth';
 import { Avatar, LanguageSwitch } from './ui';
 
 interface NavEntry {
@@ -24,10 +25,16 @@ export function AppLayout() {
   const navigate = useNavigate();
   const { pathname } = useLocation();
   const [open, setOpen] = useState(false);
+  const methods = useLoginMethods();
 
   useEffect(() => setOpen(false), [pathname]);
 
   if (!user) return null;
+  // Convidado que entrou pelo link e ainda não tem senha nem Google/Apple: cria a senha primeiro
+  // (é só a interface que obriga; quem protege as rotas continua sendo a API)
+  if (methods.data && !methods.data.hasPassword && methods.data.identities.length === 0) {
+    return <Navigate to="/create-password" replace />;
+  }
 
   const all: { label: string; items: NavEntry[] }[] = [
     {

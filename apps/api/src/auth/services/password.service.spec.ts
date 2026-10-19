@@ -2,6 +2,7 @@ import { BadRequestException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { JwtModule } from '@nestjs/jwt';
 import { Test } from '@nestjs/testing';
+import { getRepositoryToken } from '@nestjs/typeorm';
 import * as bcrypt from 'bcryptjs';
 import { Role } from '../../common/enums/role.enum';
 import { MailService } from '../../mail/mail.service';
@@ -11,6 +12,8 @@ import { AuditAction } from '../../audit/audit-action.enum';
 import { AuditService } from '../../audit/audit.service';
 import { PasswordService } from './password.service';
 import { SessionService } from '../../sessions/session.service';
+import { ReauthService } from '../../users/account/reauth.service';
+import { UserIdentity } from '../social/entities/user-identity.entity';
 
 const SECRET = 'segredo-de-teste-com-tamanho-suficiente';
 
@@ -58,6 +61,12 @@ describe('PasswordService', () => {
         { provide: SessionService, useValue: sessionService },
         { provide: MailService, useValue: mailService },
         { provide: AuditService, useValue: audit },
+        { provide: ReauthService, useValue: { confirm: jest.fn() } },
+        // sem vínculo com Google/Apple: a primeira senha é de uma conta convidada
+        {
+          provide: getRepositoryToken(UserIdentity),
+          useValue: { count: jest.fn().mockResolvedValue(0) },
+        },
         {
           provide: ConfigService,
           useValue: {
