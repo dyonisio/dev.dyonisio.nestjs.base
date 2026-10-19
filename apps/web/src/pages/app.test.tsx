@@ -1,4 +1,4 @@
-import { screen, within } from '@testing-library/react';
+import { fireEvent, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { json, requestOf } from '../test/fetch-mock';
@@ -186,5 +186,53 @@ describe('formas de login compartilhadas', () => {
       requestOf(c).url.endsWith('/api/v1/users/me/identities'),
     );
     expect(calls).toHaveLength(1);
+  });
+});
+
+describe('minha conta: foto com recorte 1:1', () => {
+  it('escolher a foto abre o recorte; "Usar foto" envia o recorte em JPEG, não a original', async () => {
+    // O navegador simulado não desenha imagens nem gera canvas: simula essas duas partes
+    vi.spyOn(HTMLCanvasElement.prototype, 'getContext').mockReturnValue({
+      fillRect: vi.fn(),
+      drawImage: vi.fn(),
+    } as unknown as CanvasRenderingContext2D);
+    vi.spyOn(HTMLCanvasElement.prototype, 'toBlob').mockImplementation(function (cb) {
+      cb(new Blob(['jpeg'], { type: 'image/jpeg' }));
+    });
+    vi.stubGlobal(
+      'URL',
+      Object.assign(URL, { createObjectURL: () => 'blob:foto', revokeObjectURL: vi.fn() }),
+    );
+
+    const user = makeUser();
+    const fetch = renderApp('/account', user, {
+      'POST /api/v1/files': () =>
+        json(201, {
+          file: { id: 'f1' },
+          upload: { url: 'https://bucket.test/', method: 'POST', fields: { key: 'k' } },
+        }),
+      'POST /': () => new Response(null, { status: 204 }),
+      'POST /api/v1/files/f1/complete': () => json(200, { id: 'f1', status: 'ready' }),
+      'PUT /api/v1/users/me/avatar': () => json(200, { ...user, avatarUrl: 'https://x/a.jpg' }),
+    });
+
+    const original = new File([new Uint8Array(3_000_000)], 'celular.png', { type: 'image/png' });
+    await userEvent.upload(await screen.findByTestId('avatar-input'), original);
+
+    const dialog = screen.getByRole('dialog', { name: 'Adjust your photo' });
+    const img = dialog.querySelector('img')!;
+    Object.defineProperty(img, 'naturalWidth', { value: 4000 });
+    Object.defineProperty(img, 'naturalHeight', { value: 3000 });
+    fireEvent.load(img);
+
+    await userEvent.click(within(dialog).getByRole('button', { name: 'Use photo' }));
+
+    expect(await lastBody(fetch, 'POST', '/api/v1/files')).toEqual({
+      purpose: 'avatar',
+      contentType: 'image/jpeg', // o recorte, não o PNG de 3 MB
+      size: 4,
+    });
+    await screen.findByText('Change photo');
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
   });
 });

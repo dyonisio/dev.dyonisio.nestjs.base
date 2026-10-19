@@ -1,6 +1,7 @@
 import { useRef, useState, type ChangeEvent, type FormEvent } from 'react';
 import { api } from '../../api/client';
 import { FILE_LIMITS, uploadFile } from '../../api/upload';
+import { AvatarCropper } from '../../components/AvatarCropper';
 import { useAuth } from '../../auth/AuthProvider';
 import { session } from '../../auth/session';
 import { ReauthDialog, useLoginMethods, type ReauthProof } from '../../components/Reauth';
@@ -21,6 +22,9 @@ import type { Language } from '../../i18n/language';
 import { formatBytes, formatDate } from '../../lib/format';
 import { CreatePasswordForm } from '../MagicLinkPages';
 import { useAction } from '../../lib/hooks';
+
+/** Maior foto que o navegador abre para recortar (a que sobe é o recorte, bem menor). */
+const MAX_ORIGINAL_BYTES = 20 * 1024 * 1024;
 
 /** /account — foto, dados pessoais, e-mail e senha. */
 export function ProfilePage() {
@@ -50,9 +54,11 @@ function PhotoSection() {
   const { m, f } = useI18n();
   const { user } = useAuth();
   const input = useRef<HTMLInputElement>(null);
+  const [cropping, setCropping] = useState<File | null>(null);
   const { run, busy, error, setError } = useAction();
   const limits = FILE_LIMITS.avatar;
-  const maxSize = formatBytes(limits.maxSize);
+  // A original só precisa abrir no navegador: o que sobe é o recorte (512×512, dezenas de KB)
+  const maxOriginal = formatBytes(MAX_ORIGINAL_BYTES);
 
   if (!user) return null;
 
@@ -63,13 +69,19 @@ function PhotoSection() {
     if (!limits.contentTypes.includes(file.type)) {
       return setError({ statusCode: 0, code: 'client', message: m.profile.photoInvalidType });
     }
-    if (file.size > limits.maxSize) {
+    if (file.size > MAX_ORIGINAL_BYTES) {
       return setError({
         statusCode: 0,
         code: 'client',
-        message: f(m.profile.photoTooBig, { size: maxSize }),
+        message: f(m.profile.photoTooBig, { size: maxOriginal }),
       });
     }
+    setError(null);
+    setCropping(file);
+  }
+
+  function upload(file: File) {
+    setCropping(null);
     void run(async () => {
       const uploaded = await uploadFile(file, 'avatar');
       const { data, error: apiError } = await api.PUT('/api/v1/users/me/avatar', {
@@ -102,7 +114,7 @@ function PhotoSection() {
               </button>
             )}
           </div>
-          <small className="hint">{f(m.profile.photoHint, { size: maxSize })}</small>
+          <small className="hint">{m.profile.photoHint}</small>
         </div>
       </div>
       <input
@@ -114,6 +126,9 @@ function PhotoSection() {
         data-testid="avatar-input"
       />
       <ErrorAlert error={error} />
+      {cropping && (
+        <AvatarCropper file={cropping} onCancel={() => setCropping(null)} onCropped={upload} />
+      )}
     </Section>
   );
 }

@@ -48,7 +48,7 @@ A API precisa aceitar a origem do front no CORS. Em desenvolvimento, o `.env.exa
 | Rota | Tela | O que tem |
 | --- | --- | --- |
 | `/` | Início | Saudação, aviso de e-mail não confirmado (com "reenviar"), convite para ativar o 2FA, atalhos |
-| `/account` | Minha conta | Foto (upload direto para o S3), nome e idioma, troca de e-mail (confirmada pelo endereço novo), troca de senha. Conta sem senha (só Google/Apple) recebe um link para criar uma |
+| `/account` | Minha conta | Foto (recorte quadrado no navegador e upload direto para o S3), nome e idioma, troca de e-mail (confirmada pelo endereço novo), troca de senha. Conta sem senha (só Google/Apple) recebe um link para criar uma |
 | `/account/security` | Segurança | 2FA (QR code, códigos de recuperação, gerar novos, desativar), dispositivos conectados (desconectar um ou todos os outros), formas de login (desvincular Google/Apple) |
 | `/account/privacy` | Privacidade | Baixar meus dados (JSON) e excluir a conta |
 | `/admin/users` | Usuários | `users:read`. Busca, filtro por role, ordenação, paginação, excluídos (com "restaurar"), criar usuário/convite |
@@ -242,6 +242,15 @@ Falha de rede vira um erro com `code: 'network'` e texto próprio. O `account.re
 antigo) aparece com um botão "Entrar de novo".
 
 Use o `code` (estável, em inglês) para decidir algo no código; use o `message` (traduzido) para mostrar.
+
+### Foto do perfil (recorte 1:1)
+
+Ao escolher a foto, abre uma janela de recorte ([AvatarCropper.tsx](../apps/web/src/components/AvatarCropper.tsx)): arrastar
+posiciona, o zoom aproxima (barra, rodinha do mouse ou `+`/`-`), as setas movem pelo teclado, e um círculo mostra como o
+avatar vai ficar. O que sobe é o **recorte** redesenhado em 512×512 (JPEG): fica com poucos KB em vez de MB e **sem os
+metadados** da original (EXIF, inclusive a localização GPS das fotos de celular). A original só precisa abrir no navegador
+(até 20 MB); o limite de 2 MB do avatar vale para o recorte. As contas do recorte ficam em [crop.ts](../apps/web/src/lib/crop.ts),
+com testes.
 
 ## Receitas
 

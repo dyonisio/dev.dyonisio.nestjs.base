@@ -23,6 +23,7 @@ function paginate<T>(rows: T[], page: number, limit: number) {
 
 export function installMockApi(me: User) {
   let current = { ...me };
+  let uploaded: string | null = null;
   const list = users.map((u) => (u.id === me.id ? current : u));
 
   window.fetch = async (input: RequestInfo | URL, init?: RequestInit) => {
@@ -30,12 +31,14 @@ export function installMockApi(me: User) {
     const url = new URL(req.url);
     const path = url.pathname.replace(/^\/api\/v1/, '');
     const q = url.searchParams;
-    const body = ['POST', 'PATCH', 'PUT', 'DELETE'].includes(req.method)
-      ? await req
-          .clone()
-          .json()
-          .catch(() => ({}))
-      : {};
+    const isJson = req.headers.get('content-type')?.includes('application/json');
+    const body =
+      isJson && ['POST', 'PATCH', 'PUT', 'DELETE'].includes(req.method)
+        ? await req
+            .clone()
+            .json()
+            .catch(() => ({}))
+        : {};
     await new Promise((r) => setTimeout(r, 120)); // um pouco de rede, para ver os estados
 
     const route = `${req.method} ${path}`;
@@ -48,6 +51,28 @@ export function installMockApi(me: User) {
       return json(200, current);
     }
     if (route === 'GET /users/me/identities') return json(200, identities);
+
+    // Upload da foto: pedido → "bucket" falso → confirmação → avatar (fica só no navegador)
+    if (route === 'POST /files') {
+      return json(201, {
+        file: { id: 'preview-file', status: 'pending' },
+        upload: { url: `${location.origin}/mock-bucket/`, method: 'POST', fields: {} },
+      });
+    }
+    if (req.method === 'POST' && url.pathname === '/mock-bucket/') {
+      const file = (await req.formData()).get('file');
+      if (file instanceof Blob) uploaded = URL.createObjectURL(file);
+      return new Response(null, { status: 204 });
+    }
+    if (route === 'POST /files/preview-file/complete') return json(200, { id: 'preview-file' });
+    if (route === 'PUT /users/me/avatar') {
+      current = { ...current, avatarUrl: uploaded };
+      return json(200, current);
+    }
+    if (route === 'DELETE /users/me/avatar') {
+      current = { ...current, avatarUrl: null };
+      return json(200, current);
+    }
     if (route === 'GET /users/me/sessions') return json(200, sessions);
 
     if (route === 'GET /users') {

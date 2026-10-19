@@ -1277,6 +1277,60 @@ a.plain:hover .row-title {
   border: 1px solid var(--border);
 }
 
+/* ---------- recorte do avatar ---------- */
+
+.cropper {
+  position: relative;
+  max-width: 100%;
+  margin: 0 auto;
+  overflow: hidden;
+  border-radius: var(--radius-card);
+  background: var(--raised);
+  cursor: grab;
+  touch-action: none; /* o dedo arrasta a foto, não a página */
+  user-select: none;
+}
+
+.cropper:active {
+  cursor: grabbing;
+}
+
+.cropper img {
+  position: absolute;
+  top: 0;
+  left: 0;
+  max-width: none;
+  pointer-events: none;
+}
+
+/* o círculo do avatar: escurece o que fica de fora */
+.cropper::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  box-shadow: 0 0 0 9999px rgb(0 0 0 / 0.45);
+  outline: 2px solid rgb(255 255 255 / 0.85);
+  outline-offset: -2px;
+  pointer-events: none;
+}
+
+.zoom {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-top: 16px;
+  font-weight: 500;
+}
+
+.zoom input[type='range'] {
+  flex: 1;
+  height: auto;
+  padding: 0;
+  border: 0;
+  accent-color: var(--primary);
+}
+
 /* ---------- janela (modal) ---------- */
 
 .modal-backdrop {
