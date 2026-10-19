@@ -178,7 +178,11 @@ function TwoFactorSection({ hasPassword }: { hasPassword: boolean }) {
           <FormError error={error} />
           <div className="panel-actions">
             {cancel}
-            <button type="submit" className="primary" disabled={busy}>
+            <button
+              type="submit"
+              className="primary"
+              disabled={busy || (hasPassword && !reauth.currentPassword)}
+            >
               {m.common.submit}
             </button>
           </div>
@@ -200,7 +204,7 @@ function TwoFactorSection({ hasPassword }: { hasPassword: boolean }) {
           <FormError error={error} />
           <div className="panel-actions">
             {cancel}
-            <button type="submit" className="primary" disabled={busy}>
+            <button type="submit" className="primary" disabled={busy || !code.trim()}>
               {m.security.activate}
             </button>
           </div>
@@ -223,7 +227,7 @@ function TwoFactorSection({ hasPassword }: { hasPassword: boolean }) {
             <button
               type="submit"
               className={step.name === 'disable' ? 'danger' : undefined}
-              disabled={busy}
+              disabled={busy || !code.trim()}
             >
               {step.name === 'disable' ? m.security.disable : m.security.regenerate}
             </button>

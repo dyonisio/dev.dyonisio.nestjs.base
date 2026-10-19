@@ -132,8 +132,15 @@ function DetailsForm({ user, onSaved }: { user: User; onSaved: (u: User) => void
     setForm({ name: user.name, email: user.email, locale: shownLocale, isActive: user.isActive });
   }, [user, shownLocale]);
 
+  const changed =
+    form.name.trim() !== user.name ||
+    form.email.trim() !== user.email ||
+    form.isActive !== user.isActive ||
+    form.locale !== shownLocale;
+
   function submit(e: FormEvent) {
     e.preventDefault();
+    if (!changed) return;
     setSaved(false);
     const { locale, ...rest } = form;
     void run(async () => {
@@ -179,7 +186,10 @@ function DetailsForm({ user, onSaved }: { user: User; onSaved: (u: User) => void
         <FormError error={error} />
         {saved && <SuccessAlert>{m.common.saved}</SuccessAlert>}
         <div className="panel-actions">
-          <button type="submit" disabled={busy}>
+          <button
+            type="submit"
+            disabled={busy || !changed || !form.name.trim() || !form.email.trim()}
+          >
             {m.common.save}
           </button>
         </div>

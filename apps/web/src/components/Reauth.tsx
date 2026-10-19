@@ -108,9 +108,13 @@ export function ReauthDialog({
   onClose: () => void;
 }) {
   const { m } = useI18n();
+  const { user } = useAuth();
   const methods = useLoginMethods();
   const [value, setValue] = useState(emptyReauth);
   const { run, busy, error } = useAction();
+  const hasPassword = methods.data?.hasPassword ?? true;
+  const ready =
+    (!hasPassword || !!value.currentPassword) && (!user?.twoFactorEnabledAt || !!value.code.trim());
 
   const submit = (e: FormEvent) => {
     e.preventDefault();
@@ -125,7 +129,7 @@ export function ReauthDialog({
           value={value}
           onChange={setValue}
           error={error}
-          hasPassword={methods.data?.hasPassword ?? true}
+          hasPassword={hasPassword}
           legend={false}
         />
         <FormError error={error} />
@@ -133,7 +137,11 @@ export function ReauthDialog({
           <button type="button" onClick={onClose}>
             {m.common.cancel}
           </button>
-          <button type="submit" className={danger ? 'danger solid' : 'primary'} disabled={busy}>
+          <button
+            type="submit"
+            className={danger ? 'danger solid' : 'primary'}
+            disabled={busy || !ready}
+          >
             {confirmLabel}
           </button>
         </div>

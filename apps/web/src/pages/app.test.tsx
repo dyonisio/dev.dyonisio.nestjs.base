@@ -144,3 +144,33 @@ describe('admin: criar usuário', () => {
     });
   });
 });
+
+describe('minha conta: botões só acendem quando faz sentido', () => {
+  it('dados pessoais: Salvar desligado sem mudança; liga ao mudar; desliga se voltar', async () => {
+    renderApp('/account', makeUser({ name: 'Jane Doe' }));
+
+    const name = await screen.findByLabelText('Name');
+    const save = screen.getByRole('button', { name: 'Save' });
+    expect(save).toBeDisabled();
+
+    await userEvent.type(name, 'x');
+    expect(save).toBeEnabled();
+
+    await userEvent.type(name, '{Backspace}');
+    expect(save).toBeDisabled();
+  });
+
+  it('senha: Trocar senha desligado até os três campos estarem preenchidos', async () => {
+    renderApp('/account', makeUser());
+
+    const change = await screen.findByRole('button', { name: 'Change password' });
+    expect(change).toBeDisabled();
+
+    await userEvent.type(screen.getByLabelText('Current password'), 'Senha123');
+    await userEvent.type(screen.getByLabelText('New password'), 'NovaSenha1');
+    expect(change).toBeDisabled();
+
+    await userEvent.type(screen.getByLabelText('Confirm the new password'), 'NovaSenha1');
+    expect(change).toBeEnabled();
+  });
+});

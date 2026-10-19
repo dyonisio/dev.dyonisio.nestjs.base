@@ -366,7 +366,11 @@ function CreateUserModal({
           <button type="button" onClick={onClose}>
             {m.common.cancel}
           </button>
-          <button type="submit" className="primary" disabled={busy}>
+          <button
+            type="submit"
+            className="primary"
+            disabled={busy || !form.name.trim() || !form.email.trim()}
+          >
             {m.users.create}
           </button>
         </div>

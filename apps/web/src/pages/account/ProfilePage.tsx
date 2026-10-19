@@ -126,9 +126,13 @@ function DetailsSection() {
   const [locale, setLocale] = useState<Language>((user?.locale as Language | null) ?? lang);
   const [saved, setSaved] = useState(false);
   const { run, busy, error } = useAction();
+  // Salvar só acende quando algo mudou (e o nome não está vazio)
+  const changed =
+    name.trim() !== (user?.name ?? '') || locale !== ((user?.locale as Language | null) ?? lang);
 
   function submit(e: FormEvent) {
     e.preventDefault();
+    if (!changed) return;
     setSaved(false);
     void run(async () => {
       const { data, error: apiError } = await api.PATCH('/api/v1/users/me', {
@@ -163,7 +167,7 @@ function DetailsSection() {
         <FormError error={error} />
         {saved && <SuccessAlert>{m.common.saved}</SuccessAlert>}
         <div className="panel-actions">
-          <button type="submit" disabled={busy}>
+          <button type="submit" disabled={busy || !changed || !name.trim()}>
             {m.common.save}
           </button>
         </div>
@@ -326,7 +330,10 @@ function PasswordSection({
         <FormError error={error} />
         {done && <SuccessAlert>{m.profile.passwordChanged}</SuccessAlert>}
         <div className="panel-actions">
-          <button type="submit" disabled={busy}>
+          <button
+            type="submit"
+            disabled={busy || !form.currentPassword || !form.newPassword || !form.confirm}
+          >
             {m.profile.changePassword}
           </button>
         </div>

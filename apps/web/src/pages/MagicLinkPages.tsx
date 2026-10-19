@@ -156,7 +156,11 @@ export function CreatePasswordForm({ onDone }: { onDone: () => void }) {
       )}
       <FormError error={error} />
       <div className="panel-actions">
-        <button type="submit" className="primary" disabled={busy}>
+        <button
+          type="submit"
+          className="primary"
+          disabled={busy || !form.password || !form.confirm || (needsCode && !form.code.trim())}
+        >
           {m.createPassword.save}
         </button>
       </div>
