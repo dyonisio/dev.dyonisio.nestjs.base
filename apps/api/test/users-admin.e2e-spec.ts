@@ -202,6 +202,71 @@ describe('Administração de usuários (e2e)', () => {
     });
   });
 
+  describe('admin troca o e-mail de alguém', () => {
+    afterEach(() => jest.restoreAllMocks());
+
+    it('vira pedido pendente: a conta segue com o e-mail atual até o novo ser confirmado', async () => {
+      const mail = app.get(MailService);
+      const verify = jest.spyOn(mail, 'sendVerifyEmail');
+      const changed = jest.spyOn(mail, 'sendEmailChanged');
+      const id = ids['ana@empresa.com'];
+
+      const res = await asAdmin(http().patch(`/api/v1/users/${id}`))
+        .send({ email: 'ana.nova@empresa.com' })
+        .expect(200);
+
+      // nada muda ainda: login, "esqueci a senha" e link mágico seguem no endereço atual
+      expect(res.body).toMatchObject({
+        email: 'ana@empresa.com',
+        pendingEmail: 'ana.nova@empresa.com',
+        emailVerifiedAt: expect.any(String),
+      });
+      await login('ana@empresa.com').expect(200);
+      expect(changed).not.toHaveBeenCalled();
+
+      // o link vai para o endereço NOVO; só abrindo-o a troca acontece e o antigo é avisado
+      expect(verify).toHaveBeenCalledWith(
+        expect.objectContaining({ email: 'ana.nova@empresa.com' }),
+        expect.stringContaining('/verify-email?token='),
+        expect.any(Number),
+      );
+      const token = new URL(verify.mock.calls[0][1]).searchParams.get('token')!;
+      await http().post('/api/v1/auth/email/verify').send({ token }).expect(200);
+
+      const after = await asAdmin(http().get(`/api/v1/users/${id}`)).expect(200);
+      expect(after.body).toMatchObject({ email: 'ana.nova@empresa.com', pendingEmail: null });
+      expect(changed).toHaveBeenCalledWith(
+        expect.objectContaining({ email: 'ana@empresa.com' }),
+        'ana.nova@empresa.com',
+      );
+      await login('ana.nova@empresa.com').expect(200);
+    });
+
+    it('e-mail digitado errado e nunca confirmado: a conta não muda de dono', async () => {
+      const created = await asAdmin(http().post('/api/v1/users'))
+        .send({ name: 'Bruno Lima', email: 'bruno.lima@outra.com', password: 'Senha123' })
+        .expect(201);
+      await asAdmin(http().patch(`/api/v1/users/${created.body.id}`))
+        .send({ email: 'bruno.lima@gmal.com' })
+        .expect(200);
+
+      await login('bruno.lima@outra.com').expect(200);
+      await login('bruno.lima@gmal.com').expect(401);
+      // o "esqueci a senha" do endereço errado não acha conta nenhuma
+      const forgot = jest.spyOn(app.get(MailService), 'sendForgotPassword');
+      await http().post('/api/v1/auth/password/forgot');
+
+      expect(forgot).not.toHaveBeenCalled();
+    });
+
+    it('e-mail já usado por outra conta -> 409', async () => {
+      const res = await asAdmin(http().patch(`/api/v1/users/${ids['diego_souza@empresa.com']}`))
+        .send({ email: 'admin@adm.com' })
+        .expect(409);
+      expect(res.body.code).toBe('users.emailTaken');
+    });
+  });
+
   describe('conta criada pelo admin (convite)', () => {
     const tokenOf = (url: string) => new URL(url).searchParams.get('token')!;
     let inviteUrl: string;

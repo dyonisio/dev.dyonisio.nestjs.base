@@ -154,7 +154,8 @@ jobs:
         run: |
           service=$(awk '/^service:/ {print $2}' serverless.yml)
           out() {
-            aws cloudformation describe-stacks --stack-name "$service-$STAGE"               --query "Stacks[0].Outputs[?OutputKey=='$1'].OutputValue" --output text
+            aws cloudformation describe-stacks --stack-name "$service-$STAGE" \
+              --query "Stacks[0].Outputs[?OutputKey=='$1'].OutputValue" --output text
           }
           if [ -n "$API_DOMAIN" ] && [ -n "$API_CERTIFICATE_ARN" ]; then
             api_origin="https://$API_DOMAIN"
@@ -179,9 +180,17 @@ jobs:
           WEB_CERTIFICATE_ARN: ${{ vars.WEB_CERTIFICATE_ARN }}
         run: |
           stack="$SERVICE-$STAGE-web"
-          aws cloudformation deploy             --template-file ../web/infra/web.yml             --stack-name "$stack"             --no-fail-on-empty-changeset             --parameter-overrides               "Service=$SERVICE" "Stage=$STAGE"               "DomainName=$WEB_DOMAIN" "CertificateArn=$WEB_CERTIFICATE_ARN"               "ApiOrigin=$API_ORIGIN" "UploadsOrigin=$UPLOADS_ORIGIN"
+          aws cloudformation deploy \
+            --template-file ../web/infra/web.yml \
+            --stack-name "$stack" \
+            --no-fail-on-empty-changeset \
+            --parameter-overrides \
+            "Service=$SERVICE" "Stage=$STAGE" \
+            "DomainName=$WEB_DOMAIN" "CertificateArn=$WEB_CERTIFICATE_ARN" \
+            "ApiOrigin=$API_ORIGIN" "UploadsOrigin=$UPLOADS_ORIGIN"
           out() {
-            aws cloudformation describe-stacks --stack-name "$stack"               --query "Stacks[0].Outputs[?OutputKey=='$1'].OutputValue" --output text
+            aws cloudformation describe-stacks --stack-name "$stack" \
+              --query "Stacks[0].Outputs[?OutputKey=='$1'].OutputValue" --output text
           }
           {
             echo "bucket=$(out BucketName)"
@@ -201,16 +210,20 @@ jobs:
           npm ci
           npm run build
 
-      # Arquivos com hash no nome nunca mudam: cache de 1 ano. O index.html é revalidado
-      # sempre, para a versão nova chegar na hora.
+      # assets/ (nome com hash, nunca muda): cache de 1 ano. Arquivos sem hash (favicon, icon.png
+      # do 2FA): 1 hora. O index.html é revalidado sempre, para a versão nova chegar na hora.
       - name: Publicar o front
         working-directory: apps/web
         env:
           BUCKET: ${{ steps.web.outputs.bucket }}
           DISTRIBUTION: ${{ steps.web.outputs.distribution }}
         run: |
-          aws s3 sync dist "s3://$BUCKET" --delete --exclude index.html             --cache-control "public,max-age=31536000,immutable"
-          aws s3 cp dist/index.html "s3://$BUCKET/index.html"             --cache-control "no-cache" --content-type "text/html; charset=utf-8"
+          aws s3 sync dist/assets "s3://$BUCKET/assets" --delete \
+            --cache-control "public,max-age=31536000,immutable"
+          aws s3 sync dist "s3://$BUCKET" --delete --exclude "assets/*" --exclude index.html \
+            --cache-control "public,max-age=3600"
+          aws s3 cp dist/index.html "s3://$BUCKET/index.html" \
+            --cache-control "no-cache" --content-type "text/html; charset=utf-8"
           aws cloudfront create-invalidation --distribution-id "$DISTRIBUTION" --paths /index.html > /dev/null
 
       - name: Resumo (endereços e DNS)

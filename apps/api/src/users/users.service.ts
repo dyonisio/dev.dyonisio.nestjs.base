@@ -193,20 +193,18 @@ export class UsersService {
       }
     }
 
-    const previous = { name: user.name, email: user.email, locale: user.locale };
+    // O e-mail NÃO muda aqui: vira um pedido de troca (pendingEmail), igual ao feito pelo próprio
+    // usuário. A conta continua com o endereço atual até o novo ser confirmado pelo link — um
+    // endereço digitado errado nunca é confirmado, então não entrega a conta a um estranho.
+    const { email: newEmail, ...rest } = dto;
     if (emailChanged) {
-      await this.ensureEmailAvailable(dto.email!);
-      user.emailVerifiedAt = null;
-      user.pendingEmail = null;
+      await this.ensureEmailAvailable(newEmail!);
+      delete changes.email; // o que mudou foi só o pedido (auditado como email_change_requested)
     }
-    Object.assign(user, dto);
+    Object.assign(user, rest);
     const saved = await this.repo.save(user);
 
-    if (emailChanged) {
-      await this.emailVerification.send(saved);
-      // Aviso no endereço ANTIGO: se não foi o dono, ele fica sabendo
-      await this.mailService.sendEmailChanged(previous, saved.email);
-    }
+    if (emailChanged) await this.emailVerification.requestChange(saved, newEmail!, 'admin');
     if (changes.isActive?.to === false) {
       await this.sessions.revokeAllForUser(id, SessionRevokeReason.USER_DISABLED);
     }

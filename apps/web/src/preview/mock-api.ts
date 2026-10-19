@@ -70,7 +70,11 @@ export function installMockApi(me: User) {
     }
     if (one && req.method === 'PATCH') {
       const u = list.find((x) => x.id === one[1]);
-      return u ? json(200, Object.assign(u, body)) : notFound();
+      if (!u) return notFound();
+      // como a API: o e-mail novo fica pendente até ser confirmado pelo link
+      const { email, ...rest } = body as { email?: string };
+      Object.assign(u, rest, email && email !== u.email ? { pendingEmail: email } : {});
+      return json(200, u);
     }
     const role = path.match(/^\/users\/([^/]+)\/role$/);
     if (role) {

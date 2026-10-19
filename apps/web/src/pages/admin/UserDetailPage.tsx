@@ -114,7 +114,7 @@ function InfoSection({ user }: { user: User }) {
 }
 
 function DetailsForm({ user, onSaved }: { user: User; onSaved: (u: User) => void }) {
-  const { m, lang } = useI18n();
+  const { m, f, lang } = useI18n();
   const languages = useLanguageOptions();
   // Sem idioma salvo, o select mostra o da tela — mas só é gravado se o admin mudar
   const shownLocale = (user.locale ?? lang) as Language;
@@ -156,6 +156,11 @@ function DetailsForm({ user, onSaved }: { user: User; onSaved: (u: User) => void
 
   return (
     <Section title={m.user.details} help={m.user.detailsHelp}>
+      {user.pendingEmail && (
+        <p className="alert alert-warning panel-alert">
+          {f(m.user.pendingEmail, { email: user.pendingEmail })}
+        </p>
+      )}
       <form onSubmit={submit} noValidate>
         <Field
           label={m.common.name}

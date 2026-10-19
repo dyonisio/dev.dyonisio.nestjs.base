@@ -279,7 +279,9 @@ const en = {
     back: 'Back to users',
     details: 'Details',
     detailsHelp:
-      'A new email takes effect at once, but unconfirmed: the person gets a confirmation link there and the old address is warned. Turning the account off signs the person out and blocks sign-in.',
+      'A new email only takes effect when the person opens the link we send to it; until then the account keeps the current one (a mistyped address changes nothing). Turning the account off signs the person out and blocks sign-in.',
+    pendingEmail:
+      'Waiting for {email} to be confirmed. The account keeps the current email until the person opens the link sent there.',
     id: 'ID',
     infoHelp: 'What the account has set up. Every change here is recorded in the audit log.',
     accountActive: 'Account active (can sign in)',
@@ -661,7 +663,9 @@ const ptBR: Dict = {
     back: 'Voltar para usuários',
     details: 'Dados',
     detailsHelp:
-      'O e-mail muda na hora, mas fica não confirmado: a pessoa recebe o link de confirmação no endereço novo e o antigo é avisado. Desativar a conta desconecta a pessoa e bloqueia o login.',
+      'O e-mail novo só passa a valer quando a pessoa abrir o link que enviamos para ele; até lá a conta segue com o atual (um endereço digitado errado não muda nada). Desativar a conta desconecta a pessoa e bloqueia o login.',
+    pendingEmail:
+      'Aguardando a confirmação de {email}. A conta segue com o e-mail atual até a pessoa abrir o link enviado para lá.',
     id: 'ID',
     infoHelp: 'O que a conta já configurou. Toda mudança aqui fica registrada na auditoria.',
     accountActive: 'Conta ativa (pode entrar)',

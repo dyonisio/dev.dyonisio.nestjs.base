@@ -90,9 +90,22 @@ export function verifyTotp(
   return null;
 }
 
-/** Link lido pelos apps autenticadores (o frontend o transforma em QR code). */
-export function otpauthUrl(params: { secret: string; account: string; issuer: string }): string {
+/**
+ * Link lido pelos apps autenticadores (o frontend o transforma em QR code).
+ * `image` (opcional, só HTTPS) é o ícone da conta no app. Parâmetro não padronizado: FreeOTP,
+ * 2FAS e Aegis mostram; Google Authenticator, Microsoft Authenticator e Authy ignoram (todos
+ * mostram o `issuer`, que é o que identifica a conta).
+ */
+export function otpauthUrl(params: {
+  secret: string;
+  account: string;
+  issuer: string;
+  image?: string | null;
+}): string {
   const issuer = encodeURIComponent(params.issuer);
   const label = `${issuer}:${encodeURIComponent(params.account)}`;
-  return `otpauth://totp/${label}?secret=${params.secret}&issuer=${issuer}&algorithm=SHA1&digits=6&period=${TOTP_PERIOD}`;
+  const image = params.image?.startsWith('https://')
+    ? `&image=${encodeURIComponent(params.image)}`
+    : '';
+  return `otpauth://totp/${label}?secret=${params.secret}&issuer=${issuer}&algorithm=SHA1&digits=6&period=${TOTP_PERIOD}${image}`;
 }

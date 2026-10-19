@@ -43,7 +43,7 @@ describe('UsersService', () => {
     restore: jest.fn(),
   };
   const mailService = { sendRoleChanged: jest.fn(), sendEmailChanged: jest.fn() };
-  const emailVerification = { send: jest.fn() };
+  const emailVerification = { send: jest.fn(), requestChange: jest.fn() };
   const sessions = { revokeAllForUser: jest.fn() };
   const audit = { record: jest.fn() };
   const files = {
@@ -115,19 +115,18 @@ describe('UsersService', () => {
   });
 
   describe('update', () => {
-    it('admin troca o e-mail: exige nova confirmação, envia o link ao novo e avisa o antigo', async () => {
-      repo.findOne.mockResolvedValue(makeUser({ emailVerifiedAt: new Date() }));
+    it('admin troca o e-mail: vira pedido pendente; a conta segue com o atual até confirmar', async () => {
+      const verifiedAt = new Date();
+      repo.findOne.mockResolvedValue(makeUser({ emailVerifiedAt: verifiedAt }));
       repo.exists.mockResolvedValue(false);
 
       const user = await service.update('user-1', { email: 'nova@test.com' });
 
-      expect(user.email).toBe('nova@test.com');
-      expect(user.emailVerifiedAt).toBeNull();
-      expect(emailVerification.send).toHaveBeenCalledWith(user);
-      expect(mailService.sendEmailChanged).toHaveBeenCalledWith(
-        expect.objectContaining({ email: 'maria@test.com' }),
-        'nova@test.com',
-      );
+      // nada muda até o dono do endereço novo abrir o link
+      expect(user.email).toBe('maria@test.com');
+      expect(user.emailVerifiedAt).toBe(verifiedAt);
+      expect(emailVerification.requestChange).toHaveBeenCalledWith(user, 'nova@test.com', 'admin');
+      expect(mailService.sendEmailChanged).not.toHaveBeenCalled(); // o antigo é avisado ao confirmar
     });
 
     it('audita só os campos que mudaram, com valor anterior e novo', async () => {

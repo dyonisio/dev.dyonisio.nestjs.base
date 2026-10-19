@@ -27,6 +27,15 @@ export default () => {
       logLevel: process.env.LOG_LEVEL ?? 'info',
       url: process.env.APP_URL ?? 'http://localhost:3000',
       frontendUrl: process.env.FRONTEND_URL ?? 'http://localhost:5173',
+      /**
+       * Ícone da conta nos apps autenticadores que o suportam (parâmetro image do QR do 2FA).
+       * Padrão: o ícone publicado pelo front (FRONTEND_URL/icon.png), se o site for HTTPS.
+       */
+      totpImageUrl:
+        process.env.TOTP_IMAGE_URL ??
+        (process.env.FRONTEND_URL?.startsWith('https://')
+          ? `${process.env.FRONTEND_URL.replace(/\/$/, '')}/icon.png`
+          : ''),
       fallbackLanguage: process.env.FALLBACK_LANGUAGE ?? 'en',
       /** Nº de proxies confiáveis na frente da API (0 = nenhum; na Lambda use 0). */
       trustProxy: toInt(process.env.TRUST_PROXY, 0),

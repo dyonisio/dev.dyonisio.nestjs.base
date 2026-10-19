@@ -122,6 +122,10 @@ Padrão **TOTP**: o código de 6 dígitos de qualquer app autenticador (Google A
 | `POST /auth/2fa/recovery-codes { code }` | Gera códigos novos (exige o código do app) |
 | `DELETE /users/:id/two-factor` | Admin (`users:reset-2fa`): para quem perdeu o celular **e** os códigos |
 
+No app autenticador, a conta aparece com o nome do `APP_NAME` (o *issuer*) e o e-mail. O QR também leva um ícone
+(`TOTP_IMAGE_URL`; padrão: `FRONTEND_URL/icon.png`, publicado pelo front), mas só alguns apps o mostram (FreeOTP, 2FAS,
+Aegis). Google Authenticator, Microsoft Authenticator e Authy ignoram o ícone e mostram só o nome.
+
 Com 2FA ativo, o login (senha **ou** social) não devolve tokens:
 
 ```json
@@ -187,6 +191,11 @@ POST /users/me/email
 
 Assim ninguém troca o e-mail para um endereço que não controla, e quem roubou um token não consegue redirecionar o
 "esqueci minha senha" para si. `PATCH /users/me` **não** aceita `email`.
+
+**Troca feita pelo admin** (`PATCH /users/:id { email }`): segue o mesmo caminho. O endereço novo vira `pendingEmail` e
+recebe o link, e a conta **continua com o e-mail atual** (login, "esqueci a senha" e link mágico) até o link ser aberto.
+Um endereço digitado errado nunca é confirmado, então não entrega a conta a um estranho. A auditoria registra o pedido
+(`user.email_change_requested`, com o admin como autor) e, depois, a troca (`user.email_changed`).
 
 ### Excluir a conta
 

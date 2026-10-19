@@ -41,12 +41,12 @@ export class EmailVerificationService {
   }
 
   /**
-   * Troca de e-mail pedida pelo próprio usuário: o novo endereço fica em `pendingEmail` e
-   * recebe o link. O e-mail da conta só muda quando o link for usado — assim ninguém troca
-   * o e-mail para um endereço que não controla (e um token roubado não basta para sequestrar
-   * a conta via "esqueci a senha").
+   * Troca de e-mail (pedida pelo próprio usuário ou por um admin): o novo endereço fica em
+   * `pendingEmail` e recebe o link. O e-mail da conta só muda quando o link for usado — assim
+   * ninguém troca o e-mail para um endereço que não controla (e um token roubado, ou um erro de
+   * digitação do admin, não basta para entregar a conta via "esqueci a senha").
    */
-  async requestChange(user: User, newEmail: string): Promise<void> {
+  async requestChange(user: User, newEmail: string, by: 'self' | 'admin' = 'self'): Promise<void> {
     user.pendingEmail = newEmail;
     await this.repo.update(user.id, { pendingEmail: newEmail });
     await this.sendLink(
@@ -54,8 +54,10 @@ export class EmailVerificationService {
       { sub: user.id, email: newEmail, purpose: 'change-email', current: user.email },
     );
     await this.audit.record(AuditAction.USER_EMAIL_CHANGE_REQUESTED, {
-      actorId: user.id,
+      // pelo admin: o autor vem do contexto da requisição (quem está logado)
+      ...(by === 'self' ? { actorId: user.id } : {}),
       target: { type: 'user', id: user.id },
+      metadata: { to: newEmail, by },
     });
   }
 

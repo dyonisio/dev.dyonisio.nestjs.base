@@ -77,6 +77,18 @@ describe('TOTP', () => {
   });
 
   it('gera o link otpauth:// lido pelos apps autenticadores', () => {
+    expect(
+      otpauthUrl({
+        secret: 'ABC',
+        account: 'ana@x.com',
+        issuer: 'Minha API',
+        image: 'https://app.x.com/icon.png',
+      }),
+    ).toContain('&image=https%3A%2F%2Fapp.x.com%2Ficon.png');
+    // só HTTPS: um ícone por http (ou localhost) não seria baixado pelo app
+    expect(
+      otpauthUrl({ secret: 'ABC', account: 'a@x.com', issuer: 'X', image: 'http://x/icon.png' }),
+    ).not.toContain('image=');
     expect(otpauthUrl({ secret: 'ABC', account: 'ana@x.com', issuer: 'Minha API' })).toBe(
       'otpauth://totp/Minha%20API:ana%40x.com?secret=ABC&issuer=Minha%20API&algorithm=SHA1&digits=6&period=30',
     );

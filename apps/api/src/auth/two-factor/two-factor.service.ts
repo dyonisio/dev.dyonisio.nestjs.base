@@ -67,6 +67,7 @@ export class TwoFactorService {
         secret,
         account: user.email,
         issuer: this.config.get<string>('app.name', 'NestJS Base API'),
+        image: this.config.get<string>('app.totpImageUrl'),
       }),
     };
   }
