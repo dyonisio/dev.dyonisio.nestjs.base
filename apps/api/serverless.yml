@@ -295,6 +295,30 @@ resources:
         TreatMissingData: notBreaching
         AlarmActions: [!Ref AlarmTopic]
 
+    # O bucket de uploads passou do tamanho esperado (padrão 5 GB; em bytes: --param="uploadsAlarmBytes=10737418240" para 10 GB).
+    # A métrica do S3 é diária: o alarme avisa em até um dia. Os limites por pessoa
+    # (FILES_MAX_*) seguram o abuso; este alarme pega o que escapar.
+    UploadsBucketSizeAlarm:
+      Type: AWS::CloudWatch::Alarm
+      Properties:
+        AlarmName: ${self:service}-${sls:stage}-uploads-size
+        AlarmDescription: O bucket de uploads passou do tamanho esperado. Veja quem mais envia em docs/FEATURES.md, "Limites de upload".
+        Namespace: AWS/S3
+        MetricName: BucketSizeBytes
+        Dimensions:
+          - Name: BucketName
+            Value: !Ref UploadsBucket
+          - Name: StorageType
+            Value: StandardStorage
+        Statistic: Maximum
+        Period: 86400
+        EvaluationPeriods: 1
+        Threshold: ${param:uploadsAlarmBytes, '5368709120'}
+        ComparisonOperator: GreaterThanThreshold
+        TreatMissingData: notBreaching
+        AlarmActions: [!Ref AlarmTopic]
+        OKActions: [!Ref AlarmTopic]
+
     # E-mails que desistiram depois de 5 tentativas (SES fora, remetente não verificado...)
     MailDeadLetterAlarm:
       Type: AWS::CloudWatch::Alarm

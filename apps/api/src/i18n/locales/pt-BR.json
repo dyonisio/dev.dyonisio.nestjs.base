@@ -55,7 +55,9 @@
     "invalidFile": "Arquivo inválido: envie um upload concluído do tipo certo",
     "invalidUploadPolicy": "Autorização de upload inválida ou expirada",
     "invalidDownloadLink": "Link de download inválido ou expirado",
-    "tooManyPending": "Há muitos envios não concluídos. Conclua ou apague-os antes de começar outros."
+    "tooManyPending": "Há muitos envios não concluídos. Conclua ou apague-os antes de começar outros.",
+    "dailyLimit": "Você atingiu o limite de {limit} envios em 24 horas. Tente de novo mais tarde.",
+    "storageLimit": "Seu espaço de {limitMb} MB acabou. Apague arquivos que não usa antes de enviar outros."
   },
   "password": {
     "invalidResetToken": "Token inválido ou expirado",

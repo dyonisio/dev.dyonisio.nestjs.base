@@ -78,6 +78,18 @@ Segurança:
 - `public/` (ex.: avatar) tem URL aberta; `private/` só por link assinado;
 - no máximo `FILES_MAX_PENDING_PER_USER` (20) uploads em aberto por usuário.
 
+**Limites de upload** (ninguém usa o bucket como depósito, que custa por GB):
+
+| Limite | Variável | Padrão | Ao passar |
+| --- | --- | --- | --- |
+| Envios em aberto por pessoa | `FILES_MAX_PENDING_PER_USER` | 20 | 429 `files.tooManyPending` |
+| Envios por pessoa em 24 h | `FILES_MAX_UPLOADS_PER_DAY` | 50 | 429 `files.dailyLimit` |
+| Espaço total por pessoa (soma dos arquivos dela, pendentes pelo tamanho declarado) | `FILES_MAX_BYTES_PER_USER` | 100 MB | 400 `files.storageLimit` |
+
+`0` desliga o limite. Trocar o avatar apaga o anterior, então só conta o que está em uso. Além disso, o alarme
+`<service>-<stage>-uploads-size` avisa por e-mail (o mesmo `ALARM_EMAIL`) quando o bucket passa de 5 GB (ajuste com
+`--param="uploadsAlarmBytes=..."`). A métrica do S3 é diária, então o aviso chega em até um dia.
+
 **Limpeza automática:** depois de 24 h o job de manutenção apaga os uploads que ficaram `pending` e os concluídos que nada usou
 (ex.: enviou a foto e não salvou como avatar). "Usar" = passar por `filesService.consume()`. Finalidades marcadas com
 `standalone: true` não precisam ser usadas.

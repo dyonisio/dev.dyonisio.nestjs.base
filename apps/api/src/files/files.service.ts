@@ -8,7 +8,7 @@ import {
 import { ConfigService } from '@nestjs/config';
 import { InjectRepository } from '@nestjs/typeorm';
 import { randomUUID } from 'crypto';
-import { Repository } from 'typeorm';
+import { MoreThan, Repository } from 'typeorm';
 import { i18nKey } from '../i18n/translations';
 import { CreateUploadDto, CreateUploadResponseDto, FileDto } from './dto/files.dto';
 import { StoredFile } from './file.entity';
@@ -36,6 +36,42 @@ export class FilesService {
     private readonly config: ConfigService,
   ) {}
 
+  /**
+   * Limites por pessoa, para ninguém usar o bucket como depósito (custo):
+   *  - FILES_MAX_UPLOADS_PER_DAY envios em 24 h (contando os já apagados não: só os que existem);
+   *  - FILES_MAX_BYTES_PER_USER de espaço, somando os arquivos dela (pendentes contam pelo
+   *    tamanho declarado: é o espaço que o envio reservou).
+   * Trocar o avatar apaga o anterior, então só conta o que está em uso.
+   */
+  private async checkQuota(ownerId: string, size: number): Promise<void> {
+    const perDay = this.config.get<number>('storage.maxUploadsPerDay', 50);
+    if (perDay > 0) {
+      const since = new Date(Date.now() - 24 * 60 * 60 * 1000);
+      const today = await this.files.count({ where: { ownerId, createdAt: MoreThan(since) } });
+      if (today >= perDay) {
+        throw new HttpException(
+          { key: 'files.dailyLimit', args: { limit: perDay } },
+          HttpStatus.TOO_MANY_REQUESTS,
+        );
+      }
+    }
+
+    const maxBytes = this.config.get<number>('storage.maxBytesPerUser', 100 * 1024 * 1024);
+    if (maxBytes > 0) {
+      const { used } = (await this.files
+        .createQueryBuilder('file')
+        .select('COALESCE(SUM(file.size), 0)', 'used')
+        .where('file.ownerId = :ownerId', { ownerId })
+        .getRawOne<{ used: string | number }>()) ?? { used: 0 };
+      if (Number(used) + size > maxBytes) {
+        throw new BadRequestException({
+          key: 'files.storageLimit',
+          args: { limitMb: Math.round(maxBytes / 1024 / 1024) },
+        });
+      }
+    }
+  }
+
   async create(ownerId: string, dto: CreateUploadDto): Promise<CreateUploadResponseDto> {
     // Cada pedido reserva espaço no storage até ser concluído ou limpo: sem limite, um
     // usuário poderia pedir milhares de URLs e encher o bucket (custo)
@@ -58,6 +94,8 @@ export class FilesService {
         args: { maxMb: purpose.maxSize / 1024 / 1024 },
       });
     }
+
+    await this.checkQuota(ownerId, dto.size);
 
     const key = `${purpose.visibility}/${dto.purpose}/${ownerId}/${randomUUID()}.${EXTENSIONS[dto.contentType]}`;
     const file = await this.files.save(

@@ -55,7 +55,9 @@
     "invalidFile": "Invalid file: send a completed upload of the right kind",
     "invalidUploadPolicy": "Invalid or expired upload authorization",
     "invalidDownloadLink": "Invalid or expired download link",
-    "tooManyPending": "Too many unfinished uploads. Complete or delete them before starting new ones."
+    "tooManyPending": "Too many unfinished uploads. Complete or delete them before starting new ones.",
+    "dailyLimit": "You reached the limit of {limit} uploads in 24 hours. Try again later.",
+    "storageLimit": "Your {limitMb} MB of storage is full. Delete files you no longer use before uploading more."
   },
   "password": {
     "invalidResetToken": "Invalid or expired token",

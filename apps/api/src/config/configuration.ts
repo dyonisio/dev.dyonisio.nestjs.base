@@ -87,6 +87,10 @@ export default () => {
       },
       /** Uploads ainda não concluídos por usuário (barra abuso de armazenamento). */
       maxPendingPerUser: toInt(process.env.FILES_MAX_PENDING_PER_USER, 20),
+      /** Envios por pessoa em 24 h (0 = sem limite) */
+      maxUploadsPerDay: toInt(process.env.FILES_MAX_UPLOADS_PER_DAY, 50),
+      /** Espaço total por pessoa, em bytes, somando os arquivos dela (0 = sem limite). 100 MB */
+      maxBytesPerUser: toInt(process.env.FILES_MAX_BYTES_PER_USER, 100 * 1024 * 1024),
     },
     /** Login social: client IDs do SEU app em cada provedor (web, iOS, Android...). Vazio = desligado. */
     social: {
