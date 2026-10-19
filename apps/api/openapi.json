@@ -3364,18 +3364,18 @@
             "example": "user.role_changed"
           },
           "actorId": {
-            "type": "object",
+            "type": "string",
             "format": "uuid",
             "nullable": true,
             "description": "Who performed the action (null = anonymous, e.g. failed login)"
           },
           "targetType": {
-            "type": "object",
+            "type": "string",
             "example": "user",
             "nullable": true
           },
           "targetId": {
-            "type": "object",
+            "type": "string",
             "nullable": true
           },
           "metadata": {
@@ -3388,15 +3388,15 @@
             "description": "Action details (never passwords or tokens)"
           },
           "ip": {
-            "type": "object",
+            "type": "string",
             "nullable": true
           },
           "userAgent": {
-            "type": "object",
+            "type": "string",
             "nullable": true
           },
           "requestId": {
-            "type": "object",
+            "type": "string",
             "nullable": true,
             "description": "Same id as the X-Request-Id header / logs"
           },
@@ -3672,13 +3672,13 @@
             "description": "When the email was confirmed — `null` means not verified yet"
           },
           "locale": {
-            "type": "object",
+            "type": "string",
             "nullable": true,
             "example": "pt-BR",
             "description": "Preferred language (emails are sent in it). null = default language"
           },
           "avatarUrl": {
-            "type": "object",
+            "type": "string",
             "nullable": true,
             "example": "https://my-bucket.s3.us-east-1.amazonaws.com/public/avatar/<user>/<file>.png",
             "description": "Public avatar URL (set via PUT /users/me/avatar)"
@@ -3870,13 +3870,13 @@
             "format": "uuid"
           },
           "userAgent": {
-            "type": "object",
+            "type": "string",
             "nullable": true,
             "example": "Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) ...",
             "description": "Raw user agent of the browser/app that signed in"
           },
           "ip": {
-            "type": "object",
+            "type": "string",
             "nullable": true,
             "example": "203.0.113.7",
             "description": "Last IP seen"
@@ -3887,7 +3887,8 @@
             "description": "When the session was opened (sign-in)"
           },
           "lastUsedAt": {
-            "type": "object",
+            "format": "date-time",
+            "type": "string",
             "nullable": true,
             "description": "Last token refresh"
           },
@@ -3961,7 +3962,7 @@
             ]
           },
           "url": {
-            "type": "object",
+            "type": "string",
             "nullable": true,
             "description": "Public files: permanent URL. Private files: temporary signed URL. null while pending."
           },
@@ -4368,7 +4369,7 @@
             "example": "google"
           },
           "email": {
-            "type": "object",
+            "type": "string",
             "nullable": true,
             "example": "jane@gmail.com"
           },

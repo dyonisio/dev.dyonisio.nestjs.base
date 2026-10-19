@@ -1,5 +1,7 @@
 # Receitas
 
+> Os comandos `npm` e os caminhos deste guia (`.env`, `serverless.yml`, `src/...`) são da API: rode-os em `apps/api`.
+
 Passo a passo para as tarefas mais comuns. Ao terminar qualquer uma, rode:
 
 ```bash
@@ -10,7 +12,7 @@ npm run lint && npm run typecheck && npm test && npm run test:e2e
 
 Exemplo: pedidos (`orders`), com leitura para managers e escrita para admins.
 
-**1. Permissões** — em [src/common/enums/permission.enum.ts](../src/common/enums/permission.enum.ts):
+**1. Permissões** — em [src/common/enums/permission.enum.ts](../apps/api/src/common/enums/permission.enum.ts):
 
 ```ts
 export enum Permission {
@@ -116,7 +118,7 @@ e responda 404 (não 403) quando não for dele, para não revelar que o registro
 ## Nova permissão ou nova role
 
 - **Permissão:** adicione em `Permission` e às roles que devem tê-la em `ROLE_PERMISSIONS`. Use com `@Authorize(...)`.
-- **Role:** adicione em [role.enum.ts](../src/common/enums/role.enum.ts) e uma entrada em `ROLE_PERMISSIONS` (um teste exige que toda role esteja no mapa).
+- **Role:** adicione em [role.enum.ts](../apps/api/src/common/enums/role.enum.ts) e uma entrada em `ROLE_PERMISSIONS` (um teste exige que toda role esteja no mapa).
   Não precisa de migration (a role é `varchar`). Adicione o nome traduzido em `roles.*` nos locales (aparece no e-mail de troca de role).
 
 ## Migration
@@ -130,7 +132,7 @@ e responda 404 (não 403) quando não for dele, para não revelar que o registro
 ## Novo e-mail
 
 1. Crie o template em **todos** os idiomas: `src/mail/templates/en/invoice-paid.hbs` e `src/mail/templates/pt-BR/invoice-paid.hbs`.
-2. Em [mail.types.ts](../src/mail/mail.types.ts): `INVOICE_PAID = 'invoice-paid'` no enum e o contexto em `MailTemplateContextMap`.
+2. Em [mail.types.ts](../apps/api/src/mail/mail.types.ts): `INVOICE_PAID = 'invoice-paid'` no enum e o contexto em `MailTemplateContextMap`.
 3. Assunto em `mail.subjects.invoicePaid` nos locales.
 4. Um helper no `MailService`, no padrão dos existentes (idioma do usuário):
 
@@ -151,7 +153,7 @@ sendInvoicePaid(user: MailRecipient, amount: string) {
 
 ## Novo tipo de upload
 
-Uma linha em [src/files/file-purposes.ts](../src/files/file-purposes.ts):
+Uma linha em [src/files/file-purposes.ts](../apps/api/src/files/file-purposes.ts):
 
 ```ts
 receipt: { contentTypes: ['application/pdf', 'image/jpeg'], maxSize: 5 * 1024 * 1024, visibility: 'private' },
@@ -171,7 +173,7 @@ order.receiptFileId = file.id;                                         // guarde
 
 ## Nova tarefa agendada
 
-Em [maintenance.service.ts](../src/maintenance/maintenance.service.ts), adicione uma linha em `tasks` (a função devolve quantos itens processou):
+Em [maintenance.service.ts](../apps/api/src/maintenance/maintenance.service.ts), adicione uma linha em `tasks` (a função devolve quantos itens processou):
 
 ```ts
 expiredInvites: () => this.invites.deleteExpired(now),
@@ -183,15 +185,15 @@ outra função no `serverless.yml` com o seu próprio `schedule`.
 ## Novo idioma
 
 1. Copie `src/i18n/locales/en.json` para `es.json` e traduza.
-2. Registre em [src/i18n/translations.ts](../src/i18n/translations.ts): `es` no objeto `TRANSLATIONS`.
+2. Registre em [src/i18n/translations.ts](../apps/api/src/i18n/translations.ts): `es` no objeto `TRANSLATIONS`.
 3. Crie `src/mail/templates/es/` com todos os templates e `partials/footer.hbs`.
 4. Rode `npm test`: os testes de paridade apontam qualquer chave, placeholder ou template faltando.
 
 ## Nova variável de ambiente
 
-1. Leia em [configuration.ts](../src/config/configuration.ts), com valor padrão e comentário.
-2. Se for obrigatória ou perigosa em produção, adicione a regra em [env.validation.ts](../src/config/env.validation.ts) (e um teste).
-3. Documente no [.env.example](../.env.example) e, se for para a Lambda, no `serverless.yml` (segredo → SSM).
+1. Leia em [configuration.ts](../apps/api/src/config/configuration.ts), com valor padrão e comentário.
+2. Se for obrigatória ou perigosa em produção, adicione a regra em [env.validation.ts](../apps/api/src/config/env.validation.ts) (e um teste).
+3. Documente no [.env.example](../apps/api/.env.example) e, se for para a Lambda, no `serverless.yml` (segredo → SSM).
 4. Use com `this.config.get<number>('secao.nome', padrao)`.
 
 ## Ação sensível com confirmação de identidade

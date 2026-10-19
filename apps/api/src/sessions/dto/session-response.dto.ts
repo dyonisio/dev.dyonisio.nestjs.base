@@ -6,19 +6,25 @@ export class SessionResponseDto {
   id: string;
 
   @ApiProperty({
+    type: String,
     nullable: true,
     example: 'Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) ...',
     description: 'Raw user agent of the browser/app that signed in',
   })
   userAgent: string | null;
 
-  @ApiProperty({ nullable: true, example: '203.0.113.7', description: 'Last IP seen' })
+  @ApiProperty({
+    type: String,
+    nullable: true,
+    example: '203.0.113.7',
+    description: 'Last IP seen',
+  })
   ip: string | null;
 
   @ApiProperty({ description: 'When the session was opened (sign-in)' })
   createdAt: Date;
 
-  @ApiProperty({ nullable: true, description: 'Last token refresh' })
+  @ApiProperty({ type: Date, nullable: true, description: 'Last token refresh' })
   lastUsedAt: Date | null;
 
   @ApiProperty({ description: 'true = the session making this request' })

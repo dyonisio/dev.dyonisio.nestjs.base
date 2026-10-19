@@ -20,6 +20,7 @@ export class AuditLog {
   action: AuditAction;
 
   @ApiPropertyOptional({
+    type: String,
     format: 'uuid',
     nullable: true,
     description: 'Who performed the action (null = anonymous, e.g. failed login)',
@@ -27,11 +28,11 @@ export class AuditLog {
   @Column({ type: 'uuid', nullable: true })
   actorId: string | null;
 
-  @ApiPropertyOptional({ example: 'user', nullable: true })
+  @ApiPropertyOptional({ type: String, example: 'user', nullable: true })
   @Column({ type: 'varchar', length: 30, nullable: true })
   targetType: AuditTargetType | null;
 
-  @ApiPropertyOptional({ nullable: true })
+  @ApiPropertyOptional({ type: String, nullable: true })
   @Column({ type: 'varchar', length: 64, nullable: true })
   targetId: string | null;
 
@@ -43,15 +44,19 @@ export class AuditLog {
   @Column({ type: 'simple-json', nullable: true })
   metadata: Record<string, unknown> | null;
 
-  @ApiPropertyOptional({ nullable: true })
+  @ApiPropertyOptional({ type: String, nullable: true })
   @Column({ type: 'varchar', length: 64, nullable: true })
   ip: string | null;
 
-  @ApiPropertyOptional({ nullable: true })
+  @ApiPropertyOptional({ type: String, nullable: true })
   @Column({ type: 'varchar', length: 255, nullable: true })
   userAgent: string | null;
 
-  @ApiPropertyOptional({ nullable: true, description: 'Same id as the X-Request-Id header / logs' })
+  @ApiPropertyOptional({
+    type: String,
+    nullable: true,
+    description: 'Same id as the X-Request-Id header / logs',
+  })
   @Column({ type: 'varchar', length: 128, nullable: true })
   requestId: string | null;
 

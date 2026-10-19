@@ -71,6 +71,7 @@ export class User {
   emailVerifiedAt: Date | null;
 
   @ApiProperty({
+    type: String,
     nullable: true,
     example: 'pt-BR',
     description: 'Preferred language (emails are sent in it). null = default language',
@@ -79,6 +80,7 @@ export class User {
   locale: string | null;
 
   @ApiProperty({
+    type: String,
     nullable: true,
     example: 'https://my-bucket.s3.us-east-1.amazonaws.com/public/avatar/<user>/<file>.png',
     description: 'Public avatar URL (set via PUT /users/me/avatar)',

@@ -3,6 +3,8 @@
 Guia para quem nunca publicou na AWS. Segue a ordem certa, explica **o porquê** de cada passo e termina com os
 erros mais comuns e como resolver. Tudo pelo console da AWS (o site), sem precisar instalar a AWS CLI.
 
+> Os comandos `npm` e os caminhos deste guia (`.env`, `serverless.yml`, `src/...`) são da API: rode-os em `apps/api`.
+
 Depois de pronto, os próximos deploys são **um botão no GitHub**. Os detalhes técnicos de cada peça estão em
 [DEPLOY_AWS_LAMBDA.md](DEPLOY_AWS_LAMBDA.md).
 

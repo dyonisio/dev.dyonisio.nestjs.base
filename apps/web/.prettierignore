@@ -1,0 +1,2 @@
+# Gerado por `npm run api:types` (do apps/api/openapi.json) — não formatar nem editar à mão
+src/api/schema.d.ts

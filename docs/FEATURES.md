@@ -1,5 +1,7 @@
 # Funcionalidades
 
+> Os comandos `npm` e os caminhos deste guia (`.env`, `serverless.yml`, `src/...`) são da API: rode-os em `apps/api`.
+
 Rotas sob `/api/v1`. Autenticação e conta estão em [AUTH.md](AUTH.md).
 
 ## Usuários (administração)
@@ -53,7 +55,7 @@ ação. Registros mais velhos que `AUDIT_RETENTION_DAYS` (365) são apagados pel
 ## Arquivos (upload)
 
 O upload é **genérico**: cada uso (avatar, comprovante, documento) é uma "finalidade" registrada em um único arquivo,
-[src/files/file-purposes.ts](../src/files/file-purposes.ts). O arquivo **não passa pela API**: vai direto do navegador para o S3
+[src/files/file-purposes.ts](../apps/api/src/files/file-purposes.ts). O arquivo **não passa pela API**: vai direto do navegador para o S3
 com uma URL pré-assinada. A Lambda aceita no máximo 6 MB por requisição e cobraria pelo tempo de upload.
 
 ```

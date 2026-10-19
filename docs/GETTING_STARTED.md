@@ -2,18 +2,22 @@
 
 Checklist para transformar a base no **seu** projeto. Faça na ordem; cada item diz onde mexer.
 
+> Os comandos `npm` e os caminhos deste guia (`package.json`, `.env`, `serverless.yml`, `src/...`) são **da API**,
+> em `apps/api/`. O front fica em `apps/web/` (veja [WEB.md](WEB.md)).
+
 ## 1. Copiar e dar nome
 
-1. Copie a pasta (ou use "Use this template" no GitHub) e rode `npm install`.
+1. Copie a pasta (ou use "Use this template" no GitHub) e rode `npm install` em `apps/api` e em `apps/web`.
 2. Troque o nome em três lugares:
 
    | Onde | O quê |
    | --- | --- |
-   | `package.json` → `name` | nome do pacote (ex.: `minha-api`) |
+   | `package.json` → `name` | nome do pacote (ex.: `minha-api`; o do front em `apps/web/package.json`) |
    | `serverless.yml` → `service` | prefixo de **tudo** na AWS: funções, filas, bucket, parâmetros do SSM (`/minha-api/<stage>/...`) |
    | `.env` → `APP_NAME` | nome que aparece nos e-mails, no Swagger e no app autenticador do 2FA |
+   | `apps/web/index.html` → `<title>` e `apps/web/src/i18n/messages.ts` → `appName` | nome que aparece no front |
 
-3. Ajuste o título/descrição do Swagger em `buildOpenApiDocument` ([src/app.setup.ts](../src/app.setup.ts)).
+3. Ajuste o título/descrição do Swagger em `buildOpenApiDocument` ([src/app.setup.ts](../apps/api/src/app.setup.ts)).
 
 ## 2. Configurar o ambiente local
 
@@ -21,7 +25,7 @@ Checklist para transformar a base no **seu** projeto. Faça na ordem; cada item 
 cp .env.example .env
 ```
 
-Todas as variáveis estão comentadas no [.env.example](../.env.example). Para desenvolver, o padrão já funciona com o `docker compose up -d`.
+Todas as variáveis estão comentadas no [.env.example](../apps/api/.env.example). Para desenvolver, o padrão já funciona com o `docker compose up -d`.
 
 ## 3. Gerar segredos (para cada ambiente de servidor)
 
@@ -60,8 +64,8 @@ Tudo é opcional e desacoplado. Exemplos:
 | Login com Apple/Google | Deixe `APPLE_CLIENT_IDS` / `GOOGLE_CLIENT_IDS` vazios (o provedor fica desligado). Para remover o código: `src/auth/social/` e as referências no `auth.module.ts` |
 | Fila de e-mails (SQS) | `MAIL_DELIVERY=sync` e remova `mailWorker`, `MailQueue` e `MailDeadLetterQueue` do `serverless.yml` |
 | Uploads | Remova `FilesModule` do `app.module.ts`, o avatar em `users`, e o bucket do `serverless.yml` |
-| Tipo de arquivo de exemplo `document` | Apague a linha em [src/files/file-purposes.ts](../src/files/file-purposes.ts) |
-| Role `manager` | Remova de `role.enum.ts` e de `ROLE_PERMISSIONS` ([permission.enum.ts](../src/common/enums/permission.enum.ts)) |
+| Tipo de arquivo de exemplo `document` | Apague a linha em [src/files/file-purposes.ts](../apps/api/src/files/file-purposes.ts) |
+| Role `manager` | Remova de `role.enum.ts` e de `ROLE_PERMISSIONS` ([permission.enum.ts](../apps/api/src/common/enums/permission.enum.ts)) |
 | Confirmação de e-mail obrigatória | `REQUIRE_EMAIL_VERIFICATION=false` |
 
 Depois de remover algo, rode `npm run typecheck && npm test` para achar o que ficou pendurado.

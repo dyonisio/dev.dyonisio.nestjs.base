@@ -1,6 +1,6 @@
 # Cliente da API para o front
 
-A API publica o próprio contrato no [`openapi.json`](../openapi.json): todas as rotas, campos, tipos e erros.
+A API publica o próprio contrato no [`openapi.json`](../apps/api/openapi.json): todas as rotas, campos, tipos e erros.
 Com ele, o front **gera** os tipos e as chamadas, em vez de escrever à mão. Se a API mudar um campo, o front deixa de
 compilar exatamente onde precisa ser ajustado, antes de chegar ao usuário.
 
@@ -12,6 +12,9 @@ compilar exatamente onde precisa ser ajustado, antes de chegar ao usuário.
 - Com a API rodando, ele também está em `http://localhost:3000/docs-json` (Swagger ligado).
 
 ## Do lado do front (TypeScript)
+
+> O front desta base ([`apps/web`](../apps/web)) já vem montado exatamente assim — veja [WEB.md](WEB.md).
+> O passo a passo abaixo serve para outro front (outro repositório, app mobile em React Native...).
 
 Com [openapi-typescript](https://openapi-ts.dev) + [openapi-fetch](https://openapi-ts.dev/openapi-fetch/) (leves, sem gerar classes).
 Instale no projeto do front:

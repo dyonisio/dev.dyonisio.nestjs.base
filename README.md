@@ -1,7 +1,16 @@
-# NestJS Base API
+# NestJS Base
 
-Base de API pronta para produção em **NestJS 11 + TypeORM (Postgres)**: autenticação completa, permissões,
-e-mails, uploads, LGPD, segurança endurecida, testes e deploy na **AWS Lambda** (ou em container no ECS).
+Base pronta para produção com **API em NestJS 11 + TypeORM (Postgres)** e **front em React**: autenticação
+completa, permissões, e-mails, uploads, LGPD, segurança endurecida, testes e deploy na **AWS Lambda**
+(ou em container no ECS).
+
+Um repositório, dois apps independentes (cada um com o próprio `package.json`):
+
+| Pasta | O que é |
+| --- | --- |
+| [`apps/api`](apps/api) | A API (NestJS). Todos os comandos `npm` da API rodam **dentro desta pasta** |
+| [`apps/web`](apps/web) | O front (React + Vite), com o cliente tipado gerado do contrato da API. Veja [docs/WEB.md](docs/WEB.md) |
+| [`docs`](docs) | Os guias. Caminhos como `src/...`, `.env` e `serverless.yml` nos guias são **da API** (`apps/api/...`) |
 
 A ideia é começar um projeto novo já com tudo o que "toda API precisa" resolvido e testado, e gastar o tempo
 só com as regras do seu negócio.
@@ -24,11 +33,18 @@ só com as regras do seu negócio.
 | **Operação** | Logs JSON com `X-Request-Id`, job de manutenção agendado, alarmes no CloudWatch, health check |
 | **Contrato da API** | Swagger em `/docs`, `openapi.json` versionado e rotas em `/api/v1` |
 | **Qualidade** | ~500 testes (unitários + e2e em SQLite **e** num Postgres real), cobertura mínima garantida, CI no GitHub Actions, Dependabot |
+| **Front** | React com login (inclusive 2FA), cadastro, senha, confirmação de e-mail e convite; cliente tipado gerado do `openapi.json` |
 | **Deploy** | AWS Lambda (Serverless Framework) ou container (Dockerfile para ECS/Fargate) |
 
 ## Começando (5 minutos)
 
 Requisitos: **Node.js 22** e **Docker** (só para o Postgres e o Mailpit locais).
+
+### API
+
+```bash
+cd apps/api
+```
 
 ```bash
 npm install
@@ -67,6 +83,25 @@ npm run start:dev
 
 > Sem Docker? Os testes não precisam dele (usam bancos em memória). Para rodar a API, aponte `DB_*` para qualquer Postgres.
 
+### Front
+
+Em outro terminal, com a API rodando:
+
+```bash
+cd apps/web
+```
+
+```bash
+npm install
+```
+
+```bash
+npm run dev
+```
+
+Abra http://localhost:5173 e entre com o administrador do seed. O front fala com `http://localhost:3000`
+por padrão (mude em `apps/web/.env` → `VITE_API_URL`; veja o `.env.example`).
+
 ## Documentação
 
 | Guia | Para quê |
@@ -77,12 +112,15 @@ npm run start:dev
 | [Funcionalidades](docs/FEATURES.md) | Usuários, auditoria, arquivos, e-mails, idiomas, rate limiting, manutenção, logs |
 | [Receitas](docs/GUIDES.md) | Passo a passo: novo módulo, nova permissão, migration, e-mail, tipo de upload, tarefa agendada, idioma |
 | [Segurança](docs/SECURITY.md) | O que está protegido e como, checklist de produção e decisões conscientes |
+| [Front (apps/web)](docs/WEB.md) | Como o front está organizado, sessão e refresh, idiomas, telas e como adicionar uma |
 | [Cliente para o front](docs/API_CLIENT.md) | Gerar tipos e chamadas do front a partir do `openapi.json` |
 | [Testes e CI](docs/TESTING.md) | Tipos de teste, cobertura, CI e como rodar tudo localmente |
 | [Primeiro deploy, passo a passo](docs/FIRST_DEPLOY.md) | Banco, segredos, e-mail (SES), GitHub ↔ AWS e o deploy — para quem nunca publicou na AWS, com os erros comuns |
 | [Deploy na AWS (referência)](docs/DEPLOY_AWS_LAMBDA.md) | Detalhes técnicos da Lambda, operação, alarmes e a alternativa em container (ECS) |
 
 ## Scripts
+
+### API (em `apps/api`)
 
 | Script | O que faz |
 | --- | --- |
@@ -102,7 +140,38 @@ npm run start:dev
 | `npm run lambda:invoke -- GET /api/health` | Invoca o handler da Lambda localmente (após `build`) |
 | `npm run deploy` / `deploy:prod` | Deploy na AWS Lambda |
 
+### Front (em `apps/web`)
+
+| Script | O que faz |
+| --- | --- |
+| `npm run dev` | Servidor de desenvolvimento em http://localhost:5173 |
+| `npm run build` / `preview` | Gera o site estático em `dist/` / serve o build localmente |
+| `npm test` | Testes (Vitest + Testing Library) |
+| `npm run lint` / `format` / `typecheck` | Prettier / TypeScript |
+| `npm run api:types` | Regenera `src/api/schema.d.ts` a partir do `apps/api/openapi.json` |
+
 ## Estrutura
+
+```
+apps/
+├── api/                        # a API (todos os comandos dela rodam aqui)
+│   ├── src/                    # código (detalhado abaixo)
+│   ├── test/                   # testes e2e (+ postgres/: Postgres real)
+│   ├── openapi.json            # contrato da API (gerado — não edite à mão)
+│   ├── serverless.yml          # deploy na Lambda
+│   └── Dockerfile              # deploy em container
+└── web/                        # o front
+    └── src/
+        ├── api/                # cliente tipado (schema.d.ts gerado do openapi.json)
+        ├── auth/               # sessão, refresh e o contexto de login
+        ├── i18n/               # textos da interface (pt-BR, en)
+        ├── components/         # peças reutilizáveis (campos, alertas, rota protegida)
+        └── pages/              # as telas
+docs/                           # guias
+.github/                        # CI (API e front) e deploy
+```
+
+Dentro de `apps/api/src/`:
 
 ```
 src/
@@ -122,9 +191,6 @@ src/
 ├── maintenance/            # job agendado de faxina/anonimização
 ├── i18n/                   # traduções e idioma da requisição
 └── health/                 # GET /api/health
-test/                       # testes e2e (+ postgres/: Postgres real)
-docs/                       # guias
-openapi.json                # contrato da API (gerado — não edite à mão)
 ```
 
 Detalhes em [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md).

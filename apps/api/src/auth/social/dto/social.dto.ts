@@ -42,7 +42,7 @@ export class IdentityDto {
   @ApiProperty({ example: 'google' })
   provider: string;
 
-  @ApiProperty({ nullable: true, example: 'jane@gmail.com' })
+  @ApiProperty({ type: String, nullable: true, example: 'jane@gmail.com' })
   email: string | null;
 
   @ApiProperty()

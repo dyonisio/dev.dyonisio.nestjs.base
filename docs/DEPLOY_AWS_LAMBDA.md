@@ -2,6 +2,8 @@
 
 > **Primeira vez?** Siga o [passo a passo do primeiro deploy](FIRST_DEPLOY.md) — ordem certa, explicações para iniciantes
 > e os erros mais comuns. Este documento é a referência técnica de cada peça.
+>
+> Os comandos `npm` e os caminhos deste guia (`.env`, `serverless.yml`, `src/...`) são da API: rode-os em `apps/api`.
 
 A API roda em uma função Lambda atrás de um **API Gateway HTTP API**, usando
 [`@codegenie/serverless-express`](https://github.com/CodeGenieApp/serverless-express) para
@@ -321,7 +323,7 @@ o runtime `nodejs22.x`, as variáveis de ambiente do `.env.example` e um gatilho
 ## 10. Alternativa: container no ECS (Fargate)
 
 Quando o tráfego crescer a ponto de a Lambda ficar mais cara que um container sempre ligado (ou você quiser WebSockets, jobs longos...),
-o mesmo código roda pelo [Dockerfile](../Dockerfile). Nada no código muda — só onde ele roda.
+o mesmo código roda pelo [Dockerfile](../apps/api/Dockerfile). Nada no código muda — só onde ele roda.
 
 1. **Imagem no ECR:**
 
@@ -344,7 +346,7 @@ docker push <conta>.dkr.ecr.us-east-1.amazonaws.com/nestjs-base-api:v1
 2. **Task definition (Fargate):** porta 3000, `ARM64`, 0.5 vCPU / 1 GB para começar. As mesmas variáveis do `serverless.yml`; os segredos
    (`DB_PASSWORD`, `JWT_SECRET`, `ENCRYPTION_KEY`...) entram pelo campo `secrets` apontando para os **mesmos parâmetros do SSM**.
    A *task role* precisa das mesmas permissões que a Lambda tem hoje (SES, SQS se usar fila, S3 do bucket de uploads).
-3. **TLS com o RDS:** baixe a CA da AWS para `certs/` antes do `docker build` (veja [certs/README.md](../certs/README.md)) e defina
+3. **TLS com o RDS:** baixe a CA da AWS para `certs/` antes do `docker build` (veja [certs/README.md](../apps/api/certs/README.md)) e defina
    `DB_SSL=true` e `DB_SSL_CA_FILE=certs/rds-global-bundle.pem`.
 4. **Serviço + ALB:** Application Load Balancer na frente, health check em `/api/health`. Defina **`TRUST_PROXY=1`** (obrigatório fora da
    Lambda — a API não sobe sem ele): sem isso, o rate limit veria o IP do ALB em vez do IP do cliente.

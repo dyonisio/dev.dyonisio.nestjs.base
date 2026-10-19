@@ -1,5 +1,7 @@
 # Arquitetura
 
+> Os comandos `npm` e os caminhos deste guia (`.env`, `serverless.yml`, `src/...`) são da API: rode-os em `apps/api`.
+
 ## Visão geral
 
 ```
@@ -42,7 +44,7 @@ Na ordem em que acontece:
 | 12 | Serialização | `ClassSerializerInterceptor` | Aplica `@Exclude()` (senha, segredos nunca saem) |
 | 13 | Erros | `common/filters/i18n-exception.filter.ts` | Qualquer erro vira `{ statusCode, code, message, errors?, requestId }`, traduzido |
 
-Os guards 5 a 9 são **globais** ([app.module.ts](../src/app.module.ts)). Uma rota nova já nasce protegida, mesmo
+Os guards 5 a 9 são **globais** ([app.module.ts](../apps/api/src/app.module.ts)). Uma rota nova já nasce protegida, mesmo
 que você esqueça de colocar algum decorator.
 
 ## Módulos
@@ -141,9 +143,9 @@ Todo erro tem o mesmo formato, traduzido pelo `Accept-Language`:
 
 ## Configuração
 
-- Todas as variáveis são lidas em um único lugar, já tipadas: [src/config/configuration.ts](../src/config/configuration.ts).
+- Todas as variáveis são lidas em um único lugar, já tipadas: [src/config/configuration.ts](../apps/api/src/config/configuration.ts).
   Use `config.get<number>('session.maxAgeDays')`, nunca `process.env` espalhado pelo código.
-- [src/config/env.validation.ts](../src/config/env.validation.ts) valida no boot. Em **produção**, a API não sobe com
+- [src/config/env.validation.ts](../apps/api/src/config/env.validation.ts) valida no boot. Em **produção**, a API não sobe com
   configuração insegura (CORS aberto, segredos de exemplo, localhost, banco em memória...). Veja [SECURITY.md](SECURITY.md).
 
 ## Banco de dados

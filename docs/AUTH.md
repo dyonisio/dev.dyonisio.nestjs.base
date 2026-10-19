@@ -1,5 +1,7 @@
 # Autenticação e conta
 
+> Os comandos `npm` e os caminhos deste guia (`.env`, `serverless.yml`, `src/...`) são da API: rode-os em `apps/api`.
+
 Todas as rotas abaixo estão sob `/api/v1`. Os exemplos completos (corpo, respostas, erros) estão no Swagger (`/docs`).
 
 ## Visão geral do login

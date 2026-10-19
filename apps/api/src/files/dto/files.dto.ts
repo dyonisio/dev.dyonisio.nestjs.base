@@ -64,6 +64,7 @@ export class FileDto {
   status: string;
 
   @ApiProperty({
+    type: String,
     nullable: true,
     description:
       'Public files: permanent URL. Private files: temporary signed URL. null while pending.',

@@ -1,5 +1,7 @@
 # Segurança
 
+> Os comandos `npm` e os caminhos deste guia (`.env`, `serverless.yml`, `src/...`) são da API: rode-os em `apps/api`.
+
 O que a base faz para resistir a invasões, o que **você** precisa configurar e as decisões tomadas de propósito.
 A base passou por uma auditoria de segurança (injeção, autenticação, autorização, uploads, configuração e dependências),
 e os pontos encontrados foram corrigidos e cobertos por testes.

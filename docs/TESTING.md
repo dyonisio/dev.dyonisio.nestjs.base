@@ -1,5 +1,7 @@
 # Testes e CI
 
+> Os comandos deste guia são da API e rodam em `apps/api`. Os testes do front estão no fim ([Front](#front-appsweb)).
+
 ## Os três tipos de teste
 
 | Comando | O que roda | Banco |
@@ -24,7 +26,7 @@ Nenhum deles precisa de Docker, internet, AWS ou e-mail real: e-mails usam o tra
 - **Rota nova → teste e2e** cobrindo pelo menos: caminho feliz, 401 sem login, 403 sem permissão, 400 de validação e 404 de recurso de outro usuário.
 - **Regra de segurança → teste que tenta o ataque** (veja `test/social-login.e2e-spec.ts`, "pré-sequestro", ou `test/files.e2e-spec.ts`, "public/../").
 - Para verificar e-mails, espione o `MailService`: `jest.spyOn(app.get(MailService), 'sendWelcome')`.
-- O ambiente dos e2e está em [test/setup-env.ts](../test/setup-env.ts). Lá ficam limites de rate limit altos e bcrypt rápido (custo 4).
+- O ambiente dos e2e está em [test/setup-env.ts](../apps/api/test/setup-env.ts). Lá ficam limites de rate limit altos e bcrypt rápido (custo 4).
 
 ## Cobertura
 
@@ -32,7 +34,7 @@ Nenhum deles precisa de Docker, internet, AWS ou e-mail real: e-mails usam o tra
 npm run test:cov
 ```
 
-Roda unitários **e** e2e juntos e mede a cobertura **combinada** ([jest.coverage.js](../jest.coverage.js)). O relatório HTML
+Roda unitários **e** e2e juntos e mede a cobertura **combinada** ([jest.coverage.js](../apps/api/jest.coverage.js)). O relatório HTML
 fica em `coverage/lcov-report/index.html`.
 
 **Entra na conta** só código com lógica. Ficam de fora DTOs, entidades, `*.module.ts`, enums, migrations e os pontos de
@@ -52,7 +54,8 @@ entrada (`main.ts`, `lambda.ts`, handlers).
 
 ## CI (GitHub Actions)
 
-A cada push na `main` e em todo Pull Request, o [ci.yml](../.github/workflows/ci.yml) roda numa máquina limpa:
+A cada push na `main` e em todo Pull Request, o [ci.yml](../.github/workflows/ci.yml) roda **dois jobs em paralelo**,
+`API` e `Web`, cada um numa máquina limpa. O job da API:
 
 1. `npm ci`
 2. **`npm audit`**: falha com vulnerabilidade alta ou crítica em dependência de produção
@@ -62,9 +65,13 @@ A cada push na `main` e em todo Pull Request, o [ci.yml](../.github/workflows/ci
 6. Build
 7. **Contrato:** `openapi.json` precisa estar atualizado (veja [API_CLIENT.md](API_CLIENT.md))
 
-Para **bloquear merge** de PR com ❌: *Settings → Branches → Branch protection rules → Require status checks → "Lint, testes e build"*.
+O job do front: `npm ci`, `npm audit`, **tipos da API atualizados** (regenera o `schema.d.ts` a partir do `openapi.json`
+commitado e falha se mudou), Prettier, TypeScript, testes e build.
 
-O [Dependabot](../.github/dependabot.yml) abre PRs de atualização: semanais para o npm (patch/minor, agrupados), mensais para
+Para **bloquear merge** de PR com ❌: *Settings → Branches → Branch protection rules → Require status checks* → marque
+"API: lint, testes e build" e "Web: lint, testes e build".
+
+O [Dependabot](../.github/dependabot.yml) abre PRs de atualização: semanais para o npm da API e do front (patch/minor, agrupados), mensais para
 as GitHub Actions e a imagem Docker. Cada PR passa pelo CI antes do merge. Versões **major** (que quebram API) não viram PR
 automático: atualize-as quando planejar, lendo o changelog. Vulnerabilidades continuam sendo pegas pelo `npm audit` do CI e
 pelos alertas de segurança do GitHub.
@@ -76,4 +83,24 @@ O deploy ([deploy.yml](../.github/workflows/deploy.yml)) é **manual** (*Actions
 
 ```bash
 npm audit --omit=dev --audit-level=high && npm run lint && npm run typecheck && npm run test:cov && npm run test:pg && npm run build && npm run openapi:export
+```
+
+## Front (`apps/web`)
+
+Testes com **Vitest + Testing Library** num navegador simulado (jsdom). Ficam ao lado do código (`*.test.ts(x)`).
+A API **não** é chamada: o `fetch` é trocado por um roteador falso ([fetch-mock.ts](../apps/web/src/test/fetch-mock.ts)).
+
+```ts
+mockFetch({
+  'POST /api/v1/auth/login': () => json(200, { twoFactorRequired: true, twoFactorToken: 'x' }),
+});
+```
+
+O que já está coberto: o cliente da API (token em toda chamada, renovação no 401, **um único** refresh para várias
+chamadas simultâneas, sessão encerrada se o refresh falhar, sem refresh no login) e o login com e sem 2FA.
+
+Rodar o que o CI roda (em `apps/web`):
+
+```bash
+npm run api:types && npm run lint && npm run typecheck && npm test && npm run build
 ```
