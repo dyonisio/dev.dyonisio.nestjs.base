@@ -102,7 +102,7 @@ export function LoginPage() {
             error={fieldError(error, 'code')}
           />
           <ErrorAlert error={error?.errors ? null : error} />
-          <button type="submit" disabled={busy}>
+          <button type="submit" disabled={busy || !code.trim()}>
             {m.login.verify}
           </button>
         </form>
@@ -132,7 +132,7 @@ export function LoginPage() {
               error={fieldError(error, 'email')}
             />
             <ErrorAlert error={error?.errors ? null : error} />
-            <button type="submit" disabled={busy}>
+            <button type="submit" disabled={busy || !email.trim()}>
               {m.login.sendLink}
             </button>
           </form>
@@ -169,7 +169,7 @@ export function LoginPage() {
           error={fieldError(error, 'password')}
         />
         <ErrorAlert error={error?.errors ? null : error} />
-        <button type="submit" disabled={busy}>
+        <button type="submit" disabled={busy || !email.trim() || !password}>
           {m.login.title}
         </button>
       </form>

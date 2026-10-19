@@ -63,7 +63,10 @@ export function RegisterPage() {
           error={fieldError(error, 'password')}
         />
         <ErrorAlert error={error?.errors ? null : error} />
-        <button type="submit" disabled={busy}>
+        <button
+          type="submit"
+          disabled={busy || !form.name.trim() || !form.email.trim() || !form.password}
+        >
           {m.register.title}
         </button>
       </form>

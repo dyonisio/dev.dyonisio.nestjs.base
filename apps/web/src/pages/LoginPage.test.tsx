@@ -85,4 +85,17 @@ describe('LoginPage', () => {
 
     expect(await screen.findByRole('alert')).toHaveTextContent('Invalid email or password');
   });
+
+  it('Entrar fica desligado até e-mail e senha estarem preenchidos (nenhuma chamada à toa)', async () => {
+    const fetch = mockFetch({});
+    renderLogin();
+
+    const button = screen.getByRole('button', { name: 'Sign in' });
+    expect(button).toBeDisabled();
+    await userEvent.type(screen.getByLabelText('Email'), 'jane@example.com');
+    expect(button).toBeDisabled();
+    await userEvent.type(screen.getByLabelText('Password'), 'x');
+    expect(button).toBeEnabled();
+    expect(fetch).not.toHaveBeenCalled();
+  });
 });

@@ -53,7 +53,7 @@ export function ForgotPasswordPage() {
             error={fieldError(error, 'email')}
           />
           <ErrorAlert error={error?.errors ? null : error} />
-          <button type="submit" disabled={busy}>
+          <button type="submit" disabled={busy || !email.trim()}>
             {m.common.submit}
           </button>
         </form>
@@ -126,7 +126,7 @@ export function ResetPasswordPage() {
             error={mismatch ? m.reset.mismatch : undefined}
           />
           <ErrorAlert error={error?.errors ? null : error} />
-          <button type="submit" disabled={busy}>
+          <button type="submit" disabled={busy || !password || !confirm}>
             {m.common.submit}
           </button>
         </form>
