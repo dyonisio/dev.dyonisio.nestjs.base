@@ -81,6 +81,8 @@ describe('validateEnv', () => {
     [{ CORS_ORIGIN: 'https://app.com,*' }, 'CORS_ORIGIN=* não é permitido'],
     [{ FRONTEND_URL: 'http://localhost:5173' }, 'FRONTEND_URL aponta para localhost'],
     [{ APP_URL: 'http://127.0.0.1:3000' }, 'APP_URL aponta para localhost'],
+    [{ FRONTEND_URL: 'base.exemplo.com' }, 'FRONTEND_URL precisa ser o endereço completo'],
+    [{ FRONTEND_URL: 'http://base.exemplo.com' }, 'FRONTEND_URL precisa ser o endereço completo'],
     [
       { JWT_SECRET: 'troque-este-segredo-por-um-valor-longo-e-aleatorio' },
       'JWT_SECRET está com o valor de exemplo',

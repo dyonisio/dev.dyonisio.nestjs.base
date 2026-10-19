@@ -113,6 +113,11 @@ jobs:
             echo "::error::Variáveis obrigatórias vazias no environment '$STAGE':$missing (Settings → Environments → $STAGE)"
             exit 1
           fi
+          # Endereço completo do front: links dos e-mails, CORS e domínio das passkeys saem dele
+          case "$FRONTEND_URL" in
+            https://*) ;;
+            *) echo "::error::FRONTEND_URL precisa ser o endereço completo, com https:// (ex.: https://app.exemplo.com). Recebido: '$FRONTEND_URL'"; exit 1 ;;
+          esac
 
           params=(
             --param="frontendUrl=$FRONTEND_URL"

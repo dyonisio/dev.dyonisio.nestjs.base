@@ -58,6 +58,14 @@ const PLACEHOLDER_SECRETS = ['troque-este-segredo-por-um-valor-longo-e-aleatorio
 const isLocalUrl = (value: unknown) =>
   typeof value === 'string' && /\/\/(localhost|127\.0\.0\.1|0\.0\.0\.0)([:/]|$)/i.test(value);
 
+const isHttpsUrl = (value: unknown) => {
+  try {
+    return typeof value === 'string' && new URL(value.trim()).protocol === 'https:';
+  } catch {
+    return false;
+  }
+};
+
 function productionErrors(config: Record<string, unknown>): string[] {
   if (config.NODE_ENV !== 'production') return [];
 
@@ -69,6 +77,12 @@ function productionErrors(config: Record<string, unknown>): string[] {
   }
   for (const key of ['FRONTEND_URL', 'APP_URL']) {
     if (isLocalUrl(config[key])) errors.push(`${key} aponta para localhost em produção`);
+  }
+  // Endereço completo: os links dos e-mails e o domínio das passkeys saem dele
+  if (config.FRONTEND_URL && !isHttpsUrl(config.FRONTEND_URL)) {
+    errors.push(
+      `FRONTEND_URL precisa ser o endereço completo do front, com https:// (ex.: https://app.exemplo.com), recebido: "${String(config.FRONTEND_URL)}"`,
+    );
   }
   for (const key of ['JWT_SECRET', 'ENCRYPTION_KEY']) {
     if (PLACEHOLDER_SECRETS.includes(config[key] as string)) {
