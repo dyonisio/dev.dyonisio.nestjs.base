@@ -1,5 +1,4 @@
 import {
-  BadRequestException,
   Body,
   Controller,
   Delete,
@@ -8,7 +7,6 @@ import {
   HttpCode,
   HttpStatus,
   Param,
-  ParseUUIDPipe,
   Patch,
   Post,
   Put,
@@ -27,6 +25,7 @@ import { Auth } from '../common/decorators/auth.decorator';
 import { Authorize } from '../common/decorators/authorize.decorator';
 import { CurrentUser } from '../common/decorators/current-user.decorator';
 import { Permission } from '../common/enums/permission.enum';
+import { UuidParam } from '../common/pipes/uuid-param.pipe';
 import { Role } from '../common/enums/role.enum';
 import { i18nKey } from '../i18n/translations';
 import { AdminCreateUserDto } from './dto/create-user.dto';
@@ -37,11 +36,6 @@ import { SetAvatarDto } from '../files/dto/files.dto';
 import { User } from './entities/user.entity';
 import { UserInvitationService } from './user-invitation.service';
 import { UsersService } from './users.service';
-
-/** :id deve ser UUID — com mensagem traduzível em vez da padrão do Nest. */
-const UuidParam = new ParseUUIDPipe({
-  exceptionFactory: () => new BadRequestException(i18nKey('errors.invalidUuid')),
-});
 
 @ApiTags('Users')
 @Controller('users')

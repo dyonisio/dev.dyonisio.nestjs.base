@@ -313,6 +313,16 @@ const en = {
     deleteConfirm: 'Delete {name}?',
     deleteWhat: '{name} will be signed out of every device right away.',
     activity: 'View activity',
+    sessions: 'Devices signed in',
+    sessionsHelp:
+      'Where this account is signed in right now. If the person thinks someone else got in, sign them out everywhere and ask them to change the password.',
+    noSessions: 'Not signed in on any device.',
+    sessionEnded: 'Device signed out.',
+    signOutAll: 'Sign out everywhere',
+    signOutAllConfirm: 'Sign {name} out of every device?',
+    signOutAllText:
+      'Every device is signed out right away and will need to sign in again. The password stays the same.',
+    sessionsEnded: 'Signed out of every device.',
   },
   audit: {
     title: 'Audit log',
@@ -706,6 +716,16 @@ const ptBR: Dict = {
     deleteConfirm: 'Excluir {name}?',
     deleteWhat: '{name} sai de todos os dispositivos na hora.',
     activity: 'Ver atividade',
+    sessions: 'Dispositivos conectados',
+    sessionsHelp:
+      'Onde esta conta está conectada agora. Se a pessoa acha que alguém entrou na conta dela, desconecte de todos e peça que troque a senha.',
+    noSessions: 'Não está conectada em nenhum dispositivo.',
+    sessionEnded: 'Dispositivo desconectado.',
+    signOutAll: 'Desconectar de todos',
+    signOutAllConfirm: 'Desconectar {name} de todos os dispositivos?',
+    signOutAllText:
+      'Todos os dispositivos saem na hora e precisam entrar de novo. A senha continua a mesma.',
+    sessionsEnded: 'Desconectado de todos os dispositivos.',
   },
   audit: {
     title: 'Auditoria',

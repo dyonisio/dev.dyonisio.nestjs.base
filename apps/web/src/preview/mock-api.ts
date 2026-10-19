@@ -74,6 +74,13 @@ export function installMockApi(me: User) {
       return json(200, current);
     }
     if (route === 'GET /users/me/sessions') return json(200, sessions);
+    // Sessões de outro usuário (admin): as mesmas do exemplo, sem a "deste dispositivo"
+    if (req.method === 'GET' && /^\/users\/[^/]+\/sessions$/.test(path)) {
+      return json(
+        200,
+        sessions.map((s) => ({ ...s, current: false })),
+      );
+    }
 
     if (route === 'GET /users') {
       const deleted = q.get('deleted') === 'true';

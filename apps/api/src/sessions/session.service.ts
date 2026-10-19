@@ -100,11 +100,12 @@ export class SessionService {
   async revokeAllForUser(
     userId: string,
     reason: SessionRevokeReason = SessionRevokeReason.PASSWORD_CHANGED,
-  ): Promise<void> {
-    await this.sessions.update(
+  ): Promise<number> {
+    const result = await this.sessions.update(
       { userId, revokedAt: IsNull() },
       { revokedAt: new Date(), revokedReason: reason },
     );
+    return result.affected ?? 0;
   }
 
   /**
@@ -177,11 +178,15 @@ export class SessionService {
    * O próprio usuário encerra UMA sessão sua. Retorna false se não existir,
    * já estiver encerrada ou for de outro usuário (não revela qual dos casos).
    */
-  async revokeOwn(userId: string, sessionId: string): Promise<boolean> {
+  async revokeOwn(
+    userId: string,
+    sessionId: string,
+    reason = SessionRevokeReason.REVOKED_BY_USER,
+  ): Promise<boolean> {
     if (!isUUID(sessionId)) return false;
     const result = await this.sessions.update(
       { id: sessionId, userId, revokedAt: IsNull() },
-      { revokedAt: new Date(), revokedReason: SessionRevokeReason.REVOKED_BY_USER },
+      { revokedAt: new Date(), revokedReason: reason },
     );
     return (result.affected ?? 0) > 0;
   }

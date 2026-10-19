@@ -202,6 +202,75 @@ describe('Administração de usuários (e2e)', () => {
     });
   });
 
+  describe('sessões de um usuário (admin)', () => {
+    let id: string;
+    const me = (token: string) =>
+      http().get('/api/v1/users/me').set('Authorization', `Bearer ${token}`);
+
+    beforeAll(async () => {
+      const res = await asAdmin(http().post('/api/v1/users'))
+        .send({ name: 'Vitima Sessao', email: 'sessoes@empresa.com', password: 'Senha123' })
+        .expect(201);
+      id = res.body.id;
+    });
+
+    it('lista os dispositivos e encerra um: só aquele cai', async () => {
+      const celular = (await login('sessoes@empresa.com').set('User-Agent', 'iPhone').expect(200))
+        .body.accessToken;
+      const notebook = (await login('sessoes@empresa.com').set('User-Agent', 'Windows').expect(200))
+        .body.accessToken;
+
+      const list = await asAdmin(http().get(`/api/v1/users/${id}/sessions`)).expect(200);
+      expect(list.body).toHaveLength(2);
+      expect(list.body.every((s: { current: boolean }) => s.current === false)).toBe(true);
+      const iphone = list.body.find((s: { userAgent: string }) => s.userAgent === 'iPhone');
+
+      await asAdmin(http().delete(`/api/v1/users/${id}/sessions/${iphone.id}`)).expect(204);
+
+      await me(celular).expect(401);
+      await me(notebook).expect(200);
+    });
+
+    it('"desconectar de todos" derruba todas as sessões e fica na auditoria', async () => {
+      const token = (await login('sessoes@empresa.com').expect(200)).body.accessToken;
+
+      await asAdmin(http().delete(`/api/v1/users/${id}/sessions`)).expect(204);
+
+      await me(token).expect(401);
+      const after = await asAdmin(http().get(`/api/v1/users/${id}/sessions`)).expect(200);
+      expect(after.body).toHaveLength(0);
+      const audit = await asAdmin(
+        http().get(`/api/v1/audit-logs?action=session.revoked&targetId=${id}`),
+      ).expect(200);
+      expect(audit.body.data[0]).toMatchObject({
+        actorId: adminId,
+        metadata: { byAdmin: true },
+      });
+    });
+
+    it('sessão de outra pessoa ou id inválido -> 404/400; usuário inexistente -> 404', async () => {
+      await asAdmin(
+        http().delete(`/api/v1/users/${id}/sessions/00000000-0000-4000-8000-000000000000`),
+      ).expect(404);
+      await asAdmin(http().get('/api/v1/users/nao-e-uuid/sessions')).expect(400);
+      await asAdmin(
+        http().get('/api/v1/users/00000000-0000-4000-8000-000000000000/sessions'),
+      ).expect(404);
+    });
+
+    it('quem não é admin não vê nem encerra sessões dos outros', async () => {
+      const token = (await login('sessoes@empresa.com').expect(200)).body.accessToken;
+      await http()
+        .get(`/api/v1/users/${adminId}/sessions`)
+        .set('Authorization', `Bearer ${token}`)
+        .expect(403);
+      await http()
+        .delete(`/api/v1/users/${adminId}/sessions`)
+        .set('Authorization', `Bearer ${token}`)
+        .expect(403);
+    });
+  });
+
   describe('admin troca o e-mail de alguém', () => {
     afterEach(() => jest.restoreAllMocks());
 

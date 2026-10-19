@@ -17,6 +17,8 @@ export enum SessionRevokeReason {
   USER_DELETED = 'user-deleted',
   /** Encerrada pelo próprio usuário em "meus dispositivos". */
   REVOKED_BY_USER = 'revoked-by-user',
+  /** Encerrada por um admin (ex.: "acho que invadiram minha conta"). */
+  REVOKED_BY_ADMIN = 'revoked-by-admin',
   /** Conta não confirmada assumida pelo dono real do e-mail (login social). */
   ACCOUNT_CLAIMED = 'account-claimed',
 }

@@ -21,7 +21,7 @@ import {
 import { Icon } from '../../components/Icon';
 import { useI18n } from '../../i18n/I18nProvider';
 import type { Language } from '../../i18n/language';
-import { formatDateTime } from '../../lib/format';
+import { describeUserAgent, formatDateTime } from '../../lib/format';
 import { useAction, useQuery } from '../../lib/hooks';
 import { UserStatus } from './UsersPage';
 
@@ -65,6 +65,7 @@ export function UserDetailPage() {
       <InfoSection user={user} />
       {can(me, 'users:update') && <DetailsForm user={user} onSaved={changed} />}
       {can(me, 'users:manage-roles') && <RoleForm user={user} onSaved={changed} />}
+      <SessionsSection user={user} />
       <ActionsSection user={user} onChanged={query.reload} />
     </>
   );
@@ -248,6 +249,119 @@ function RoleForm({ user, onSaved }: { user: User; onSaved: (u: User) => void })
           </button>
         </div>
       </form>
+    </Section>
+  );
+}
+
+/**
+ * Dispositivos conectados da pessoa: para o "acho que invadiram minha conta".
+ * Ver pede users:read; desconectar pede users:update. A senha não muda: se for invasão, a
+ * pessoa ainda precisa trocá-la (ou o admin desativa a conta).
+ */
+function SessionsSection({ user }: { user: User }) {
+  const { m, f, lang } = useI18n();
+  const { user: me } = useAuth();
+  const id = user.id;
+  const sessions = useQuery(
+    () => api.GET('/api/v1/users/{id}/sessions', { params: { path: { id } } }),
+    [id],
+  );
+  const [confirmAll, setConfirmAll] = useState(false);
+  const [notice, setNotice] = useState<string | null>(null);
+  const { run, busy, error, setError } = useAction();
+  const canEnd = can(me, 'users:update');
+
+  if (!can(me, 'users:read')) return null;
+
+  const revoke = (sessionId: string) =>
+    void run(async () => {
+      setNotice(null);
+      const { error: apiError } = await api.DELETE('/api/v1/users/{id}/sessions/{sessionId}', {
+        params: { path: { id, sessionId } },
+      });
+      if (apiError) throw apiError;
+      setNotice(m.user.sessionEnded);
+      sessions.reload();
+    });
+
+  const revokeAll = () =>
+    void run(async () => {
+      const { error: apiError } = await api.DELETE('/api/v1/users/{id}/sessions', {
+        params: { path: { id } },
+      });
+      if (apiError) throw apiError;
+      setConfirmAll(false);
+      setNotice(m.user.sessionsEnded);
+      sessions.reload();
+    });
+
+  const list = sessions.data ?? [];
+
+  return (
+    <Section title={m.user.sessions} help={m.user.sessionsHelp}>
+      {sessions.loading && !sessions.data && <p className="muted">{m.common.loading}</p>}
+      {!confirmAll && <ErrorAlert error={sessions.error ?? error} />}
+      {list.length > 0 && (
+        <ul className="rows">
+          {list.map((s) => (
+            <li key={s.id}>
+              <div className="row-main">
+                <span className="row-title">
+                  {describeUserAgent(s.userAgent) ?? m.security.unknownDevice}
+                </span>
+                <span className="row-meta">
+                  <span className="mono">{s.ip ?? '—'}</span>
+                  {' · '}
+                  {[
+                    f(m.security.signedInAt, { date: formatDateTime(lang, s.createdAt) }),
+                    s.lastUsedAt &&
+                      f(m.security.lastUsed, { date: formatDateTime(lang, s.lastUsedAt) }),
+                  ]
+                    .filter(Boolean)
+                    .join(' · ')}
+                </span>
+              </div>
+              {canEnd && (
+                <button type="button" disabled={busy} onClick={() => revoke(s.id)}>
+                  {m.security.signOutDevice}
+                </button>
+              )}
+            </li>
+          ))}
+        </ul>
+      )}
+      {notice && <SuccessAlert>{notice}</SuccessAlert>}
+      {sessions.data &&
+        (list.length > 0 ? (
+          canEnd && (
+            <div className="panel-actions">
+              <button
+                type="button"
+                className="danger"
+                disabled={busy}
+                onClick={() => {
+                  setError(null);
+                  setConfirmAll(true);
+                }}
+              >
+                {m.user.signOutAll}
+              </button>
+            </div>
+          )
+        ) : (
+          <p className="muted">{m.user.noSessions}</p>
+        ))}
+      {confirmAll && (
+        <ConfirmDialog
+          title={f(m.user.signOutAllConfirm, { name: user.name })}
+          text={m.user.signOutAllText}
+          confirmLabel={m.user.signOutAll}
+          busy={busy}
+          error={error}
+          onConfirm={revokeAll}
+          onClose={() => setConfirmAll(false)}
+        />
+      )}
     </Section>
   );
 }

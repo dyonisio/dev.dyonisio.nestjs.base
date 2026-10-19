@@ -67,6 +67,12 @@ Sem o cabeçalho (apps mobile, integrações), nada muda: o token vem no corpo, 
 **Meus dispositivos:** `GET /users/me/sessions` lista as sessões ativas (navegador, IP, último uso, `current`).
 `DELETE /users/me/sessions/:id` encerra uma. `DELETE /users/me/sessions` encerra todas as outras.
 
+**Sessões de outra pessoa (admin):** para o "acho que invadiram minha conta". `GET /users/:id/sessions`
+(`users:read`) lista; `DELETE /users/:id/sessions/:sessionId` encerra uma e `DELETE /users/:id/sessions`
+encerra todas (`users:update`). Fica na auditoria como `session.revoked` com `byAdmin: true`, e a sessão
+fica com o motivo `revoked-by-admin`. A senha **não** muda: se for invasão, a pessoa ainda precisa trocá-la
+(ou o admin desativa a conta). No painel: página do usuário → "Dispositivos conectados".
+
 > Toda requisição autenticada faz 1 consulta ao banco (sessão + usuário). É o preço de revogar na hora; com o
 > pool de conexões e o índice, custa poucos milissegundos.
 

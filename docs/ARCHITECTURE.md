@@ -102,9 +102,9 @@ export const ROLE_PERMISSIONS: Record<Role, readonly Permission[]> = {
 
 | Permissão | Libera |
 | --- | --- |
-| `users:read` | `GET /users`, `GET /users/:id` |
+| `users:read` | `GET /users`, `GET /users/:id`, `GET /users/:id/sessions` |
 | `users:create` | `POST /users`, `POST /users/:id/invite` (criar com role acima de `user` exige também `users:manage-roles`) |
-| `users:update` | `PATCH /users/:id` |
+| `users:update` | `PATCH /users/:id`, `DELETE /users/:id/sessions[/:sessionId]` |
 | `users:delete` | `DELETE /users/:id`, `PATCH /users/:id/restore` |
 | `users:manage-roles` | `PATCH /users/:id/role` e escolher a role ao criar |
 | `users:reset-2fa` | `DELETE /users/:id/two-factor` |

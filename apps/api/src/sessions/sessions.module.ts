@@ -6,6 +6,8 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 import { RefreshToken } from './entities/refresh-token.entity';
 import { Session } from './entities/session.entity';
 import { SessionService } from './session.service';
+import { User } from '../users/entities/user.entity';
+import { AdminSessionsController } from './admin-sessions.controller';
 import { SessionsController } from './sessions.controller';
 
 /**
@@ -15,7 +17,7 @@ import { SessionsController } from './sessions.controller';
  */
 @Module({
   imports: [
-    TypeOrmModule.forFeature([Session, RefreshToken]),
+    TypeOrmModule.forFeature([Session, RefreshToken, User]),
     JwtModule.registerAsync({
       inject: [ConfigService],
       useFactory: (config: ConfigService) => ({
@@ -29,7 +31,8 @@ import { SessionsController } from './sessions.controller';
       }),
     }),
   ],
-  controllers: [SessionsController],
+  // A ordem importa: /users/me/sessions antes de /users/:id/sessions (o "me" não vira um :id)
+  controllers: [SessionsController, AdminSessionsController],
   providers: [SessionService],
   exports: [SessionService, JwtModule],
 })
