@@ -21,7 +21,7 @@ describe('Sessão em cookie httpOnly (e2e)', () => {
     const raw = ([] as string[])
       .concat(res.headers['set-cookie'] ?? [])
       .find((c) => c.startsWith('refresh='));
-    return raw ? { pair: raw.split(';')[0]!, attrs: raw.toLowerCase() } : null;
+    return raw ? { pair: raw.split(';')[0], attrs: raw.toLowerCase() } : null;
   }
 
   const login = (headers: Record<string, string> = {}) =>
