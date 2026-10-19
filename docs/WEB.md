@@ -184,6 +184,11 @@ const save = () =>
   });
 ```
 
+Dados que várias telas usam ao mesmo tempo ficam num armazenamento compartilhado, buscados uma vez só. É o caso das
+formas de login (`useLoginMethods`, em [login-methods.ts](../apps/web/src/auth/login-methods.ts)), que a moldura,
+Segurança, Minha conta e a janela "confirme que é você" leem juntas. Depois de mudar algo, chame
+`refreshLoginMethods()` e todas se atualizam.
+
 ### Chamando a API
 
 O cliente é **tipado pelo contrato**: rota, corpo e resposta errados viram erro de compilação.

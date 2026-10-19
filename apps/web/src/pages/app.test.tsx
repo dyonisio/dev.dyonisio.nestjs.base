@@ -174,3 +174,17 @@ describe('minha conta: botões só acendem quando faz sentido', () => {
     expect(change).toBeEnabled();
   });
 });
+
+describe('formas de login compartilhadas', () => {
+  it('Segurança busca as formas de login uma vez só (moldura e página usam o mesmo resultado)', async () => {
+    const fetch = renderApp('/account/security', makeUser(), {
+      'GET /api/v1/users/me/sessions': () => json(200, []),
+    });
+
+    expect(await screen.findByText('Email and password')).toBeInTheDocument();
+    const calls = fetch.mock.calls.filter((c) =>
+      requestOf(c).url.endsWith('/api/v1/users/me/identities'),
+    );
+    expect(calls).toHaveLength(1);
+  });
+});

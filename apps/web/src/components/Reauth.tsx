@@ -1,8 +1,9 @@
 import { useState, type FormEvent, type ReactNode } from 'react';
-import { api, type ApiError } from '../api/client';
+import { type ApiError } from '../api/client';
 import { useAuth } from '../auth/AuthProvider';
+import { useLoginMethods } from '../auth/login-methods';
 import { useI18n } from '../i18n/I18nProvider';
-import { useAction, useQuery } from '../lib/hooks';
+import { useAction } from '../lib/hooks';
 import { Field, fieldError, FormError, Modal } from './ui';
 
 export interface ReauthValue {
@@ -12,10 +13,8 @@ export interface ReauthValue {
 
 export const emptyReauth: ReauthValue = { currentPassword: '', code: '' };
 
-/** Formas de login da pessoa logada (tem senha? Google/Apple vinculados?). */
-export function useLoginMethods() {
-  return useQuery(() => api.GET('/api/v1/users/me/identities'), []);
-}
+// Formas de login da pessoa logada: uma busca compartilhada por todas as telas
+export { refreshLoginMethods, useLoginMethods } from '../auth/login-methods';
 
 /** A "prova de identidade" no formato da API. */
 export type ReauthProof = { currentPassword?: string; code?: string };

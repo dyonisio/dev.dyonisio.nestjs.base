@@ -3,7 +3,7 @@ import { Navigate, useNavigate, useSearchParams } from 'react-router';
 import { api } from '../api/client';
 import { useAuth } from '../auth/AuthProvider';
 import { session } from '../auth/session';
-import { useLoginMethods } from '../components/Reauth';
+import { refreshLoginMethods, useLoginMethods } from '../components/Reauth';
 import { AuthCard, BackToLogin, Field, fieldError, FormError } from '../components/ui';
 import { useI18n } from '../i18n/I18nProvider';
 import { useAction } from '../lib/hooks';
@@ -118,6 +118,7 @@ export function CreatePasswordForm({ onDone }: { onDone: () => void }) {
       });
       if (apiError || !data) throw apiError;
       session.start(data); // a API encerra as outras sessões e devolve um par novo
+      await refreshLoginMethods(); // agora tem senha: a moldura não manda mais para cá
       onDone();
     });
   }
