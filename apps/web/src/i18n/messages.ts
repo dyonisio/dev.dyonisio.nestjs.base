@@ -242,7 +242,16 @@ const en = {
       'It stops working on this site right away. You can also delete it from the device or password manager where it is saved.',
     added: 'Passkey added. Next time, choose “Sign in with a passkey”.',
     removed: 'Passkey removed.',
-    failed: 'The browser could not complete the passkey. Try again.',
+    failures: {
+      'already-registered':
+        'This device or password manager already has a passkey for this account. Use it to sign in, or remove the old one first.',
+      'wrong-domain':
+        "This site's address does not match the passkey domain set on the server (FRONTEND_URL / WEBAUTHN_RP_ID). Open the site at that exact address.",
+      'no-lock':
+        'This device has no screen lock (PIN, fingerprint or face). Set one up (on Windows: Windows Hello) or choose “Use a phone” in the browser window.',
+      unsupported: 'No compatible device was found. Try another browser or your phone.',
+      unknown: 'The browser could not complete the passkey. Try again.',
+    },
   },
   privacy: {
     title: 'Privacy',
@@ -423,11 +432,9 @@ const en = {
   forbidden: { title: 'Access denied', text: 'You do not have permission to see this page.' },
 };
 
-type Dict = {
-  [K in keyof typeof en]: (typeof en)[K] extends string
-    ? string
-    : Record<keyof (typeof en)[K], string>;
-};
+/** Mesma forma do inglês (em qualquer profundidade), com textos livres: o pt-BR não pode faltar chave. */
+type Widen<T> = { [K in keyof T]: T[K] extends string ? string : Widen<T[K]> };
+type Dict = Widen<typeof en>;
 
 const ptBR: Dict = {
   appName: APP_NAME,
@@ -670,7 +677,16 @@ const ptBR: Dict = {
       'Ela para de funcionar neste site na hora. Você também pode apagá-la do aparelho ou gerenciador de senhas onde está salva.',
     added: 'Passkey adicionada. Da próxima vez, escolha “Entrar com passkey”.',
     removed: 'Passkey removida.',
-    failed: 'O navegador não conseguiu concluir a passkey. Tente de novo.',
+    failures: {
+      'already-registered':
+        'Este aparelho ou gerenciador de senhas já tem uma passkey desta conta. Use-a para entrar, ou remova a antiga antes.',
+      'wrong-domain':
+        'O endereço do site não bate com o domínio da passkey configurado no servidor (FRONTEND_URL / WEBAUTHN_RP_ID). Abra o site exatamente nesse endereço.',
+      'no-lock':
+        'Este aparelho não tem bloqueio de tela (PIN, digital ou rosto). Configure um (no Windows: Windows Hello) ou escolha “Usar um celular” na janela do navegador.',
+      unsupported: 'Nenhum aparelho compatível foi encontrado. Tente outro navegador ou o celular.',
+      unknown: 'O navegador não conseguiu concluir a passkey. Tente de novo.',
+    },
   },
   privacy: {
     title: 'Privacidade',

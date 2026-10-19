@@ -79,18 +79,23 @@ describe('LoginPage — passkey', () => {
     expect(screen.getByRole('button', { name: 'Sign in with a passkey' })).toBeEnabled();
   });
 
-  it('falha do navegador mostra uma mensagem clara', async () => {
+  it('falha do navegador mostra o motivo e o detalhe técnico', async () => {
     mockFetch({
       'POST /api/v1/auth/passkeys/login/options': () =>
         json(200, { options, challengeToken: 'desafio' }),
     });
-    browser.startAuthentication.mockRejectedValue(new Error('SecurityError'));
+    browser.startAuthentication.mockRejectedValue(
+      Object.assign(new Error('The RP ID "front.test" is invalid for this domain'), {
+        name: 'SecurityError',
+        code: 'ERROR_INVALID_RP_ID',
+      }),
+    );
     renderLogin();
 
     await userEvent.click(screen.getByRole('button', { name: 'Sign in with a passkey' }));
 
-    expect(await screen.findByRole('alert')).toHaveTextContent(
-      'The browser could not complete the passkey',
-    );
+    const alert = await screen.findByRole('alert');
+    expect(alert).toHaveTextContent("This site's address does not match the passkey domain");
+    expect(alert).toHaveTextContent('SecurityError: ERROR_INVALID_RP_ID'); // detalhe para suporte
   });
 });

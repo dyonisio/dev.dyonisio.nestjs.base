@@ -3,7 +3,12 @@ import { useState, type FormEvent } from 'react';
 import { api, type ApiError } from '../../api/client';
 import type { components } from '../../api/schema';
 import { useAuth } from '../../auth/AuthProvider';
-import { createPasskey, passkeysSupported } from '../../auth/passkey';
+import {
+  createPasskey,
+  PasskeyBrowserError,
+  passkeyFailureMessage,
+  passkeysSupported,
+} from '../../auth/passkey';
 import {
   emptyReauth,
   reauthBody,
@@ -341,8 +346,13 @@ function PasskeysSection() {
     let response;
     try {
       response = await createPasskey(start.options);
-    } catch {
-      throw { statusCode: 0, code: 'client', message: m.passkeys.failed } satisfies ApiError;
+    } catch (e) {
+      if (!(e instanceof PasskeyBrowserError)) throw e;
+      throw {
+        statusCode: 0,
+        code: 'client',
+        message: passkeyFailureMessage(m.passkeys.failures, e),
+      } satisfies ApiError;
     }
     if (!response) return setDialog(null); // cancelou no navegador
     const { error: saveError } = await api.POST('/api/v1/auth/passkeys/register', {

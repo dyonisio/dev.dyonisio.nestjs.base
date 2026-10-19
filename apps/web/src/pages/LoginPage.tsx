@@ -2,7 +2,7 @@ import { useEffect, useState, type FormEvent } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router';
 import { api, toApiError, type ApiError } from '../api/client';
 import { useAuth, type LoginResult } from '../auth/AuthProvider';
-import { PasskeyBrowserError, passkeysSupported } from '../auth/passkey';
+import { PasskeyBrowserError, passkeyFailureMessage, passkeysSupported } from '../auth/passkey';
 import { SocialLogin } from '../components/SocialLogin';
 import { AuthCard, ErrorAlert, Field, fieldError, SuccessAlert } from '../components/ui';
 import { useI18n } from '../i18n/I18nProvider';
@@ -79,7 +79,11 @@ export function LoginPage() {
         if (await passkeyLogin()) navigate(from, { replace: true });
       } catch (e) {
         if (!(e instanceof PasskeyBrowserError)) throw e;
-        throw { statusCode: 0, code: 'client', message: m.passkeys.failed } satisfies ApiError;
+        throw {
+          statusCode: 0,
+          code: 'client',
+          message: passkeyFailureMessage(m.passkeys.failures, e),
+        } satisfies ApiError;
       }
     });
 
