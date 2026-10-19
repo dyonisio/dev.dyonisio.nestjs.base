@@ -240,4 +240,48 @@ describe('SessionService', () => {
       await expect(service.listAllForUser(user.id)).resolves.toEqual([]);
     });
   });
+
+  describe('encerrar sessões (admin e o próprio usuário)', () => {
+    it('revokeAllForUser conta as sessões encerradas e grava o motivo', async () => {
+      await service.create(user);
+      await service.create(user);
+
+      await expect(
+        service.revokeAllForUser(user.id, SessionRevokeReason.REVOKED_BY_ADMIN),
+      ).resolves.toBe(2);
+      const all = await service.listAllForUser(user.id);
+      expect(all.map((s) => s.revokedReason)).toEqual([
+        SessionRevokeReason.REVOKED_BY_ADMIN,
+        SessionRevokeReason.REVOKED_BY_ADMIN,
+      ]);
+    });
+
+    it('revokeOwn com o motivo do admin; sem motivo, vale o do próprio usuário', async () => {
+      const a = sidOf((await service.create(user)).accessToken);
+      const b = sidOf((await service.create(user)).accessToken);
+
+      await expect(
+        service.revokeOwn(user.id, a, SessionRevokeReason.REVOKED_BY_ADMIN),
+      ).resolves.toBe(true);
+      await expect(service.revokeOwn(user.id, b)).resolves.toBe(true);
+      await expect(service.revokeOwn(user.id, b)).resolves.toBe(false); // já encerrada
+
+      const reasons = Object.fromEntries(
+        (await service.listAllForUser(user.id)).map((s) => [s.id, s.revokedReason]),
+      );
+      expect(reasons).toEqual({
+        [a]: SessionRevokeReason.REVOKED_BY_ADMIN,
+        [b]: SessionRevokeReason.REVOKED_BY_USER,
+      });
+    });
+
+    it('driver que não informa quantas linhas mudaram conta como 0', async () => {
+      jest.spyOn(sessions, 'update').mockResolvedValue({ affected: undefined } as never);
+      const sessionId = randomUUID();
+
+      await expect(service.revokeAllForUser(user.id)).resolves.toBe(0);
+      await expect(service.revokeOthers(user.id, sessionId)).resolves.toBe(0);
+      await expect(service.revokeOwn(user.id, sessionId)).resolves.toBe(false);
+    });
+  });
 });
