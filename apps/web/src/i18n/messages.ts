@@ -279,7 +279,7 @@ const en = {
     back: 'Back to users',
     details: 'Details',
     detailsHelp:
-      'The email changes at once, already confirmed (you vouch for it). Turning the account off signs the person out and blocks sign-in.',
+      'A new email takes effect at once, but unconfirmed: the person gets a confirmation link there and the old address is warned. Turning the account off signs the person out and blocks sign-in.',
     id: 'ID',
     infoHelp: 'What the account has set up. Every change here is recorded in the audit log.',
     accountActive: 'Account active (can sign in)',
@@ -661,7 +661,7 @@ const ptBR: Dict = {
     back: 'Voltar para usuários',
     details: 'Dados',
     detailsHelp:
-      'O e-mail muda na hora, já confirmado (você responde por ele). Desativar a conta desconecta a pessoa e bloqueia o login.',
+      'O e-mail muda na hora, mas fica não confirmado: a pessoa recebe o link de confirmação no endereço novo e o antigo é avisado. Desativar a conta desconecta a pessoa e bloqueia o login.',
     id: 'ID',
     infoHelp: 'O que a conta já configurou. Toda mudança aqui fica registrada na auditoria.',
     accountActive: 'Conta ativa (pode entrar)',
