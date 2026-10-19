@@ -1,5 +1,5 @@
-# Deploy MANUAL na AWS Lambda: Actions → "Deploy" → "Run workflow" → escolha o stage.
-# Nada é publicado automaticamente.
+# Deploy MANUAL da API (AWS Lambda) e do front (S3 + CloudFront): Actions → "Deploy" →
+# "Run workflow" → escolha o stage. Nada é publicado automaticamente.
 #
 # Configuração única (veja docs/DEPLOY_AWS_LAMBDA.md, seção "Deploy pelo GitHub Actions"):
 #   1. Na AWS, crie um Identity Provider OIDC para token.actions.githubusercontent.com
@@ -8,6 +8,9 @@
 #      (em "prod" você pode exigir aprovação de alguém antes de rodar).
 #   3. Em cada environment, crie as variáveis: AWS_ROLE_ARN (ARN da role), FRONTEND_URL,
 #      MAIL_FROM, SUPPORT_EMAIL e, opcionalmente, ALARM_EMAIL, GOOGLE_CLIENT_IDS, APPLE_CLIENT_IDS.
+#   4. Domínios próprios (opcional, docs/DEPLOY_WEB.md): API_DOMAIN + API_CERTIFICATE_ARN e
+#      WEB_DOMAIN + WEB_CERTIFICATE_ARN. Login social no front: WEB_GOOGLE_CLIENT_ID,
+#      WEB_APPLE_CLIENT_ID, WEB_APPLE_REDIRECT_URI.
 name: Deploy
 
 on:
@@ -43,7 +46,9 @@ jobs:
         with:
           node-version-file: .nvmrc
           cache: npm
-          cache-dependency-path: apps/api/package-lock.json
+          cache-dependency-path: |
+            apps/api/package-lock.json
+            apps/web/package-lock.json
 
       - run: npm ci
 
@@ -97,6 +102,8 @@ jobs:
           MAIL_FROM: ${{ vars.MAIL_FROM }}
           SUPPORT_EMAIL: ${{ vars.SUPPORT_EMAIL }}
           ALARM_EMAIL: ${{ vars.ALARM_EMAIL }}
+          API_DOMAIN: ${{ vars.API_DOMAIN }}
+          API_CERTIFICATE_ARN: ${{ vars.API_CERTIFICATE_ARN }}
           CORS_ORIGIN: ${{ vars.CORS_ORIGIN }}
           SWAGGER_ENABLED: ${{ vars.SWAGGER_ENABLED }}
           GOOGLE_CLIENT_IDS: ${{ vars.GOOGLE_CLIENT_IDS }}
@@ -125,7 +132,110 @@ jobs:
           [ -n "$SWAGGER_ENABLED" ] && params+=(--param="swaggerEnabled=$SWAGGER_ENABLED")
           [ -n "$GOOGLE_CLIENT_IDS" ] && params+=(--param="googleClientIds=$GOOGLE_CLIENT_IDS")
           [ -n "$APPLE_CLIENT_IDS" ] && params+=(--param="appleClientIds=$APPLE_CLIENT_IDS")
+          if [ -n "$API_DOMAIN" ] && [ -n "$API_CERTIFICATE_ARN" ]; then
+            params+=(--param="apiDomain=$API_DOMAIN" --param="apiCertificateArn=$API_CERTIFICATE_ARN")
+            params+=(--param="appUrl=https://$API_DOMAIN")
+          fi
 
           npm run build
           # --region explícito: a mesma região da credencial, dos segredos (SSM) e do SES
           npx serverless deploy --stage "$STAGE" --region "$REGION" "${params[@]}"
+
+      # ---------------------------------------------------------------- front (apps/web)
+
+      # Endereços que o front precisa: a API (domínio próprio ou o do API Gateway) e o bucket
+      # de uploads (entra na CSP). Lidos das saídas do stack que o deploy acabou de atualizar.
+      - name: Saídas da API
+        id: api
+        env:
+          STAGE: ${{ inputs.stage }}
+          API_DOMAIN: ${{ vars.API_DOMAIN }}
+          API_CERTIFICATE_ARN: ${{ vars.API_CERTIFICATE_ARN }}
+        run: |
+          service=$(awk '/^service:/ {print $2}' serverless.yml)
+          out() {
+            aws cloudformation describe-stacks --stack-name "$service-$STAGE"               --query "Stacks[0].Outputs[?OutputKey=='$1'].OutputValue" --output text
+          }
+          if [ -n "$API_DOMAIN" ] && [ -n "$API_CERTIFICATE_ARN" ]; then
+            api_origin="https://$API_DOMAIN"
+          else
+            api_origin=$(out HttpApiUrl)
+          fi
+          {
+            echo "service=$service"
+            echo "api_origin=${api_origin%/}"
+            echo "uploads_origin=$(out UploadsOrigin)"
+            echo "api_target=$(out ApiDomainTarget)"
+          } >> "$GITHUB_OUTPUT"
+
+      - name: Infra do front (S3 + CloudFront)
+        id: web
+        env:
+          STAGE: ${{ inputs.stage }}
+          SERVICE: ${{ steps.api.outputs.service }}
+          API_ORIGIN: ${{ steps.api.outputs.api_origin }}
+          UPLOADS_ORIGIN: ${{ steps.api.outputs.uploads_origin }}
+          WEB_DOMAIN: ${{ vars.WEB_DOMAIN }}
+          WEB_CERTIFICATE_ARN: ${{ vars.WEB_CERTIFICATE_ARN }}
+        run: |
+          stack="$SERVICE-$STAGE-web"
+          aws cloudformation deploy             --template-file ../web/infra/web.yml             --stack-name "$stack"             --no-fail-on-empty-changeset             --parameter-overrides               "Service=$SERVICE" "Stage=$STAGE"               "DomainName=$WEB_DOMAIN" "CertificateArn=$WEB_CERTIFICATE_ARN"               "ApiOrigin=$API_ORIGIN" "UploadsOrigin=$UPLOADS_ORIGIN"
+          out() {
+            aws cloudformation describe-stacks --stack-name "$stack"               --query "Stacks[0].Outputs[?OutputKey=='$1'].OutputValue" --output text
+          }
+          {
+            echo "bucket=$(out BucketName)"
+            echo "distribution=$(out DistributionId)"
+            echo "domain=$(out DistributionDomain)"
+            echo "url=$(out SiteUrl)"
+          } >> "$GITHUB_OUTPUT"
+
+      - name: Build do front
+        working-directory: apps/web
+        env:
+          VITE_API_URL: ${{ steps.api.outputs.api_origin }}
+          VITE_GOOGLE_CLIENT_ID: ${{ vars.WEB_GOOGLE_CLIENT_ID }}
+          VITE_APPLE_CLIENT_ID: ${{ vars.WEB_APPLE_CLIENT_ID }}
+          VITE_APPLE_REDIRECT_URI: ${{ vars.WEB_APPLE_REDIRECT_URI }}
+        run: |
+          npm ci
+          npm run build
+
+      # Arquivos com hash no nome nunca mudam: cache de 1 ano. O index.html é revalidado
+      # sempre, para a versão nova chegar na hora.
+      - name: Publicar o front
+        working-directory: apps/web
+        env:
+          BUCKET: ${{ steps.web.outputs.bucket }}
+          DISTRIBUTION: ${{ steps.web.outputs.distribution }}
+        run: |
+          aws s3 sync dist "s3://$BUCKET" --delete --exclude index.html             --cache-control "public,max-age=31536000,immutable"
+          aws s3 cp dist/index.html "s3://$BUCKET/index.html"             --cache-control "no-cache" --content-type "text/html; charset=utf-8"
+          aws cloudfront create-invalidation --distribution-id "$DISTRIBUTION" --paths /index.html > /dev/null
+
+      - name: Resumo (endereços e DNS)
+        env:
+          SITE_URL: ${{ steps.web.outputs.url }}
+          WEB_TARGET: ${{ steps.web.outputs.domain }}
+          API_ORIGIN: ${{ steps.api.outputs.api_origin }}
+          API_TARGET: ${{ steps.api.outputs.api_target }}
+          WEB_DOMAIN: ${{ vars.WEB_DOMAIN }}
+          API_DOMAIN: ${{ vars.API_DOMAIN }}
+        run: |
+          {
+            echo "### Publicado"
+            echo ""
+            echo "| | Endereço |"
+            echo "|---|---|"
+            echo "| Site | $SITE_URL |"
+            echo "| API | $API_ORIGIN |"
+            if [ -n "$WEB_DOMAIN$API_DOMAIN" ]; then
+              echo ""
+              echo "### Registros DNS (uma vez só; no Cloudflare: proxy **desligado**, DNS only)"
+              echo ""
+              echo "| Tipo | Nome | Destino |"
+              echo "|---|---|---|"
+              [ -n "$WEB_DOMAIN" ] && echo "| CNAME | \`$WEB_DOMAIN\` | \`$WEB_TARGET\` |"
+              [ -n "$API_DOMAIN" ] && [ "$API_TARGET" != "None" ] && echo "| CNAME | \`$API_DOMAIN\` | \`$API_TARGET\` |"
+            fi
+          } >> "$GITHUB_STEP_SUMMARY"

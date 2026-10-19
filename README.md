@@ -34,7 +34,7 @@ só com as regras do seu negócio.
 | **Contrato da API** | Swagger em `/docs`, `openapi.json` versionado e rotas em `/api/v1` |
 | **Qualidade** | ~500 testes (unitários + e2e em SQLite **e** num Postgres real), cobertura mínima garantida, CI no GitHub Actions, Dependabot |
 | **Front** | React com todas as telas: login (senha, Google/Apple, 2FA), cadastro, senha e convite, minha conta (foto, e-mail, senha), segurança (2FA com QR code, dispositivos, formas de login), privacidade (exportar/excluir) e admin (usuários e auditoria, conforme as permissões). Cliente tipado gerado do `openapi.json` |
-| **Deploy** | AWS Lambda (Serverless Framework) ou container (Dockerfile para ECS/Fargate) |
+| **Deploy** | Um só deploy publica a API e o front (S3 + CloudFront, CSP e HTTPS), com domínios próprios opcionais. AWS Lambda (Serverless Framework) ou container (Dockerfile para ECS/Fargate) |
 
 ## Começando (5 minutos)
 
@@ -116,6 +116,7 @@ por padrão (mude em `apps/web/.env` → `VITE_API_URL`; veja o `.env.example`).
 | [Cliente para o front](docs/API_CLIENT.md) | Gerar tipos e chamadas do front a partir do `openapi.json` |
 | [Testes e CI](docs/TESTING.md) | Tipos de teste, cobertura, CI e como rodar tudo localmente |
 | [Primeiro deploy, passo a passo](docs/FIRST_DEPLOY.md) | Banco, segredos, e-mail (SES), GitHub ↔ AWS e o deploy — para quem nunca publicou na AWS, com os erros comuns |
+| [Deploy do front e domínios](docs/DEPLOY_WEB.md) | Front no S3 + CloudFront, domínios próprios para o site e a API (exemplo com Cloudflare) |
 | [Deploy na AWS (referência)](docs/DEPLOY_AWS_LAMBDA.md) | Detalhes técnicos da Lambda, operação, alarmes e a alternativa em container (ECS) |
 
 ## Scripts

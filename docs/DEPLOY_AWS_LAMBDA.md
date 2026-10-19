@@ -1,7 +1,8 @@
 # Deploy na AWS Lambda
 
 > **Primeira vez?** Siga o [passo a passo do primeiro deploy](FIRST_DEPLOY.md) — ordem certa, explicações para iniciantes
-> e os erros mais comuns. Este documento é a referência técnica de cada peça.
+> e os erros mais comuns. Este documento é a referência técnica de cada peça. O front e os domínios próprios
+> (site e API) estão em [DEPLOY_WEB.md](DEPLOY_WEB.md).
 >
 > Os comandos `npm` e os caminhos deste guia (`.env`, `serverless.yml`, `src/...`) são da API: rode-os em `apps/api`.
 

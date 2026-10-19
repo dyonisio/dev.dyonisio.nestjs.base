@@ -1,0 +1,174 @@
+# Hospedagem do front: bucket S3 privado + CloudFront (HTTPS, cache, cabeçalhos de segurança).
+# Criado/atualizado pelo .github/workflows/deploy.yml — veja docs/DEPLOY_WEB.md.
+#
+# O bucket não é público: só o CloudFront lê (Origin Access Control). Rotas do React
+# (/account, /admin/users...) não existem como arquivo; o 403/404 do S3 vira o index.html.
+AWSTemplateFormatVersion: '2010-09-09'
+Description: Front (apps/web) em S3 + CloudFront
+
+Parameters:
+  Service:
+    Type: String
+    Description: Prefixo dos nomes (o mesmo "service" do serverless.yml)
+  Stage:
+    Type: String
+  DomainName:
+    Type: String
+    Default: ''
+    Description: Domínio do site (ex. base.dyonisio.dev). Vazio = só o endereço *.cloudfront.net
+  CertificateArn:
+    Type: String
+    Default: ''
+    Description: Certificado do ACM para o DomainName, emitido em us-east-1 (exigência do CloudFront)
+  ApiOrigin:
+    Type: String
+    Description: Endereço da API, sem barra no final (ex. https://api.base.dyonisio.dev)
+  UploadsOrigin:
+    Type: String
+    Description: Endereço do bucket de uploads (ex. https://bucket.s3.us-east-2.amazonaws.com)
+
+Conditions:
+  HasDomain: !And
+    - !Not [!Equals [!Ref DomainName, '']]
+    - !Not [!Equals [!Ref CertificateArn, '']]
+
+Resources:
+  SiteBucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      BucketName: !Sub ${Service}-${Stage}-web-${AWS::AccountId}
+      PublicAccessBlockConfiguration:
+        BlockPublicAcls: true
+        BlockPublicPolicy: true
+        IgnorePublicAcls: true
+        RestrictPublicBuckets: true
+      OwnershipControls:
+        Rules:
+          - ObjectOwnership: BucketOwnerEnforced
+      BucketEncryption:
+        ServerSideEncryptionConfiguration:
+          - ServerSideEncryptionByDefault:
+              SSEAlgorithm: AES256
+
+  OriginAccess:
+    Type: AWS::CloudFront::OriginAccessControl
+    Properties:
+      OriginAccessControlConfig:
+        Name: !Sub ${Service}-${Stage}-web
+        OriginAccessControlOriginType: s3
+        SigningBehavior: always
+        SigningProtocol: sigv4
+
+  # Cabeçalhos de segurança em toda resposta. A CSP só libera o que o front usa de verdade:
+  # a API, o bucket de uploads (avatar e o envio direto), as fontes do Google e os SDKs
+  # oficiais de login do Google e da Apple (carregados só quando o botão está ligado).
+  SecurityHeaders:
+    Type: AWS::CloudFront::ResponseHeadersPolicy
+    Properties:
+      ResponseHeadersPolicyConfig:
+        Name: !Sub ${Service}-${Stage}-web-headers
+        SecurityHeadersConfig:
+          ContentSecurityPolicy:
+            Override: true
+            ContentSecurityPolicy: !Sub >-
+              default-src 'self';
+              script-src 'self' https://accounts.google.com https://appleid.cdn-apple.com;
+              style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://accounts.google.com;
+              font-src https://fonts.gstatic.com;
+              img-src 'self' data: blob: ${UploadsOrigin} https://*.googleusercontent.com;
+              connect-src 'self' ${ApiOrigin} ${UploadsOrigin} https://accounts.google.com;
+              frame-src https://accounts.google.com https://appleid.apple.com;
+              form-action 'self' https://appleid.apple.com;
+              frame-ancestors 'none';
+              base-uri 'self';
+              object-src 'none'
+          StrictTransportSecurity:
+            Override: true
+            AccessControlMaxAgeSec: 31536000
+            IncludeSubdomains: true
+          ContentTypeOptions:
+            Override: true
+          FrameOptions:
+            Override: true
+            FrameOption: DENY
+          ReferrerPolicy:
+            Override: true
+            ReferrerPolicy: strict-origin-when-cross-origin
+        CustomHeadersConfig:
+          Items:
+            - Header: Permissions-Policy
+              Override: true
+              Value: camera=(), microphone=(), geolocation=(), payment=()
+
+  Distribution:
+    Type: AWS::CloudFront::Distribution
+    Properties:
+      DistributionConfig:
+        Comment: !Sub ${Service} ${Stage} web
+        Enabled: true
+        HttpVersion: http2and3
+        IPV6Enabled: true
+        DefaultRootObject: index.html
+        # Todas as regiões: inclui a América do Sul (o plano gratuito vale igual)
+        PriceClass: PriceClass_All
+        Aliases: !If [HasDomain, [!Ref DomainName], !Ref AWS::NoValue]
+        ViewerCertificate: !If
+          - HasDomain
+          - AcmCertificateArn: !Ref CertificateArn
+            SslSupportMethod: sni-only
+            MinimumProtocolVersion: TLSv1.2_2021
+          - CloudFrontDefaultCertificate: true
+        Origins:
+          - Id: site
+            DomainName: !GetAtt SiteBucket.RegionalDomainName
+            OriginAccessControlId: !GetAtt OriginAccess.Id
+            S3OriginConfig:
+              OriginAccessIdentity: ''
+        DefaultCacheBehavior:
+          TargetOriginId: site
+          ViewerProtocolPolicy: redirect-to-https
+          Compress: true
+          AllowedMethods: [GET, HEAD]
+          # Managed-CachingOptimized: respeita o Cache-Control de cada arquivo (o deploy manda
+          # "immutable" nos assets com hash no nome e "no-cache" no index.html)
+          CachePolicyId: 658327ea-f89d-4fab-a63d-7e88639e58f6
+          ResponseHeadersPolicyId: !Ref SecurityHeaders
+        # Rotas do React: o S3 responde 403 para um caminho que não é arquivo
+        CustomErrorResponses:
+          - ErrorCode: 403
+            ResponseCode: 200
+            ResponsePagePath: /index.html
+            ErrorCachingMinTTL: 0
+          - ErrorCode: 404
+            ResponseCode: 200
+            ResponsePagePath: /index.html
+            ErrorCachingMinTTL: 0
+
+  # Só ESTA distribuição lê o bucket
+  SiteBucketPolicy:
+    Type: AWS::S3::BucketPolicy
+    Properties:
+      Bucket: !Ref SiteBucket
+      PolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Sid: CloudFrontOnly
+            Effect: Allow
+            Principal:
+              Service: cloudfront.amazonaws.com
+            Action: s3:GetObject
+            Resource: !Sub ${SiteBucket.Arn}/*
+            Condition:
+              StringEquals:
+                AWS:SourceArn: !Sub arn:aws:cloudfront::${AWS::AccountId}:distribution/${Distribution}
+
+Outputs:
+  BucketName:
+    Value: !Ref SiteBucket
+  DistributionId:
+    Value: !Ref Distribution
+  DistributionDomain:
+    Description: Para o CNAME do domínio do site (ex. base -> este endereço), com proxy desligado
+    Value: !GetAtt Distribution.DomainName
+  SiteUrl:
+    Value: !If [HasDomain, !Sub 'https://${DomainName}', !Sub 'https://${Distribution.DomainName}']

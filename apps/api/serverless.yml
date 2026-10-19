@@ -115,6 +115,9 @@ params:
     # mailFrom: Minha App <no-reply@seudominio.com>
     # supportEmail: suporte@seudominio.com
     # alarmEmail: devops@seudominio.com   # recebe os alarmes (confirme a inscrição no e-mail)
+    # Domínio próprio da API (opcional; os dois juntos). Certificado do ACM NA MESMA região da API:
+    # apiDomain: api.seudominio.com
+    # apiCertificateArn: arn:aws:acm:us-east-2:123456789012:certificate/...
   dev:
     swaggerEnabled: 'true'
 
@@ -312,8 +315,42 @@ resources:
         AlarmActions: [!Ref AlarmTopic]
         OKActions: [!Ref AlarmTopic]
 
+    # Domínio próprio da API (ex.: api.base.dyonisio.dev). Depois do deploy, aponte um CNAME
+    # do domínio para a saída ApiDomainTarget (no Cloudflare: proxy desligado, "DNS only").
+    ApiCustomDomain:
+      Type: AWS::ApiGatewayV2::DomainName
+      Condition: HasApiDomain
+      Properties:
+        DomainName: ${param:apiDomain, ''}
+        DomainNameConfigurations:
+          - CertificateArn: ${param:apiCertificateArn, ''}
+            EndpointType: REGIONAL
+            SecurityPolicy: TLS_1_2
+
+    ApiCustomDomainMapping:
+      Type: AWS::ApiGatewayV2::ApiMapping
+      Condition: HasApiDomain
+      DependsOn: [ApiCustomDomain, HttpApiStage]
+      Properties:
+        DomainName: ${param:apiDomain, ''}
+        ApiId: !Ref HttpApi
+        Stage: $default
+
+  Outputs:
+    # Lidas pelo deploy do front (CSP e build)
+    UploadsOrigin:
+      # !Join em vez de !Sub: o ${...} do Sub se confundiria com variável do Serverless
+      Value: !Join ['', ['https://', !Ref UploadsBucket, '.s3.', !Ref AWS::Region, '.amazonaws.com']]
+    ApiDomainTarget:
+      Condition: HasApiDomain
+      Description: Destino do CNAME do domínio da API
+      Value: !GetAtt ApiCustomDomain.RegionalDomainName
+
   Conditions:
     HasAlarmEmail: !Not [!Equals ["${param:alarmEmail, ''}", '']]
+    HasApiDomain: !And
+      - !Not [!Equals ["${param:apiDomain, ''}", '']]
+      - !Not [!Equals ["${param:apiCertificateArn, ''}", '']]
 
 plugins:
   - serverless-offline
