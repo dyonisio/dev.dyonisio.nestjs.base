@@ -1,9 +1,11 @@
-import { useState, type FormEvent } from 'react';
+import { useEffect, useState, type FormEvent } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router';
 import { toApiError, type ApiError } from '../api/client';
-import { useAuth } from '../auth/AuthProvider';
-import { AuthCard, ErrorAlert, Field, fieldError } from '../components/ui';
+import { useAuth, type LoginResult } from '../auth/AuthProvider';
+import { SocialLogin } from '../components/SocialLogin';
+import { AuthCard, ErrorAlert, Field, fieldError, SuccessAlert } from '../components/ui';
 import { useI18n } from '../i18n/I18nProvider';
+import { flash } from '../lib/flash';
 
 /**
  * Login em dois passos quando a conta tem 2FA:
@@ -14,12 +16,22 @@ export function LoginPage() {
   const { m } = useI18n();
   const { login, verifyTwoFactor } = useAuth();
   const navigate = useNavigate();
-  const from = (useLocation().state as { from?: string } | null)?.from ?? '/';
+  const state = useLocation().state as {
+    from?: string;
+    /** vindo do cadastro: entrou com Google/Apple numa conta que tem 2FA */
+    twoFactorToken?: string;
+  } | null;
+  const from = state?.from ?? '/';
 
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [code, setCode] = useState('');
-  const [twoFactorToken, setTwoFactorToken] = useState<string | null>(null);
+  // Aviso deixado pela tela anterior (ex.: conta excluída); lido uma vez
+  const [notice] = useState(flash.peek);
+  useEffect(() => flash.clear(), []);
+  const [twoFactorToken, setTwoFactorToken] = useState<string | null>(
+    state?.twoFactorToken ?? null,
+  );
   const [error, setError] = useState<ApiError | null>(null);
   const [busy, setBusy] = useState(false);
 
@@ -35,13 +47,15 @@ export function LoginPage() {
     }
   }
 
+  /** Senha ou Google/Apple: entrou, ou falta o código do 2FA. */
+  const handleResult = (result: LoginResult) => {
+    if (result.done) navigate(from, { replace: true });
+    else setTwoFactorToken(result.twoFactorToken);
+  };
+
   const submitPassword = (e: FormEvent) => {
     e.preventDefault();
-    void run(async () => {
-      const result = await login(email, password);
-      if (result.done) navigate(from, { replace: true });
-      else setTwoFactorToken(result.twoFactorToken);
-    });
+    void run(async () => handleResult(await login(email, password)));
   };
 
   const submitCode = (e: FormEvent) => {
@@ -78,6 +92,7 @@ export function LoginPage() {
 
   return (
     <AuthCard title={m.login.title}>
+      {notice === 'accountDeleted' && <SuccessAlert>{m.login.accountDeleted}</SuccessAlert>}
       <form onSubmit={submitPassword} noValidate>
         <Field
           label={m.common.email}
@@ -102,6 +117,7 @@ export function LoginPage() {
           {m.login.title}
         </button>
       </form>
+      <SocialLogin onResult={handleResult} />
       <p className="links">
         <Link to="/forgot-password">{m.login.forgot}</Link>
         <span>

@@ -16,6 +16,21 @@ export interface ApiError {
 /** Rotas em que um 401 é resposta "de verdade" (credencial errada), não token expirado. */
 const NO_REFRESH = ['/auth/login', '/auth/refresh', '/auth/register', '/auth/2fa/verify'];
 
+/**
+ * Códigos de 401 que significam "access token ausente/vencido": só esses valem um refresh.
+ * Outros 401 (ex.: `account.reauthRequired`) são respostas finais — repetir não muda nada.
+ */
+const TOKEN_EXPIRED_CODES = ['errors.http.401', 'auth.sessionExpired'];
+
+async function isExpiredToken(response: Response): Promise<boolean> {
+  try {
+    const body = (await response.clone().json()) as { code?: string };
+    return !body.code || TOKEN_EXPIRED_CODES.includes(body.code);
+  } catch {
+    return true; // 401 sem corpo JSON: trata como token vencido
+  }
+}
+
 let refreshing: Promise<boolean> | null = null;
 
 /**
@@ -63,6 +78,7 @@ export async function apiFetch(request: Request): Promise<Response> {
 
   const path = new URL(request.url).pathname;
   if (response.status !== 401 || NO_REFRESH.some((p) => path.endsWith(p))) return response;
+  if (!(await isExpiredToken(response))) return response;
   if (!(await refreshSession())) return response;
   return fetch(withHeaders(retry));
 }

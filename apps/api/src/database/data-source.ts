@@ -7,6 +7,7 @@ import 'dotenv/config';
 import { join } from 'path';
 import { DataSource } from 'typeorm';
 import configuration from '../config/configuration';
+import './pg-utc';
 import { buildSslOptions } from './ssl';
 
 const { database: db } = configuration();

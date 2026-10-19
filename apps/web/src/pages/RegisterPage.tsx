@@ -2,12 +2,13 @@ import { useState, type FormEvent } from 'react';
 import { Link, useNavigate } from 'react-router';
 import { toApiError, type ApiError } from '../api/client';
 import { useAuth } from '../auth/AuthProvider';
+import { SocialLogin } from '../components/SocialLogin';
 import { AuthCard, ErrorAlert, Field, fieldError } from '../components/ui';
 import { useI18n } from '../i18n/I18nProvider';
 
 /** Cadastro: a API já abre a sessão e manda o e-mail de confirmação. */
 export function RegisterPage() {
-  const { m } = useI18n();
+  const { m, lang } = useI18n();
   const { register } = useAuth();
   const navigate = useNavigate();
   const [form, setForm] = useState({ name: '', email: '', password: '' });
@@ -22,7 +23,7 @@ export function RegisterPage() {
     setBusy(true);
     setError(null);
     try {
-      await register(form);
+      await register({ ...form, locale: lang });
       navigate('/', { replace: true });
     } catch (err) {
       setError(toApiError(err));
@@ -66,6 +67,15 @@ export function RegisterPage() {
           {m.register.title}
         </button>
       </form>
+      {/* Google/Apple: conta nova já nasce confirmada. Se o e-mail já tinha conta com 2FA,
+          o login pede o código — a tela de login continua de onde parou. */}
+      <SocialLogin
+        onResult={(result) =>
+          result.done
+            ? navigate('/', { replace: true })
+            : navigate('/login', { state: { twoFactorToken: result.twoFactorToken } })
+        }
+      />
       <p className="links">
         <span>
           {m.register.haveAccount} <Link to="/login">{m.register.signIn}</Link>

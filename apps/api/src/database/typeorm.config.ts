@@ -2,6 +2,7 @@ import { ConfigService } from '@nestjs/config';
 import { TypeOrmModuleOptions } from '@nestjs/typeorm';
 import { join } from 'path';
 import configuration from '../config/configuration';
+import './pg-utc';
 import { buildSslOptions } from './ssl';
 
 type DatabaseConfig = ReturnType<typeof configuration>['database'];

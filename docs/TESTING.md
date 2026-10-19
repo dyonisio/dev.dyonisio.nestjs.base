@@ -96,8 +96,18 @@ mockFetch({
 });
 ```
 
-O que já está coberto: o cliente da API (token em toda chamada, renovação no 401, **um único** refresh para várias
-chamadas simultâneas, sessão encerrada se o refresh falhar, sem refresh no login) e o login com e sem 2FA.
+Para testar uma tela inteira já logado, use `renderApp` ([render.tsx](../apps/web/src/test/render.tsx)):
+
+```ts
+const fetch = renderApp('/account/privacy', makeUser({ role: 'admin' }), {
+  'DELETE /api/v1/users/me': () => new Response(null, { status: 204 }),
+});
+expect(await lastBody(fetch, 'DELETE', '/api/v1/users/me')).toEqual({ currentPassword: 'x' });
+```
+
+O que já está coberto: o cliente da API (token em toda chamada, renovação só no 401 de token vencido, **um único**
+refresh para várias chamadas simultâneas, sessão encerrada se o refresh falhar), login com e sem 2FA, menu e telas de
+admin conforme as permissões, ativação do 2FA, exclusão da conta e criação de usuário por convite.
 
 Rodar o que o CI roda (em `apps/web`):
 

@@ -103,10 +103,10 @@ export const ROLE_PERMISSIONS: Record<Role, readonly Permission[]> = {
 | Permissão | Libera |
 | --- | --- |
 | `users:read` | `GET /users`, `GET /users/:id` |
-| `users:create` | `POST /users` |
+| `users:create` | `POST /users`, `POST /users/:id/invite` (criar com role acima de `user` exige também `users:manage-roles`) |
 | `users:update` | `PATCH /users/:id` |
 | `users:delete` | `DELETE /users/:id`, `PATCH /users/:id/restore` |
-| `users:manage-roles` | `PATCH /users/:id/role` |
+| `users:manage-roles` | `PATCH /users/:id/role` e escolher a role ao criar |
 | `users:reset-2fa` | `DELETE /users/:id/two-factor` |
 | `audit:read` | `GET /audit-logs` |
 
@@ -163,6 +163,10 @@ Todo erro tem o mesmo formato, traduzido pelo `Accept-Language`:
 - **Migrations sempre**, nunca `synchronize` (proibido em produção). O teste `npm run test:pg` compara as migrations com as
   entidades e falha se houver diferença.
 - Em produção o certificado TLS do banco é conferido (`DB_SSL=true` + CA da AWS). Veja `certs/README.md`.
+- **Datas sempre em UTC.** As colunas são `timestamp` (sem fuso), e o driver é configurado para gravar e ler em UTC
+  ([pg-utc.ts](../apps/api/src/database/pg-utc.ts)), qualquer que seja o fuso da máquina. Sem isso, num computador em
+  São Paulo as datas gravadas pelo código ficavam 3h diferentes das preenchidas pelo banco (`DEFAULT now()`). Converter
+  para o fuso de quem vê é papel de quem exibe: o front e os e-mails (`MAIL_TIMEZONE`).
 
 ## Convenções de código
 

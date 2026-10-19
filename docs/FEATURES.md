@@ -10,7 +10,7 @@ Rotas sob `/api/v1`. Autenticação e conta estão em [AUTH.md](AUTH.md).
 | --- | --- |
 | `GET /users?search=ana&sortBy=name&order=asc&role=manager&page=1&limit=20` | `users:read` |
 | `GET /users/:id` | `users:read` |
-| `POST /users` (cria já com e-mail confirmado, qualquer role; sem `password` = convite) | `users:create` |
+| `POST /users` (cria já com e-mail confirmado; sem `password` = convite) | `users:create` (+ `users:manage-roles` para role acima de `user`) |
 | `POST /users/:id/invite` (reenvia o convite, se a pessoa ainda não criou a senha) | `users:create` |
 | `PATCH /users/:id` (nome, e-mail, idioma, ativo) | `users:update` |
 | `PATCH /users/:id/role` | `users:manage-roles` |

@@ -125,7 +125,7 @@ export interface paths {
         put?: never;
         /**
          * Create a user with any role
-         * @description The email is considered verified (the admin vouches for it). **Without `password` (recommended)** the user receives an email with a single-use link to create their own password (valid for INVITE_EXPIRES_IN, default 7 days). With `password`, the email only says the account exists — the password is never emailed. Permission: `users:create`.
+         * @description The email is considered verified (the admin vouches for it). A `role` other than `user` also requires `users:manage-roles`. **Without `password` (recommended)** the user receives an email with a single-use link to create their own password (valid for INVITE_EXPIRES_IN, default 7 days). With `password`, the email only says the account exists — the password is never emailed. Permission: `users:create`.
          */
         post: operations["UsersController_create_v1"];
         delete?: never;
@@ -929,7 +929,7 @@ export interface components {
              * @default user
              * @enum {string}
              */
-            role: "admin" | "manager" | "user";
+            role?: "admin" | "manager" | "user";
             /**
              * @description Preferred language for emails. Default: the request Accept-Language
              * @enum {string}
@@ -1708,7 +1708,11 @@ export interface operations {
                     "application/json": components["schemas"]["ErrorResponseDto"];
                 };
             };
-            /** @description Requires the permission(s): users:create */
+            /**
+             * @description A role other than `user` requires `users:manage-roles`
+             *
+             *     Requires the permission(s): users:create
+             */
             403: {
                 headers: {
                     [name: string]: unknown;

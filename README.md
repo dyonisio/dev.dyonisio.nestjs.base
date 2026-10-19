@@ -33,7 +33,7 @@ só com as regras do seu negócio.
 | **Operação** | Logs JSON com `X-Request-Id`, job de manutenção agendado, alarmes no CloudWatch, health check |
 | **Contrato da API** | Swagger em `/docs`, `openapi.json` versionado e rotas em `/api/v1` |
 | **Qualidade** | ~500 testes (unitários + e2e em SQLite **e** num Postgres real), cobertura mínima garantida, CI no GitHub Actions, Dependabot |
-| **Front** | React com login (inclusive 2FA), cadastro, senha, confirmação de e-mail e convite; cliente tipado gerado do `openapi.json` |
+| **Front** | React com todas as telas: login (senha, Google/Apple, 2FA), cadastro, senha e convite, minha conta (foto, e-mail, senha), segurança (2FA com QR code, dispositivos, formas de login), privacidade (exportar/excluir) e admin (usuários e auditoria, conforme as permissões). Cliente tipado gerado do `openapi.json` |
 | **Deploy** | AWS Lambda (Serverless Framework) ou container (Dockerfile para ECS/Fargate) |
 
 ## Começando (5 minutos)
@@ -162,11 +162,11 @@ apps/
 │   └── Dockerfile              # deploy em container
 └── web/                        # o front
     └── src/
-        ├── api/                # cliente tipado (schema.d.ts gerado do openapi.json)
-        ├── auth/               # sessão, refresh e o contexto de login
+        ├── api/                # cliente tipado (schema.d.ts gerado do openapi.json) e upload
+        ├── auth/               # sessão, refresh, login e permissões
         ├── i18n/               # textos da interface (pt-BR, en)
-        ├── components/         # peças reutilizáveis (campos, alertas, rota protegida)
-        └── pages/              # as telas
+        ├── components/         # layout, campos, modal, confirmação de identidade, login social
+        └── pages/              # as telas (account/: minha conta; admin/: usuários e auditoria)
 docs/                           # guias
 .github/                        # CI (API e front) e deploy
 ```

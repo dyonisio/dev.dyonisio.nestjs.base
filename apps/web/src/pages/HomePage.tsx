@@ -1,15 +1,15 @@
 import { useState } from 'react';
-import { Link, useNavigate } from 'react-router';
+import { Link } from 'react-router';
 import { api } from '../api/client';
 import { useAuth } from '../auth/AuthProvider';
-import { LanguageSwitch, SuccessAlert } from '../components/ui';
+import { can, type Permission } from '../auth/permissions';
+import { Avatar, SuccessAlert } from '../components/ui';
 import { useI18n } from '../i18n/I18nProvider';
 
-/** Início (logado). As telas de conta e de admin entram nas próximas fases. */
+/** Início (logado): saudação, avisos importantes e atalhos. */
 export function HomePage() {
   const { m, f } = useI18n();
-  const { user, logout } = useAuth();
-  const navigate = useNavigate();
+  const { user } = useAuth();
   const [resent, setResent] = useState(false);
 
   if (!user) return null;
@@ -19,25 +19,19 @@ export function HomePage() {
     if (!error) setResent(true);
   }
 
-  return (
-    <main className="page">
-      <header className="topbar">
-        <strong>{m.appName}</strong>
-        <nav>
-          <Link to="/account/security">{m.home.security}</Link>
-          <button
-            type="button"
-            className="link"
-            onClick={() => void logout().then(() => navigate('/login'))}
-          >
-            {m.home.signOut}
-          </button>
-        </nav>
-      </header>
+  const shortcuts: { to: string; title: string; help: string; permission?: Permission }[] = [
+    { to: '/account', title: m.nav.account, help: m.home.accountHelp },
+    { to: '/account/security', title: m.nav.security, help: m.home.securityHelp },
+    { to: '/account/privacy', title: m.nav.privacy, help: m.home.privacyHelp },
+    { to: '/admin/users', title: m.nav.users, help: m.home.usersHelp, permission: 'users:read' },
+    { to: '/admin/audit', title: m.nav.audit, help: m.home.auditHelp, permission: 'audit:read' },
+  ];
 
+  return (
+    <>
       <section className="card">
         <div className="profile">
-          {user.avatarUrl && <img src={user.avatarUrl} alt="" className="avatar" />}
+          <Avatar user={user} size={64} />
           <div>
             <h1>{f(m.home.hello, { name: user.name })}</h1>
             <p className="muted">{f(m.home.signedInAs, { email: user.email })}</p>
@@ -55,28 +49,27 @@ export function HomePage() {
               </button>
             </p>
           ))}
+
+        {user.twoFactorEnabledAt ? (
+          <p className="muted">{m.home.twoFactorOn}</p>
+        ) : (
+          <p className="alert alert-warning">
+            {m.home.twoFactorOff} <Link to="/account/security">{m.home.setUp}</Link>
+          </p>
+        )}
       </section>
 
-      <footer>
-        <LanguageSwitch />
-      </footer>
-    </main>
-  );
-}
-
-/** /account/security — destino dos botões dos e-mails de alerta (conteúdo na próxima fase). */
-export function AccountSecurityPage() {
-  const { m } = useI18n();
-  return (
-    <main className="page">
-      <section className="card">
-        <h1>{m.security.title}</h1>
-        <p className="muted">{m.security.soon}</p>
-        <p className="links">
-          <Link to="/">{m.security.back}</Link>
-        </p>
+      <section aria-label={m.home.shortcuts} className="tiles">
+        {shortcuts
+          .filter((s) => !s.permission || can(user, s.permission))
+          .map((s) => (
+            <Link key={s.to} to={s.to} className="card tile">
+              <strong>{s.title}</strong>
+              <span className="muted">{s.help}</span>
+            </Link>
+          ))}
       </section>
-    </main>
+    </>
   );
 }
 

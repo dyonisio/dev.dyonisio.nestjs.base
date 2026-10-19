@@ -4,7 +4,8 @@ import { json, mockFetch, requestOf } from '../test/fetch-mock';
 import { api } from './client';
 
 const tokens = (n: number) => ({ accessToken: `access-${n}`, refreshToken: `refresh-${n}` });
-const unauthorized = () => json(401, { statusCode: 401, code: 'auth.unauthorized', message: '' });
+/** O que a API responde com o access token ausente ou vencido. */
+const unauthorized = () => json(401, { statusCode: 401, code: 'errors.http.401', message: '' });
 
 /** /users/me aceita só o token renovado (access-2). */
 const meRoute = (req: Request) =>
@@ -56,7 +57,8 @@ describe('cliente da API', () => {
     session.start(tokens(1));
     mockFetch({
       'GET /api/v1/users/me': unauthorized,
-      'POST /api/v1/auth/refresh': unauthorized,
+      'POST /api/v1/auth/refresh': () =>
+        json(401, { statusCode: 401, code: 'auth.invalidRefreshToken', message: '' }),
     });
 
     const { error } = await api.GET('/api/v1/users/me');
@@ -64,6 +66,20 @@ describe('cliente da API', () => {
     expect(error).toMatchObject({ statusCode: 401 });
     expect(session.getRefreshToken()).toBeNull();
     expect(session.getAccessToken()).toBeNull();
+  });
+
+  it('401 que não é token vencido (ex.: reauthRequired) volta direto, sem refresh', async () => {
+    session.start(tokens(1));
+    const fetch = mockFetch({
+      'DELETE /api/v1/users/me': () =>
+        json(401, { statusCode: 401, code: 'account.reauthRequired', message: 'Sign in again' }),
+    });
+
+    const { error } = await api.DELETE('/api/v1/users/me', { body: {} });
+
+    expect(error).toMatchObject({ code: 'account.reauthRequired' });
+    expect(fetch).toHaveBeenCalledTimes(1);
+    expect(session.getRefreshToken()).toBe('refresh-1');
   });
 
   it('401 no login é senha errada: NÃO tenta renovar', async () => {

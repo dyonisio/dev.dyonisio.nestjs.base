@@ -3,6 +3,7 @@ import {
   Body,
   Controller,
   Delete,
+  ForbiddenException,
   Get,
   HttpCode,
   HttpStatus,
@@ -26,6 +27,7 @@ import { Auth } from '../common/decorators/auth.decorator';
 import { Authorize } from '../common/decorators/authorize.decorator';
 import { CurrentUser } from '../common/decorators/current-user.decorator';
 import { Permission } from '../common/enums/permission.enum';
+import { Role } from '../common/enums/role.enum';
 import { i18nKey } from '../i18n/translations';
 import { AdminCreateUserDto } from './dto/create-user.dto';
 import { ListUsersQueryDto, PaginatedUsersDto } from './dto/list-users-query.dto';
@@ -121,11 +123,20 @@ export class UsersController {
   @ApiOperation({
     summary: 'Create a user with any role',
     description:
-      'The email is considered verified (the admin vouches for it). **Without `password` (recommended)** the user receives an email with a single-use link to create their own password (valid for INVITE_EXPIRES_IN, default 7 days). With `password`, the email only says the account exists — the password is never emailed. Permission: `users:create`.',
+      'The email is considered verified (the admin vouches for it). A `role` other than `user` also requires `users:manage-roles`. **Without `password` (recommended)** the user receives an email with a single-use link to create their own password (valid for INVITE_EXPIRES_IN, default 7 days). With `password`, the email only says the account exists — the password is never emailed. Permission: `users:create`.',
   })
   @ApiCreatedResponse({ type: User })
-  @ApiErrors([400, 'Validation failed'], [409, 'Email already registered'])
-  create(@Body() dto: AdminCreateUserDto) {
+  @ApiErrors(
+    [400, 'Validation failed'],
+    [403, 'A role other than `user` requires `users:manage-roles`'],
+    [409, 'Email already registered'],
+  )
+  create(@Body() dto: AdminCreateUserDto, @CurrentUser() actor: User) {
+    // Dar uma role é gerenciar roles: sem isso, quem só cria usuários poderia criar um admin
+    const elevated = dto.role !== undefined && dto.role !== Role.USER;
+    if (elevated && !actor.permissions.includes(Permission.USERS_MANAGE_ROLES)) {
+      throw new ForbiddenException(i18nKey('auth.forbidden'));
+    }
     return this.invitations.createByAdmin(dto);
   }
 

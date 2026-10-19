@@ -1,8 +1,17 @@
-import { useId, type InputHTMLAttributes, type ReactNode } from 'react';
-import { Link } from 'react-router';
+import {
+  useEffect,
+  useId,
+  useRef,
+  type InputHTMLAttributes,
+  type ReactNode,
+  type SelectHTMLAttributes,
+} from 'react';
+import { Link, useLocation, useNavigate } from 'react-router';
 import type { ApiError } from '../api/client';
+import { useAuth } from '../auth/AuthProvider';
+import type { User } from '../auth/session';
 import { useI18n } from '../i18n/I18nProvider';
-import { LANGUAGES } from '../i18n/language';
+import { LANGUAGES, type Language } from '../i18n/language';
 
 /** Página de formulário centralizada (login, cadastro, senha...). */
 export function AuthCard({ title, children }: { title: string; children: ReactNode }) {
@@ -14,6 +23,28 @@ export function AuthCard({ title, children }: { title: string; children: ReactNo
       </div>
       <LanguageSwitch />
     </main>
+  );
+}
+
+/** Bloco de uma tela logada: título, explicação opcional e o conteúdo. */
+export function Section({
+  title,
+  help,
+  children,
+  danger,
+}: {
+  title: string;
+  help?: ReactNode;
+  children: ReactNode;
+  danger?: boolean;
+}) {
+  const id = useId();
+  return (
+    <section className={danger ? 'card card-danger' : 'card'} aria-labelledby={id}>
+      <h2 id={id}>{title}</h2>
+      {help && <p className="muted">{help}</p>}
+      {children}
+    </section>
   );
 }
 
@@ -39,15 +70,86 @@ export function Field({ label, hint, error, ...input }: FieldProps) {
   );
 }
 
+interface SelectFieldProps extends SelectHTMLAttributes<HTMLSelectElement> {
+  label: string;
+  hint?: string;
+  error?: string;
+  options: { value: string; label: string }[];
+}
+
+export function SelectField({ label, hint, error, options, ...select }: SelectFieldProps) {
+  const id = useId();
+  return (
+    <div className="field">
+      <label htmlFor={id}>{label}</label>
+      <select id={id} aria-invalid={!!error} aria-describedby={`${id}-help`} {...select}>
+        {options.map((o) => (
+          <option key={o.value} value={o.value}>
+            {o.label}
+          </option>
+        ))}
+      </select>
+      {(error || hint) && (
+        <small id={`${id}-help`} className={error ? 'error' : 'hint'}>
+          {error ?? hint}
+        </small>
+      )}
+    </div>
+  );
+}
+
+export function Checkbox({
+  label,
+  ...input
+}: { label: string } & InputHTMLAttributes<HTMLInputElement>) {
+  return (
+    <label className="checkbox">
+      <input type="checkbox" {...input} />
+      <span>{label}</span>
+    </label>
+  );
+}
+
+/** Opções de idioma para um <SelectField>. */
+export function useLanguageOptions(): { value: Language; label: string }[] {
+  return LANGUAGES.map((l) => ({ value: l, label: l === 'pt-BR' ? 'Português' : 'English' }));
+}
+
 /** Mensagem de erro geral. Os textos vêm traduzidos da API; erro de rede tem texto próprio. */
 export function ErrorAlert({ error }: { error: ApiError | null }) {
   const { m } = useI18n();
   if (!error) return null;
+  // Conta sem senha com login antigo: a única saída é entrar de novo
+  if (error.code === 'account.reauthRequired') return <ReauthRequiredAlert />;
   return (
     <p className="alert alert-error" role="alert">
       {error.code === 'network' ? m.common.networkError : error.message}
     </p>
   );
+}
+
+function ReauthRequiredAlert() {
+  const { m } = useI18n();
+  const { logout } = useAuth();
+  const navigate = useNavigate();
+  const { pathname } = useLocation();
+  return (
+    <p className="alert alert-error" role="alert">
+      {m.reauth.reauthRequired}{' '}
+      <button
+        type="button"
+        className="link"
+        onClick={() => void logout().then(() => navigate('/login', { state: { from: pathname } }))}
+      >
+        {m.reauth.signInAgain}
+      </button>
+    </p>
+  );
+}
+
+/** Erro geral só quando não é erro de campo (esses aparecem embaixo de cada campo). */
+export function FormError({ error }: { error: ApiError | null }) {
+  return <ErrorAlert error={error?.errors ? null : error} />;
 }
 
 export function SuccessAlert({ children }: { children: ReactNode }) {
@@ -73,16 +175,155 @@ export function BackToLogin() {
 
 export function LanguageSwitch() {
   const { lang, setLang, m } = useI18n();
+  const options = useLanguageOptions();
   return (
     <label className="lang">
       <span>{m.language}</span>
-      <select value={lang} onChange={(e) => setLang(e.target.value as (typeof LANGUAGES)[number])}>
-        {LANGUAGES.map((l) => (
-          <option key={l} value={l}>
-            {l === 'pt-BR' ? 'Português' : 'English'}
+      <select value={lang} onChange={(e) => setLang(e.target.value as Language)}>
+        {options.map((o) => (
+          <option key={o.value} value={o.value}>
+            {o.label}
           </option>
         ))}
       </select>
     </label>
+  );
+}
+
+/** Foto do usuário, ou as iniciais quando não tem. */
+export function Avatar({
+  user,
+  size = 40,
+}: {
+  user: Pick<User, 'name' | 'avatarUrl'>;
+  size?: number;
+}) {
+  const style = { width: size, height: size, fontSize: size * 0.4 };
+  if (user.avatarUrl) return <img src={user.avatarUrl} alt="" className="avatar" style={style} />;
+  const initials = user.name
+    .split(/\s+/)
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((w) => w[0]!.toUpperCase())
+    .join('');
+  return (
+    <span className="avatar avatar-initials" style={style} aria-hidden="true">
+      {initials}
+    </span>
+  );
+}
+
+export function Badge({
+  children,
+  tone = 'neutral',
+}: {
+  children: ReactNode;
+  tone?: 'neutral' | 'success' | 'warning' | 'danger';
+}) {
+  return <span className={`badge badge-${tone}`}>{children}</span>;
+}
+
+/** Janela sobre a página (Esc ou clique fora fecham). */
+export function Modal({
+  title,
+  onClose,
+  children,
+}: {
+  title: string;
+  onClose: () => void;
+  children: ReactNode;
+}) {
+  const id = useId();
+  const ref = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const previous = document.activeElement as HTMLElement | null;
+    ref.current?.querySelector<HTMLElement>('input, select, button')?.focus();
+    const onKey = (e: KeyboardEvent) => e.key === 'Escape' && onClose();
+    document.addEventListener('keydown', onKey);
+    return () => {
+      document.removeEventListener('keydown', onKey);
+      previous?.focus();
+    };
+  }, [onClose]);
+
+  return (
+    <div className="modal-backdrop" onMouseDown={(e) => e.target === e.currentTarget && onClose()}>
+      <div className="modal card" role="dialog" aria-modal="true" aria-labelledby={id} ref={ref}>
+        <h2 id={id}>{title}</h2>
+        {children}
+      </div>
+    </div>
+  );
+}
+
+/** Pergunta "tem certeza?" antes de uma ação destrutiva. */
+export function ConfirmDialog({
+  title,
+  text,
+  confirmLabel,
+  busy,
+  error,
+  onConfirm,
+  onClose,
+}: {
+  title: string;
+  text?: ReactNode;
+  confirmLabel: string;
+  busy?: boolean;
+  error?: ApiError | null;
+  onConfirm: () => void;
+  onClose: () => void;
+}) {
+  const { m } = useI18n();
+  return (
+    <Modal title={title} onClose={onClose}>
+      {text && <p className="muted">{text}</p>}
+      <ErrorAlert error={error ?? null} />
+      <div className="actions">
+        <button type="button" className="secondary" onClick={onClose}>
+          {m.common.cancel}
+        </button>
+        <button type="button" className="danger" disabled={busy} onClick={onConfirm}>
+          {confirmLabel}
+        </button>
+      </div>
+    </Modal>
+  );
+}
+
+/** Paginação simples (anterior / próxima). */
+export function Pager({
+  page,
+  totalPages,
+  label,
+  onPage,
+}: {
+  page: number;
+  totalPages: number;
+  label: string;
+  onPage: (page: number) => void;
+}) {
+  const { m } = useI18n();
+  return (
+    <nav className="pager" aria-label={label}>
+      <button
+        type="button"
+        className="secondary"
+        disabled={page <= 1}
+        onClick={() => onPage(page - 1)}
+      >
+        {m.users.previous}
+      </button>
+      <span className="muted">{label}</span>
+      <button
+        type="button"
+        className="secondary"
+        disabled={page >= totalPages}
+        onClick={() => onPage(page + 1)}
+      >
+        {m.users.next}
+      </button>
+    </nav>
   );
 }

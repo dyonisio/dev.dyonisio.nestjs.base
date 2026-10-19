@@ -9,6 +9,7 @@ import {
   type ReactNode,
 } from 'react';
 import { api, refreshSession, type ApiError } from '../api/client';
+import type { components } from '../api/schema';
 import { session, type User } from './session';
 
 type Status = 'loading' | 'authenticated' | 'anonymous';
@@ -21,7 +22,12 @@ interface AuthValue {
   user: User | null;
   login(email: string, password: string): Promise<LoginResult>;
   verifyTwoFactor(twoFactorToken: string, code: string): Promise<void>;
-  register(input: { name: string; email: string; password: string }): Promise<void>;
+  /** Login com o ID token do Google/Apple (veja components/SocialLogin.tsx). */
+  socialLogin(
+    provider: 'google' | 'apple',
+    body: components['schemas']['SocialLoginDto'],
+  ): Promise<LoginResult>;
+  register(input: components['schemas']['RegisterDto']): Promise<void>;
   logout(): Promise<void>;
   reloadUser(): Promise<void>;
 }
@@ -31,6 +37,18 @@ const AuthContext = createContext<AuthValue | null>(null);
 /** Repassa o erro da API (já traduzido pelo Accept-Language) para a tela mostrar. */
 function fail(error: unknown): never {
   throw error as ApiError;
+}
+
+type LoginResponse =
+  components['schemas']['AuthResponseDto'] | components['schemas']['TwoFactorChallengeDto'];
+
+/** Login (senha ou social) devolve os tokens, ou o desafio do 2FA quando a conta tem 2FA. */
+function startOrChallenge(data: LoginResponse): LoginResult {
+  if ('twoFactorRequired' in data && data.twoFactorRequired) {
+    return { done: false, twoFactorToken: data.twoFactorToken };
+  }
+  session.start(data as components['schemas']['AuthResponseDto']);
+  return { done: true };
 }
 
 export function AuthProvider({ children }: { children: ReactNode }) {
@@ -59,11 +77,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       async login(email, password) {
         const { data, error } = await api.POST('/api/v1/auth/login', { body: { email, password } });
         if (error || !data) fail(error);
-        if ('twoFactorRequired' in data && data.twoFactorRequired) {
-          return { done: false, twoFactorToken: data.twoFactorToken };
-        }
-        session.start(data as Parameters<typeof session.start>[0]);
-        return { done: true };
+        return startOrChallenge(data);
+      },
+      async socialLogin(provider, body) {
+        const { data, error } = await api.POST('/api/v1/auth/social/{provider}', {
+          params: { path: { provider } },
+          body,
+        });
+        if (error || !data) fail(error);
+        return startOrChallenge(data);
       },
       async verifyTwoFactor(twoFactorToken, code) {
         const { data, error } = await api.POST('/api/v1/auth/2fa/verify', {

@@ -120,6 +120,9 @@ e responda 404 (não 403) quando não for dele, para não revelar que o registro
 - **Permissão:** adicione em `Permission` e às roles que devem tê-la em `ROLE_PERMISSIONS`. Use com `@Authorize(...)`.
 - **Role:** adicione em [role.enum.ts](../apps/api/src/common/enums/role.enum.ts) e uma entrada em `ROLE_PERMISSIONS` (um teste exige que toda role esteja no mapa).
   Não precisa de migration (a role é `varchar`). Adicione o nome traduzido em `roles.*` nos locales (aparece no e-mail de troca de role).
+- **No front:** rode `npm run api:types` em `apps/web` (a role e as permissões novas entram nos tipos) e adicione o nome
+  da role em `roles` no [messages.ts](../apps/web/src/i18n/messages.ts). Uma tela nova protegida usa
+  `<RequirePermission permission="...">` (veja [WEB.md](WEB.md#mostrar-algo-só-para-quem-tem-permissão)).
 
 ## Migration
 
@@ -160,6 +163,8 @@ receipt: { contentTypes: ['application/pdf', 'image/jpeg'], maxSize: 5 * 1024 * 
 ```
 
 Se o tipo de arquivo for novo, adicione também a extensão (`EXTENSIONS`) e a assinatura (`SIGNATURES`) no mesmo arquivo.
+No front, repita os limites em `FILE_LIMITS` ([upload.ts](../apps/web/src/api/upload.ts)) e envie com
+`uploadFile(file, 'receipt')`.
 
 No service que usa o arquivo:
 
