@@ -47,8 +47,9 @@ Para cada um:
 
 O deploy agora também cria o CloudFront e usa os certificados. Na AWS, abra **IAM → Roles →** a role do GitHub
 (a do `AWS_ROLE_ARN`) **→** a política inline do deploy **→ Edit → JSON**, e cole o conteúdo atualizado de
-[docs/aws/github-deploy-policy.json](aws/github-deploy-policy.json). Ele ganhou dois blocos: `CloudFrontWeb` e
-`CertificatesRead`.
+[docs/aws/github-deploy-policy.json](aws/github-deploy-policy.json). Ele ganhou três blocos: `CloudFrontWeb`,
+`CertificatesRead` e `ApiGatewayServiceLinkedRole`. O último deixa o deploy criar, uma vez por conta, a role interna
+que o API Gateway usa para os domínios próprios (só ela: a permissão não vale para nenhuma outra role).
 
 O stack e o bucket do front se chamam `nestjs-base-api-<stage>-web...` de propósito, dentro do prefixo que a política
 já libera.
@@ -127,6 +128,7 @@ npm run migration:run
 | `The specified SSL certificate doesn't exist, isn't in us-east-1 region...` | O certificado do **site** precisa estar em **us-east-1**. Peça outro lá e troque o `WEB_CERTIFICATE_ARN` |
 | `Certificate ... not found` no domínio da API | O certificado da **API** precisa estar na **mesma região** da API |
 | `... is not authorized to perform: cloudfront:...` ou `acm:...` | A política da role não foi atualizada (passo 2) |
+| `Caller does not have permissions to create a Service Linked Role` no `ApiCustomDomain` | Falta o bloco `ApiGatewayServiceLinkedRole` na política (passo 2). O stack volta sozinho à versão anterior (a API continua no ar); atualize a política e rode o deploy de novo |
 | `CNAMEAlreadyExists` | O domínio já está em outra distribuição do CloudFront (nesta ou em outra conta). Remova-o de lá |
 | Certificado parado em *Pending validation* | O CNAME de validação está errado: confira o *Name* sem o `.dyonisio.dev` final e o proxy desligado |
 | Site abre, mas "Failed to fetch" nas telas | `CORS_ORIGIN`/`FRONTEND_URL` sem o endereço do site: corrija e rode o deploy de novo |
