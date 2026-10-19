@@ -38,6 +38,7 @@ export class AuditLog {
 
   @ApiPropertyOptional({
     nullable: true,
+    additionalProperties: true,
     example: { from: 'user', to: 'manager' },
     description: 'Action details (never passwords or tokens)',
   })

@@ -12,12 +12,18 @@ import { useAuth } from '../auth/AuthProvider';
 import type { User } from '../auth/session';
 import { useI18n } from '../i18n/I18nProvider';
 import { LANGUAGES, type Language } from '../i18n/language';
+import { ProductMark } from './Icon';
 
 /** Página de formulário centralizada (login, cadastro, senha...). */
 export function AuthCard({ title, children }: { title: string; children: ReactNode }) {
+  const { m } = useI18n();
   return (
     <main className="auth">
-      <div className="card">
+      <div className="auth-brand">
+        <ProductMark size={28} />
+        {m.appName}
+      </div>
+      <div className="auth-card">
         <h1>{title}</h1>
         {children}
       </div>
@@ -26,7 +32,37 @@ export function AuthCard({ title, children }: { title: string; children: ReactNo
   );
 }
 
-/** Bloco de uma tela logada: título, explicação opcional e o conteúdo. */
+/** Título da tela (o h1), uma linha opcional sobre os dados e as ações reais à direita. */
+export function PageHeader({
+  title,
+  subtitle,
+  actions,
+  lead,
+}: {
+  title: ReactNode;
+  subtitle?: ReactNode;
+  actions?: ReactNode;
+  /** Algo antes do título (ex.: o avatar no detalhe do usuário) */
+  lead?: ReactNode;
+}) {
+  return (
+    <header className="page-head">
+      <div className="person">
+        {lead}
+        <div>
+          <h1>{title}</h1>
+          {subtitle && <p className="subtitle">{subtitle}</p>}
+        </div>
+      </div>
+      {actions && <div className="page-head-actions">{actions}</div>}
+    </header>
+  );
+}
+
+/**
+ * Uma linha de configuração: à esquerda o nome e a explicação, à direita o painel com os campos.
+ * `danger` para a zona destrutiva (sempre a última da tela).
+ */
 export function Section({
   title,
   help,
@@ -40,10 +76,12 @@ export function Section({
 }) {
   const id = useId();
   return (
-    <section className={danger ? 'card card-danger' : 'card'} aria-labelledby={id}>
-      <h2 id={id}>{title}</h2>
-      {help && <p className="muted">{help}</p>}
-      {children}
+    <section className={danger ? 'setting setting-danger' : 'setting'} aria-labelledby={id}>
+      <div className="setting-label">
+        <h2 id={id}>{title}</h2>
+        {help && <p>{help}</p>}
+      </div>
+      <div className="setting-panel">{children}</div>
     </section>
   );
 }
@@ -177,20 +215,30 @@ export function LanguageSwitch() {
   const { lang, setLang, m } = useI18n();
   const options = useLanguageOptions();
   return (
-    <label className="lang">
-      <span>{m.language}</span>
-      <select value={lang} onChange={(e) => setLang(e.target.value as Language)}>
+    <div className="lang">
+      <select
+        aria-label={m.language}
+        value={lang}
+        onChange={(e) => setLang(e.target.value as Language)}
+      >
         {options.map((o) => (
           <option key={o.value} value={o.value}>
             {o.label}
           </option>
         ))}
       </select>
-    </label>
+    </div>
   );
 }
 
-/** Foto do usuário, ou as iniciais quando não tem. */
+/** Matiz estável por pessoa (a mesma pessoa tem sempre a mesma cor, em tom pálido). */
+function hueOf(text: string): number {
+  let h = 0;
+  for (const c of text) h = (h * 31 + c.charCodeAt(0)) % 360;
+  return h;
+}
+
+/** Foto do usuário, ou as iniciais num tom pálido próprio de cada pessoa. */
 export function Avatar({
   user,
   size = 40,
@@ -198,7 +246,12 @@ export function Avatar({
   user: Pick<User, 'name' | 'avatarUrl'>;
   size?: number;
 }) {
-  const style = { width: size, height: size, fontSize: size * 0.4 };
+  const style = {
+    width: size,
+    height: size,
+    fontSize: Math.round(size * 0.38),
+    '--h': hueOf(user.name),
+  } as React.CSSProperties;
   if (user.avatarUrl) return <img src={user.avatarUrl} alt="" className="avatar" style={style} />;
   const initials = user.name
     .split(/\s+/)
@@ -218,9 +271,9 @@ export function Badge({
   tone = 'neutral',
 }: {
   children: ReactNode;
-  tone?: 'neutral' | 'success' | 'warning' | 'danger';
+  tone?: 'neutral' | 'success' | 'warning' | 'danger' | 'accent';
 }) {
-  return <span className={`badge badge-${tone}`}>{children}</span>;
+  return <span className={tone === 'neutral' ? 'pill' : `pill pill-${tone}`}>{children}</span>;
 }
 
 /** Janela sobre a página (Esc ou clique fora fecham). */
@@ -249,7 +302,7 @@ export function Modal({
 
   return (
     <div className="modal-backdrop" onMouseDown={(e) => e.target === e.currentTarget && onClose()}>
-      <div className="modal card" role="dialog" aria-modal="true" aria-labelledby={id} ref={ref}>
+      <div className="modal" role="dialog" aria-modal="true" aria-labelledby={id} ref={ref}>
         <h2 id={id}>{title}</h2>
         {children}
       </div>
@@ -280,8 +333,8 @@ export function ConfirmDialog({
     <Modal title={title} onClose={onClose}>
       {text && <p className="muted">{text}</p>}
       <ErrorAlert error={error ?? null} />
-      <div className="actions">
-        <button type="button" className="secondary" onClick={onClose}>
+      <div className="panel-actions">
+        <button type="button" onClick={onClose}>
           {m.common.cancel}
         </button>
         <button type="button" className="danger" disabled={busy} onClick={onConfirm}>
@@ -292,7 +345,7 @@ export function ConfirmDialog({
   );
 }
 
-/** Paginação simples (anterior / próxima). */
+/** Paginação: o intervalo à esquerda ("Página 1 de 3 · 42 usuários"), anterior/próxima à direita. */
 export function Pager({
   page,
   totalPages,
@@ -307,23 +360,15 @@ export function Pager({
   const { m } = useI18n();
   return (
     <nav className="pager" aria-label={label}>
-      <button
-        type="button"
-        className="secondary"
-        disabled={page <= 1}
-        onClick={() => onPage(page - 1)}
-      >
-        {m.users.previous}
-      </button>
-      <span className="muted">{label}</span>
-      <button
-        type="button"
-        className="secondary"
-        disabled={page >= totalPages}
-        onClick={() => onPage(page + 1)}
-      >
-        {m.users.next}
-      </button>
+      <span className="muted num">{label}</span>
+      <div>
+        <button type="button" disabled={page <= 1} onClick={() => onPage(page - 1)}>
+          {m.users.previous}
+        </button>
+        <button type="button" disabled={page >= totalPages} onClick={() => onPage(page + 1)}>
+          {m.users.next}
+        </button>
+      </div>
     </nav>
   );
 }

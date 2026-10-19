@@ -4,15 +4,16 @@ import { api } from '../../api/client';
 import { useAuth } from '../../auth/AuthProvider';
 import { can, ROLES, type Role } from '../../auth/permissions';
 import type { User } from '../../auth/session';
+import { Icon } from '../../components/Icon';
 import {
   Avatar,
   Badge,
-  Checkbox,
   ErrorAlert,
   Field,
   fieldError,
   FormError,
   Modal,
+  PageHeader,
   Pager,
   SelectField,
   SuccessAlert,
@@ -97,68 +98,104 @@ export function UsersPage() {
     });
 
   const meta = users.data?.meta;
+  const rows = users.data?.data ?? [];
 
   return (
     <>
-      <div className="page-header">
-        <h1>{m.users.title}</h1>
-        {can(me, 'users:create') && (
-          <button type="button" onClick={() => setCreating(true)}>
-            {m.users.create}
+      <PageHeader
+        title={m.users.title}
+        subtitle={
+          meta
+            ? f(deleted ? m.users.totalDeleted : m.users.total, { n: String(meta.total) })
+            : m.common.loading
+        }
+        actions={
+          can(me, 'users:create') && (
+            <button type="button" className="primary" onClick={() => setCreating(true)}>
+              {m.users.create}
+            </button>
+          )
+        }
+      />
+
+      <div className="tabs" role="tablist">
+        {[
+          { value: false, label: m.users.tabActive },
+          { value: true, label: m.users.tabDeleted },
+        ].map((t) => (
+          <button
+            key={t.label}
+            type="button"
+            role="tab"
+            className="tab"
+            aria-selected={deleted === t.value}
+            onClick={() => update({ deleted: t.value ? '1' : null })}
+          >
+            {t.label}
           </button>
-        )}
+        ))}
       </div>
 
-      <section className="card filters" aria-label={m.users.search}>
-        <Field
-          label={m.users.search}
-          type="search"
-          value={searchInput}
-          onChange={(e) => setSearchInput(e.target.value)}
-        />
-        <SelectField
-          label={m.users.role}
-          value={role}
-          onChange={(e) => update({ role: e.target.value || null })}
-          options={[
-            { value: '', label: m.users.allRoles },
-            ...ROLES.map((r) => ({ value: r, label: m.roles[r] })),
-          ]}
-        />
-        <SelectField
-          label={m.users.sort}
-          value={sort}
-          onChange={(e) => update({ sort: e.target.value === 'newest' ? null : e.target.value })}
-          options={(Object.keys(SORTS) as Sort[]).map((s) => ({ value: s, label: m.users[s] }))}
-        />
-        <Checkbox
-          label={m.users.showDeleted}
-          checked={deleted}
-          onChange={(e) => update({ deleted: e.target.checked ? '1' : null })}
-        />
-      </section>
+      <div className="toolbar">
+        <div className="search">
+          <Icon name="search" />
+          <input
+            type="search"
+            aria-label={m.users.search}
+            placeholder={m.users.search}
+            value={searchInput}
+            onChange={(e) => setSearchInput(e.target.value)}
+          />
+        </div>
+        <div className="toolbar-group">
+          <select
+            aria-label={m.users.role}
+            value={role}
+            onChange={(e) => update({ role: e.target.value || null })}
+          >
+            <option value="">{m.users.allRoles}</option>
+            {ROLES.map((r) => (
+              <option key={r} value={r}>
+                {m.roles[r]}
+              </option>
+            ))}
+          </select>
+          <select
+            aria-label={m.users.sort}
+            value={sort}
+            onChange={(e) => update({ sort: e.target.value === 'newest' ? null : e.target.value })}
+          >
+            {(Object.keys(SORTS) as Sort[]).map((key) => (
+              <option key={key} value={key}>
+                {m.users[key]}
+              </option>
+            ))}
+          </select>
+        </div>
+      </div>
 
       {notice && <SuccessAlert>{notice}</SuccessAlert>}
       <ErrorAlert error={users.error ?? error} />
 
-      <section className="card table-card">
-        {users.loading && !users.data ? (
-          <p className="muted">{m.common.loading}</p>
-        ) : users.data?.data.length === 0 ? (
-          <p className="muted">{m.users.empty}</p>
-        ) : (
+      {users.loading && !users.data ? (
+        <p className="loading-line">{m.common.loading}</p>
+      ) : rows.length === 0 ? (
+        <p className="empty">{m.users.empty}</p>
+      ) : (
+        <div className="table-wrap">
           <table className="table">
             <thead>
               <tr>
                 <th>{m.common.name}</th>
-                <th>{m.users.role}</th>
+                <th className="hide-sm">{m.users.role}</th>
+                <th className="hide-sm">{m.users.twoFactor}</th>
                 <th>{m.users.status}</th>
-                <th>{m.users.createdAt}</th>
+                <th className="num hide-sm">{deleted ? m.users.deletedAt : m.users.createdAt}</th>
                 {deleted && <th aria-label={m.users.restore} />}
               </tr>
             </thead>
             <tbody>
-              {users.data?.data.map((u) => (
+              {rows.map((u) => (
                 <tr
                   key={u.id}
                   className={deleted ? undefined : 'clickable'}
@@ -167,26 +204,35 @@ export function UsersPage() {
                   <td>
                     <div className="person">
                       <Avatar user={u} size={32} />
-                      <div>
-                        {deleted ? u.name : <Link to={`/admin/users/${u.id}`}>{u.name}</Link>}
-                        <div className="muted small">{u.email}</div>
+                      <div className="row-main">
+                        {deleted ? (
+                          <span className="row-title">{u.name}</span>
+                        ) : (
+                          <Link to={`/admin/users/${u.id}`} onClick={(e) => e.stopPropagation()}>
+                            {u.name}
+                          </Link>
+                        )}
+                        <span className="cell-sub">
+                          {u.email}
+                          <span className="show-sm"> · {m.roles[u.role]}</span>
+                        </span>
                       </div>
                     </div>
                   </td>
-                  <td>{m.roles[u.role]}</td>
+                  <td className="hide-sm">{m.roles[u.role]}</td>
+                  <td className="hide-sm">
+                    {u.twoFactorEnabledAt ? m.users.on : <span className="muted">—</span>}
+                  </td>
                   <td>
                     <UserStatus user={u} />
                   </td>
-                  <td>{formatDate(lang, u.createdAt)}</td>
+                  <td className="num muted nowrap hide-sm">
+                    {formatDate(lang, deleted ? u.deletedAt : u.createdAt)}
+                  </td>
                   {deleted && (
-                    <td>
+                    <td className="num">
                       {can(me, 'users:delete') && !u.anonymizedAt && (
-                        <button
-                          type="button"
-                          className="secondary"
-                          disabled={busy}
-                          onClick={() => restore(u)}
-                        >
+                        <button type="button" disabled={busy} onClick={() => restore(u)}>
                           {m.users.restore}
                         </button>
                       )}
@@ -196,20 +242,20 @@ export function UsersPage() {
               ))}
             </tbody>
           </table>
-        )}
-        {meta && meta.totalPages > 1 && (
-          <Pager
-            page={meta.page}
-            totalPages={meta.totalPages}
-            label={f(m.users.page, {
-              page: String(meta.page),
-              pages: String(meta.totalPages),
-              total: String(meta.total),
-            })}
-            onPage={(p) => update({ page: p > 1 ? String(p) : null })}
-          />
-        )}
-      </section>
+        </div>
+      )}
+      {meta && meta.totalPages > 1 && (
+        <Pager
+          page={meta.page}
+          totalPages={meta.totalPages}
+          label={f(m.users.page, {
+            page: String(meta.page),
+            pages: String(meta.totalPages),
+            total: String(meta.total),
+          })}
+          onPage={(p) => update({ page: p > 1 ? String(p) : null })}
+        />
+      )}
 
       {creating && (
         <CreateUserModal
@@ -227,15 +273,12 @@ export function UsersPage() {
 
 /** Situação da conta em uma etiqueta. */
 export function UserStatus({ user }: { user: User }) {
-  const { m, f, lang } = useI18n();
-  if (user.deletedAt) {
-    return (
-      <Badge tone="danger">{f(m.users.deleted, { date: formatDate(lang, user.deletedAt) })}</Badge>
-    );
-  }
+  const { m } = useI18n();
+  if (user.deletedAt) return <Badge tone="danger">{m.users.deletedShort}</Badge>;
   if (!user.isActive) return <Badge tone="danger">{m.users.inactive}</Badge>;
   if (!user.emailVerifiedAt) return <Badge tone="warning">{m.users.unverified}</Badge>;
-  return <Badge tone="success">{m.users.active}</Badge>;
+  // O normal fica sem cor: a cor vai só para o que precisa de atenção
+  return <span className="muted status-ok">{m.users.active}</span>;
 }
 
 function CreateUserModal({
@@ -319,11 +362,11 @@ function CreateUserModal({
           error={fieldError(error, 'password')}
         />
         <FormError error={error} />
-        <div className="actions">
-          <button type="button" className="secondary" onClick={onClose}>
+        <div className="panel-actions">
+          <button type="button" onClick={onClose}>
             {m.common.cancel}
           </button>
-          <button type="submit" disabled={busy}>
+          <button type="submit" className="primary" disabled={busy}>
             {m.users.create}
           </button>
         </div>

@@ -6,6 +6,8 @@ dist/
 
 # ---------- Testes e arquivos gerados localmente ----------
 coverage/
+# fotos e medições da skill de design (design-taste-frontend)
+.taste-skill/
 # uploads do driver local, preview de e-mails, uploads dos testes
 tmp/
 

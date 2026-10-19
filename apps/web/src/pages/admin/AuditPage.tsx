@@ -4,9 +4,9 @@ import { api } from '../../api/client';
 import type { components } from '../../api/schema';
 import { useAuth } from '../../auth/AuthProvider';
 import { can } from '../../auth/permissions';
-import { ErrorAlert, Field, Pager, SelectField } from '../../components/ui';
+import { Badge, ErrorAlert, PageHeader, Pager } from '../../components/ui';
 import { useI18n } from '../../i18n/I18nProvider';
-import { describeUserAgent, formatDateTime } from '../../lib/format';
+import { describeUserAgent, formatDate, formatTime } from '../../lib/format';
 import { useQuery } from '../../lib/hooks';
 
 type AuditLog = components['schemas']['AuditLog'];
@@ -14,6 +14,9 @@ type AuditAction = AuditLog['action'];
 
 /** Id curto para caber na tabela (o completo aparece ao passar o mouse). */
 const shortId = (id: string) => id.slice(0, 8);
+
+/** Eventos que são alarme de segurança: os únicos com cor na tabela. */
+const ALARMS: AuditAction[] = ['auth.login_failed', 'auth.refresh_token_reuse', 'auth.2fa_failed'];
 
 /**
  * /admin/audit — trilha de auditoria (permissão `audit:read`), filtrável por ação, por quem fez
@@ -61,47 +64,71 @@ export function AuditPage() {
   };
 
   const actions = Object.keys(m.auditActions) as AuditAction[];
-  const userLink = (id: string) =>
-    can(me, 'users:read') ? (
+  // Com users:read, troca o id pelo nome (uma busca só, das primeiras 100 contas)
+  const people = useQuery(
+    () =>
+      can(me, 'users:read')
+        ? api.GET('/api/v1/users', { params: { query: { limit: 100 } } })
+        : Promise.resolve({ data: undefined }),
+    [],
+  );
+  const names = new Map((people.data?.data ?? []).map((u) => [u.id, u.name]));
+  const userLink = (id: string) => {
+    const name = names.get(id);
+    const label = name ?? <span className="mono">{shortId(id)}</span>;
+    return can(me, 'users:read') ? (
       <Link to={`/admin/users/${id}`} title={id}>
-        {shortId(id)}
+        {label}
       </Link>
     ) : (
-      <span title={id}>{shortId(id)}</span>
+      <span title={id}>{label}</span>
     );
+  };
   const meta = logs.data?.meta;
   const hasFilters = action || actorId || targetId;
 
   return (
     <>
-      <h1>{m.audit.title}</h1>
+      <PageHeader
+        title={m.audit.title}
+        subtitle={meta ? f(m.audit.subtitle, { n: String(meta.total) }) : m.common.loading}
+      />
 
-      <form className="card filters" onSubmit={applyIds} noValidate>
-        <SelectField
-          label={m.audit.action}
-          value={action}
-          onChange={(e) => update({ action: e.target.value || null })}
-          options={[
-            { value: '', label: m.audit.allActions },
-            ...actions.map((a) => ({ value: a, label: m.auditActions[a] })),
-          ]}
-        />
-        <Field
-          label={m.audit.filterActor}
-          value={ids.actorId}
-          onChange={(e) => setIds({ ...ids, actorId: e.target.value })}
-          onBlur={applyIds}
-        />
-        <Field
-          label={m.audit.filterTarget}
-          value={ids.targetId}
-          onChange={(e) => setIds({ ...ids, targetId: e.target.value })}
-          onBlur={applyIds}
-        />
+      <form className="toolbar" onSubmit={applyIds} noValidate>
+        <div className="toolbar-group">
+          <select
+            aria-label={m.audit.action}
+            value={action}
+            onChange={(e) => update({ action: e.target.value || null })}
+          >
+            <option value="">{m.audit.allActions}</option>
+            {actions.map((a) => (
+              <option key={a} value={a}>
+                {m.auditActions[a]}
+              </option>
+            ))}
+          </select>
+          <input
+            className="mono id-filter"
+            aria-label={m.audit.filterActor}
+            placeholder={m.audit.filterActor}
+            value={ids.actorId}
+            onChange={(e) => setIds({ ...ids, actorId: e.target.value })}
+            onBlur={applyIds}
+          />
+          <input
+            className="mono id-filter"
+            aria-label={m.audit.filterTarget}
+            placeholder={m.audit.filterTarget}
+            value={ids.targetId}
+            onChange={(e) => setIds({ ...ids, targetId: e.target.value })}
+            onBlur={applyIds}
+          />
+        </div>
         {hasFilters && (
           <button
             type="button"
-            className="secondary"
+            className="ghost"
             onClick={() => {
               setIds({ actorId: '', targetId: '' });
               update({ action: null, actorId: null, targetId: null });
@@ -114,73 +141,90 @@ export function AuditPage() {
 
       <ErrorAlert error={logs.error} />
 
-      <section className="card table-card">
-        {logs.loading && !logs.data ? (
-          <p className="muted">{m.common.loading}</p>
-        ) : logs.data?.data.length === 0 ? (
-          <p className="muted">{m.audit.empty}</p>
-        ) : (
+      {logs.loading && !logs.data ? (
+        <p className="loading-line">{m.common.loading}</p>
+      ) : logs.data?.data.length === 0 ? (
+        <p className="empty">{m.audit.empty}</p>
+      ) : (
+        <div className="table-wrap">
           <table className="table">
             <thead>
               <tr>
-                <th>{m.audit.when}</th>
                 <th>{m.audit.action}</th>
-                <th>{m.audit.actor}</th>
-                <th>{m.audit.target}</th>
-                <th>{m.audit.details}</th>
+                <th className="hide-sm">{m.audit.actor}</th>
+                <th className="hide-sm">{m.audit.target}</th>
+                <th className="hide-sm">{m.audit.origin}</th>
+                <th className="num">{m.audit.when}</th>
               </tr>
             </thead>
             <tbody>
               {logs.data?.data.map((log) => (
                 <tr key={log.id}>
-                  <td className="nowrap">{formatDateTime(lang, log.createdAt)}</td>
-                  <td>{m.auditActions[log.action] ?? log.action}</td>
-                  <td>{log.actorId ? userLink(log.actorId) : m.audit.anonymous}</td>
                   <td>
-                    {log.targetId &&
-                      (log.targetType === 'user' ? (
+                    <span className="row-title">
+                      {m.auditActions[log.action] ?? log.action}
+                      {ALARMS.includes(log.action) && <Badge tone="danger">{m.audit.alarm}</Badge>}
+                    </span>
+                    <AuditDetails log={log} />
+                  </td>
+                  <td className="hide-sm">
+                    {log.actorId ? (
+                      userLink(log.actorId)
+                    ) : (
+                      <span className="muted">{m.audit.anonymous}</span>
+                    )}
+                  </td>
+                  <td className="hide-sm">
+                    {log.targetId ? (
+                      log.targetType === 'user' ? (
                         userLink(log.targetId)
                       ) : (
-                        <span title={log.targetId}>
+                        <span className="mono" title={log.targetId}>
                           {log.targetType} {shortId(log.targetId)}
                         </span>
-                      ))}
+                      )
+                    ) : (
+                      <span className="muted">—</span>
+                    )}
                   </td>
-                  <td className="small">
-                    <AuditDetails log={log} />
+                  <td className="hide-sm">
+                    <span className="mono">{log.ip ?? '—'}</span>
+                    <span className="cell-sub">{describeUserAgent(log.userAgent) ?? ''}</span>
+                  </td>
+                  <td className="num nowrap">
+                    {formatDate(lang, log.createdAt)}
+                    <span className="cell-sub">{formatTime(lang, log.createdAt)}</span>
                   </td>
                 </tr>
               ))}
             </tbody>
           </table>
-        )}
-        {meta && meta.totalPages > 1 && (
-          <Pager
-            page={meta.page}
-            totalPages={meta.totalPages}
-            label={f(m.audit.page, {
-              page: String(meta.page),
-              pages: String(meta.totalPages),
-              total: String(meta.total),
-            })}
-            onPage={(p) => update({ page: p > 1 ? String(p) : null })}
-          />
-        )}
-      </section>
+        </div>
+      )}
+      {meta && meta.totalPages > 1 && (
+        <Pager
+          page={meta.page}
+          totalPages={meta.totalPages}
+          label={f(m.audit.page, {
+            page: String(meta.page),
+            pages: String(meta.totalPages),
+            total: String(meta.total),
+          })}
+          onPage={(p) => update({ page: p > 1 ? String(p) : null })}
+        />
+      )}
     </>
   );
 }
 
+/** Os detalhes que importam do evento, numa linha cinza (nunca senhas ou tokens: a API não grava). */
 function AuditDetails({ log }: { log: AuditLog }) {
-  const parts = [
-    log.ip,
-    describeUserAgent(log.userAgent),
-    ...Object.entries(log.metadata ?? {}).map(
-      ([k, v]) => `${k}: ${typeof v === 'string' ? v : JSON.stringify(v)}`,
-    ),
-  ].filter(Boolean);
+  const parts = Object.entries(log.metadata ?? {}).map(
+    ([k, v]) => `${k}: ${typeof v === 'string' ? v : JSON.stringify(v)}`,
+  );
+  if (!parts.length) return null;
   return (
-    <span className="muted" title={log.requestId ?? undefined}>
+    <span className="cell-sub" title={log.requestId ?? undefined}>
       {parts.join(' · ')}
     </span>
   );

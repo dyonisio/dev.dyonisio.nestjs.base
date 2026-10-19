@@ -741,7 +741,9 @@ export interface components {
              *       "to": "manager"
              *     }
              */
-            metadata?: Record<string, never> | null;
+            metadata?: {
+                [key: string]: unknown;
+            } | null;
             ip?: string | null;
             userAgent?: string | null;
             /** @description Same id as the X-Request-Id header / logs */

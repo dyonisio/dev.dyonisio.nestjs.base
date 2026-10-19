@@ -10,6 +10,7 @@ import {
   Field,
   fieldError,
   FormError,
+  PageHeader,
   Section,
   SelectField,
   SuccessAlert,
@@ -17,18 +18,25 @@ import {
 } from '../../components/ui';
 import { useI18n } from '../../i18n/I18nProvider';
 import type { Language } from '../../i18n/language';
-import { formatBytes } from '../../lib/format';
+import { formatBytes, formatDate } from '../../lib/format';
 import { useAction } from '../../lib/hooks';
 
 /** /account — foto, dados pessoais, e-mail e senha. */
 export function ProfilePage() {
-  const { m } = useI18n();
+  const { m, f, lang } = useI18n();
+  const { user } = useAuth();
   const methods = useLoginMethods();
   const hasPassword = methods.data?.hasPassword ?? true;
 
   return (
     <>
-      <h1>{m.profile.title}</h1>
+      <PageHeader
+        title={m.profile.title}
+        subtitle={
+          user &&
+          f(m.profile.subtitle, { email: user.email, date: formatDate(lang, user.createdAt) })
+        }
+      />
       <PhotoSection />
       <DetailsSection />
       <EmailSection hasPassword={hasPassword} />
@@ -79,16 +87,16 @@ function PhotoSection() {
     });
 
   return (
-    <Section title={m.profile.photo}>
+    <Section title={m.profile.photo} help={m.profile.photoHelp}>
       <div className="profile">
         <Avatar user={user} size={72} />
         <div className="stack">
-          <div className="row">
+          <div className="panel-actions start">
             <button type="button" disabled={busy} onClick={() => input.current?.click()}>
               {busy ? m.profile.uploading : m.profile.changePhoto}
             </button>
             {user.avatarUrl && (
-              <button type="button" className="secondary" disabled={busy} onClick={remove}>
+              <button type="button" disabled={busy} onClick={remove}>
                 {m.profile.removePhoto}
               </button>
             )}
@@ -133,7 +141,7 @@ function DetailsSection() {
   }
 
   return (
-    <Section title={m.profile.details}>
+    <Section title={m.profile.details} help={m.profile.detailsHelp}>
       <form onSubmit={submit} noValidate>
         <Field
           label={m.common.name}
@@ -153,9 +161,11 @@ function DetailsSection() {
         />
         <FormError error={error} />
         {saved && <SuccessAlert>{m.common.saved}</SuccessAlert>}
-        <button type="submit" disabled={busy}>
-          {m.common.save}
-        </button>
+        <div className="panel-actions">
+          <button type="submit" disabled={busy}>
+            {m.common.save}
+          </button>
+        </div>
       </form>
     </Section>
   );
@@ -208,9 +218,11 @@ function EmailSection({ hasPassword }: { hasPassword: boolean }) {
         />
         <ReauthFields value={reauth} onChange={setReauth} error={error} hasPassword={hasPassword} />
         <FormError error={error} />
-        <button type="submit" disabled={busy}>
-          {m.profile.changeEmail}
-        </button>
+        <div className="panel-actions">
+          <button type="submit" disabled={busy}>
+            {m.profile.changeEmail}
+          </button>
+        </div>
       </form>
     </Section>
   );
@@ -310,9 +322,11 @@ function PasswordSection({
         />
         <FormError error={error} />
         {done && <SuccessAlert>{m.profile.passwordChanged}</SuccessAlert>}
-        <button type="submit" disabled={busy}>
-          {m.profile.changePassword}
-        </button>
+        <div className="panel-actions">
+          <button type="submit" disabled={busy}>
+            {m.profile.changePassword}
+          </button>
+        </div>
       </form>
     </Section>
   );

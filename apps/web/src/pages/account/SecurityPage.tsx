@@ -9,6 +9,7 @@ import {
   Field,
   fieldError,
   FormError,
+  PageHeader,
   Section,
   SuccessAlert,
 } from '../../components/ui';
@@ -19,11 +20,15 @@ import { useAction, useQuery } from '../../lib/hooks';
 /** /account/security — 2FA, dispositivos conectados e formas de login. Destino dos e-mails de alerta. */
 export function SecurityPage() {
   const { m } = useI18n();
+  const { user } = useAuth();
   const methods = useLoginMethods();
 
   return (
     <>
-      <h1>{m.security.title}</h1>
+      <PageHeader
+        title={m.security.title}
+        subtitle={user?.twoFactorEnabledAt ? m.security.subtitleOn : m.security.subtitleOff}
+      />
       <TwoFactorSection hasPassword={methods.data?.hasPassword ?? true} />
       <SessionsSection />
       <MethodsSection methods={methods} />
@@ -121,38 +126,45 @@ function TwoFactorSection({ hasPassword }: { hasPassword: boolean }) {
     />
   );
   const cancel = (
-    <button type="button" className="secondary" onClick={() => go({ name: 'idle' })}>
+    <button type="button" onClick={() => go({ name: 'idle' })}>
       {m.common.cancel}
     </button>
   );
 
   return (
     <Section title={m.security.twoFactor} help={m.security.twoFactorHelp}>
-      <p>
-        {enabled ? (
-          <Badge tone="success">
-            {f(m.security.enabledSince, { date: formatDate(lang, user.twoFactorEnabledAt) })}
-          </Badge>
-        ) : (
-          <Badge tone="warning">{m.security.disabled}</Badge>
-        )}
-      </p>
-
-      {step.name === 'idle' &&
-        (enabled ? (
-          <div className="row">
-            <button type="button" className="secondary" onClick={() => go({ name: 'regenerate' })}>
-              {m.security.regenerate}
+      <div className="status-line">
+        <span className="row-main">
+          <span className="row-title">
+            {enabled ? m.security.on : m.security.off}
+            {enabled ? (
+              <Badge tone="success">{m.security.active}</Badge>
+            ) : (
+              <Badge tone="warning">{m.security.inactive}</Badge>
+            )}
+          </span>
+          <span className="row-meta">
+            {enabled
+              ? f(m.security.enabledSince, { date: formatDate(lang, user.twoFactorEnabledAt) })
+              : m.security.disabled}
+          </span>
+        </span>
+        {step.name === 'idle' &&
+          (enabled ? (
+            <span className="toolbar-group">
+              <button type="button" onClick={() => go({ name: 'regenerate' })}>
+                {m.security.regenerateShort}
+              </button>
+              <button type="button" className="danger" onClick={() => go({ name: 'disable' })}>
+                {m.security.disable}
+              </button>
+            </span>
+          ) : (
+            <button type="button" className="primary" onClick={() => go({ name: 'reauth' })}>
+              {m.security.enable}
             </button>
-            <button type="button" className="danger" onClick={() => go({ name: 'disable' })}>
-              {m.security.disable}
-            </button>
-          </div>
-        ) : (
-          <button type="button" onClick={() => go({ name: 'reauth' })}>
-            {m.security.enable}
-          </button>
-        ))}
+          ))}
+      </div>
 
       {step.name === 'reauth' && (
         <form onSubmit={startSetup} noValidate>
@@ -164,9 +176,9 @@ function TwoFactorSection({ hasPassword }: { hasPassword: boolean }) {
             withCode={false}
           />
           <FormError error={error} />
-          <div className="actions">
+          <div className="panel-actions">
             {cancel}
-            <button type="submit" disabled={busy}>
+            <button type="submit" className="primary" disabled={busy}>
               {m.common.submit}
             </button>
           </div>
@@ -174,17 +186,21 @@ function TwoFactorSection({ hasPassword }: { hasPassword: boolean }) {
       )}
 
       {step.name === 'scan' && (
-        <form onSubmit={activate} noValidate>
-          <p>{m.security.scan}</p>
-          <img src={step.qr} alt="QR code" className="qr" width={200} height={200} />
-          <p className="muted">{m.security.manual}</p>
-          <code className="secret">{step.secret}</code>
-          <p>{m.security.enterCode}</p>
-          {codeField}
+        <form onSubmit={activate} noValidate className="step">
+          <div className="setup">
+            <img src={step.qr} alt="QR code" className="qr" width={168} height={168} />
+            <div>
+              <p>{m.security.scan}</p>
+              <p className="muted small step-gap">{m.security.manual}</p>
+              <code className="secret">{step.secret}</code>
+              <p className="step-gap">{m.security.enterCode}</p>
+              {codeField}
+            </div>
+          </div>
           <FormError error={error} />
-          <div className="actions">
+          <div className="panel-actions">
             {cancel}
-            <button type="submit" disabled={busy}>
+            <button type="submit" className="primary" disabled={busy}>
               {m.security.activate}
             </button>
           </div>
@@ -202,7 +218,7 @@ function TwoFactorSection({ hasPassword }: { hasPassword: boolean }) {
           </p>
           {codeField}
           <FormError error={error} />
-          <div className="actions">
+          <div className="panel-actions">
             {cancel}
             <button
               type="submit"
@@ -250,11 +266,11 @@ function RecoveryCodes({ codes, onDone }: { codes: string[]; onDone: () => void 
           </li>
         ))}
       </ul>
-      <div className="row">
-        <button type="button" className="secondary" onClick={copy}>
+      <div className="panel-actions start">
+        <button type="button" onClick={copy}>
           {copied ? m.security.copied : m.security.copy}
         </button>
-        <button type="button" className="secondary" onClick={download}>
+        <button type="button" onClick={download}>
           {m.security.download}
         </button>
         <button type="button" onClick={onDone}>
@@ -297,27 +313,30 @@ function SessionsSection() {
     <Section title={m.security.sessions} help={m.security.sessionsHelp}>
       {sessions.loading && !sessions.data && <p className="muted">{m.common.loading}</p>}
       <ErrorAlert error={sessions.error ?? error} />
-      <ul className="list">
+      <ul className="rows">
         {list.map((s) => (
           <li key={s.id}>
-            <div>
-              <strong>{describeUserAgent(s.userAgent) ?? m.security.unknownDevice}</strong>{' '}
-              {s.current && <Badge tone="success">{m.security.thisDevice}</Badge>}
-              <div className="muted small">
+            <div className="row-main">
+              <span className="row-title">
+                {describeUserAgent(s.userAgent) ?? m.security.unknownDevice}
+                {s.current && <Badge tone="accent">{m.security.thisDevice}</Badge>}
+              </span>
+              <span className="row-meta">
+                <span className="mono">{s.ip ?? '—'}</span>
+                {' · '}
                 {[
-                  s.ip,
                   f(m.security.signedInAt, { date: formatDateTime(lang, s.createdAt) }),
                   s.lastUsedAt &&
                     f(m.security.lastUsed, { date: formatDateTime(lang, s.lastUsedAt) }),
                 ]
                   .filter(Boolean)
                   .join(' · ')}
-              </div>
+              </span>
             </div>
             {!s.current && (
               <button
                 type="button"
-                className="secondary"
+
                 disabled={busy}
                 onClick={() => revoke(s.id)}
               >
@@ -330,11 +349,13 @@ function SessionsSection() {
       {othersDone && <SuccessAlert>{m.security.othersSignedOut}</SuccessAlert>}
       {sessions.data &&
         (others.length > 0 ? (
-          <button type="button" className="danger" disabled={busy} onClick={revokeOthers}>
-            {m.security.signOutOthers}
-          </button>
+          <div className="panel-actions">
+            <button type="button" className="danger" disabled={busy} onClick={revokeOthers}>
+              {m.security.signOutOthers}
+            </button>
+          </div>
         ) : (
-          !othersDone && <p className="muted">{m.security.noOtherSessions}</p>
+          !othersDone && <p className="muted step-gap">{m.security.noOtherSessions}</p>
         ))}
     </Section>
   );
@@ -361,26 +382,28 @@ function MethodsSection({ methods }: { methods: ReturnType<typeof useLoginMethod
     <Section title={m.security.methods} help={m.security.linkHelp}>
       <ErrorAlert error={methods.error ?? error} />
       {data && (
-        <ul className="list">
+        <ul className="rows">
           <li>
-            <strong>{m.security.methodPassword}</strong>
-            <Badge tone={data.hasPassword ? 'success' : 'neutral'}>
-              {data.hasPassword ? m.security.methodPasswordOn : m.security.methodPasswordOff}
-            </Badge>
+            <div className="row-main">
+              <span className="row-title">{m.security.methodPassword}</span>
+              <span className="row-meta">
+                {data.hasPassword ? m.security.methodPasswordOn : m.security.methodPasswordOff}
+              </span>
+            </div>
           </li>
           {data.identities.map((i) => (
             <li key={i.provider}>
-              <div>
-                <strong className="capitalize">{i.provider}</strong>
-                <div className="muted small">
+              <div className="row-main">
+                <span className="row-title capitalize">{i.provider}</span>
+                <span className="row-meta">
                   {[i.email, f(m.security.linkedOn, { date: formatDate(lang, i.createdAt) })]
                     .filter(Boolean)
                     .join(' · ')}
-                </div>
+                </span>
               </div>
               <button
                 type="button"
-                className="secondary"
+
                 disabled={busy}
                 onClick={() => unlink(i.provider)}
               >
@@ -390,7 +413,9 @@ function MethodsSection({ methods }: { methods: ReturnType<typeof useLoginMethod
           ))}
         </ul>
       )}
-      {data && data.identities.length === 0 && <p className="muted">{m.security.noIdentities}</p>}
+      {data && data.identities.length === 0 && (
+        <p className="muted step-gap">{m.security.noIdentities}</p>
+      )}
     </Section>
   );
 }

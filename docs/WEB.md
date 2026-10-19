@@ -85,6 +85,43 @@ VITE_APPLE_REDIRECT_URI=https://app.exemplo.com
 O código fica em [SocialLogin.tsx](../apps/web/src/components/SocialLogin.tsx). Cada login gera um *nonce* novo, que a API
 confere: um ID token capturado não serve para outro login.
 
+## Pré-visualização (sem API e sem login)
+
+Para ajustar o visual ou ver uma tela de admin sem ter um admin, abra a pré-visualização com o `npm run dev` rodando.
+Ela monta o app inteiro com dados de exemplo ([data.ts](../apps/web/src/preview/data.ts)) e uma API falsa no próprio
+navegador. Nada é gravado e ela não entra no build.
+
+| Endereço | O que mostra |
+| --- | --- |
+| `http://localhost:5173/preview.html?path=/admin/users` | Logado como admin, na lista de usuários |
+| `...?path=/account&as=user` | Logado como usuário comum |
+| `...?path=/login&as=anonymous` | Tela pública |
+| `...&theme=light`, `&theme=dark`, `&lang=en` | Força o tema ou o idioma |
+
+## Visual
+
+O painel segue um estilo de console: a barra lateral e a superior formam uma moldura tingida, e a tela fica numa folha
+branca. Ele usa uma fonte só (IBM Plex Sans, mais a Plex Mono para IDs e IPs). A cor da marca vai só nos dados e nas
+marcações, e a ação principal de cada tela é o botão preto. Para adaptar à sua marca, mexa só nos tokens do começo do
+[styles.css](../apps/web/src/styles.css):
+
+| Token | Para quê |
+| --- | --- |
+| `--accent` | A cor da marca: marca do produto, barra de proteção, etiquetas de destaque |
+| `--ground` | O tom da moldura (barra lateral e superior) |
+| `--primary` | O botão principal (preto no claro, branco no escuro) |
+| `--font`, `--mono` | As fontes (carregadas no `index.html`) |
+
+O tema escuro segue o sistema. `<html data-theme="light">` ou `"dark"` força um dos dois. A marca é o escudo com a
+inicial ([Icon.tsx](../apps/web/src/components/Icon.tsx) → `ProductMark`): troque pelo logo do seu projeto.
+
+Padrões das telas:
+- **Configurações** (minha conta, segurança, privacidade e detalhe do usuário): uma linha por assunto. O nome e a
+  explicação ficam à esquerda e o painel com os campos à direita (`<Section>`). Cada painel tem seus botões no pé, à
+  direita, e a zona de exclusão vem sempre por último (`<Section danger>`).
+- **Listas** (usuários e auditoria): abas, uma barra de filtros e a tabela direto na folha, sem cartão em volta.
+- **Cor só no que pede atenção**: "e-mail não confirmado", "inativo", "alerta". O que está normal fica em cinza.
+
 ## Como está organizado
 
 ```
@@ -106,11 +143,13 @@ src/
 │   ├── format.ts           # datas no idioma, tamanho de arquivo, nome do dispositivo
 │   └── flash.ts            # aviso para a próxima tela (ex.: "conta excluída")
 ├── components/
-│   ├── ui.tsx              # Section, Field, SelectField, Modal, ConfirmDialog, Avatar, Badge, Pager...
-│   ├── Layout.tsx          # menu das telas logadas + RequirePermission
+│   ├── ui.tsx              # PageHeader, Section, Field, SelectField, Modal, ConfirmDialog, Avatar, Badge, Pager...
+│   ├── Icon.tsx            # ícones de contorno e a marca do produto
+│   ├── Layout.tsx          # moldura das telas logadas (barra lateral, topo, folha) + RequirePermission
 │   ├── RequireAuth.tsx     # protege rotas: sem sessão → /login (e volta depois)
 │   ├── Reauth.tsx          # "confirme que é você" (senha e/ou código do 2FA)
 │   └── SocialLogin.tsx     # botões do Google e da Apple
+├── preview/                # pré-visualização com dados de exemplo (só em desenvolvimento)
 ├── pages/                  # telas públicas e início
 │   ├── account/            # minha conta, segurança, privacidade
 │   └── admin/              # usuários, detalhe do usuário, auditoria
@@ -228,7 +267,7 @@ Para uma tela inteira, envolva a rota em `App.tsx`:
 } />
 ```
 
-E adicione o item no menu (`links` em [Layout.tsx](../apps/web/src/components/Layout.tsx)) com a mesma permissão.
+E adicione o item no menu (a lista `all` em [Layout.tsx](../apps/web/src/components/Layout.tsx), com um ícone do [Icon.tsx](../apps/web/src/components/Icon.tsx)) com a mesma permissão.
 Isso só **esconde**. Quem protege de verdade é a API, que confere a permissão em toda chamada.
 
 ## Testes

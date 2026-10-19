@@ -2,7 +2,7 @@ import { useState, type FormEvent } from 'react';
 import { api } from '../../api/client';
 import { session } from '../../auth/session';
 import { emptyReauth, reauthBody, ReauthFields, useLoginMethods } from '../../components/Reauth';
-import { Checkbox, ErrorAlert, FormError, Section } from '../../components/ui';
+import { Checkbox, ErrorAlert, FormError, PageHeader, Section } from '../../components/ui';
 import { useI18n } from '../../i18n/I18nProvider';
 import { flash } from '../../lib/flash';
 import { downloadJson } from '../../lib/format';
@@ -13,7 +13,7 @@ export function PrivacyPage() {
   const { m } = useI18n();
   return (
     <>
-      <h1>{m.privacy.title}</h1>
+      <PageHeader title={m.privacy.title} subtitle={m.privacy.subtitle} />
       <ExportSection />
       <DeleteSection />
     </>
@@ -33,10 +33,13 @@ function ExportSection() {
 
   return (
     <Section title={m.privacy.exportTitle} help={m.privacy.exportHelp}>
+      <p className="muted">{m.privacy.exportDetail}</p>
       <ErrorAlert error={error} />
-      <button type="button" disabled={busy} onClick={exportData}>
-        {m.privacy.export}
-      </button>
+      <div className="panel-actions">
+        <button type="button" disabled={busy} onClick={exportData}>
+          {m.privacy.export}
+        </button>
+      </div>
     </Section>
   );
 }
@@ -76,9 +79,11 @@ function DeleteSection() {
           onChange={(e) => setConfirmed(e.target.checked)}
         />
         <FormError error={error} />
-        <button type="submit" className="danger" disabled={busy || !confirmed}>
-          {m.privacy.delete}
-        </button>
+        <div className="panel-actions">
+          <button type="submit" className="danger" disabled={busy || !confirmed}>
+            {m.privacy.delete}
+          </button>
+        </div>
       </form>
     </Section>
   );

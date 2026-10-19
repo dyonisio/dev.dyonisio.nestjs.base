@@ -3381,6 +3381,7 @@
           "metadata": {
             "type": "object",
             "nullable": true,
+            "additionalProperties": true,
             "example": {
               "from": "user",
               "to": "manager"

@@ -1,4 +1,4 @@
-import { useEffect, useState, type FormEvent } from 'react';
+import { useEffect, useState, type FormEvent, type ReactNode } from 'react';
 import { Link, useNavigate, useParams } from 'react-router';
 import { api } from '../../api/client';
 import { useAuth } from '../../auth/AuthProvider';
@@ -12,11 +12,13 @@ import {
   Field,
   fieldError,
   FormError,
+  PageHeader,
   Section,
   SelectField,
   SuccessAlert,
   useLanguageOptions,
 } from '../../components/ui';
+import { Icon } from '../../components/Icon';
 import { useI18n } from '../../i18n/I18nProvider';
 import type { Language } from '../../i18n/language';
 import { formatDateTime } from '../../lib/format';
@@ -31,12 +33,19 @@ export function UserDetailPage() {
   const query = useQuery(() => api.GET('/api/v1/users/{id}', { params: { path: { id } } }), [id]);
   const user = query.data;
 
-  if (query.loading && !user) return <p className="muted">{m.common.loading}</p>;
+  const back = (
+    <Link to="/admin/users" className="back">
+      <Icon name="back" />
+      {m.user.back}
+    </Link>
+  );
+
+  if (query.loading && !user) return <p className="loading-line">{m.common.loading}</p>;
   if (!user) {
     return (
       <>
+        {back}
         <ErrorAlert error={query.error} />
-        <Link to="/admin/users">{m.user.back}</Link>
       </>
     );
   }
@@ -45,19 +54,13 @@ export function UserDetailPage() {
 
   return (
     <>
-      <p>
-        <Link to="/admin/users">← {m.user.back}</Link>
-      </p>
-      <div className="page-header">
-        <div className="person">
-          <Avatar user={user} size={56} />
-          <div>
-            <h1>{user.name}</h1>
-            <p className="muted">{user.email}</p>
-          </div>
-        </div>
-        <UserStatus user={user} />
-      </div>
+      {back}
+      <PageHeader
+        lead={<Avatar user={user} size={48} />}
+        title={user.name}
+        subtitle={`${user.email} · ${m.roles[user.role]}`}
+        actions={(!user.isActive || !user.emailVerifiedAt) && <UserStatus user={user} />}
+      />
 
       <InfoSection user={user} />
       {can(me, 'users:update') && <DetailsForm user={user} onSaved={changed} />}
@@ -70,8 +73,13 @@ export function UserDetailPage() {
 function InfoSection({ user }: { user: User }) {
   const { m, lang } = useI18n();
   const { user: me } = useAuth();
-  const rows: [string, string][] = [
-    [m.users.role, m.roles[user.role]],
+  const rows: [string, ReactNode][] = [
+    [
+      m.user.id,
+      <span className="mono" title={user.id}>
+        {user.id.slice(0, 8)}…
+      </span>,
+    ],
     [
       m.user.emailVerified,
       user.emailVerifiedAt ? formatDateTime(lang, user.emailVerifiedAt) : m.common.no,
@@ -80,11 +88,12 @@ function InfoSection({ user }: { user: User }) {
       m.user.twoFactor,
       user.twoFactorEnabledAt ? formatDateTime(lang, user.twoFactorEnabledAt) : m.common.no,
     ],
+    [m.users.language, user.locale ?? '—'],
     [m.user.createdAt, formatDateTime(lang, user.createdAt)],
     [m.user.updatedAt, formatDateTime(lang, user.updatedAt)],
   ];
   return (
-    <Section title={m.user.info}>
+    <Section title={m.user.info} help={m.user.infoHelp}>
       <dl className="info">
         {rows.map(([k, v]) => (
           <div key={k}>
@@ -94,9 +103,11 @@ function InfoSection({ user }: { user: User }) {
         ))}
       </dl>
       {can(me, 'audit:read') && (
-        <p className="links">
-          <Link to={`/admin/audit?targetId=${user.id}`}>{m.user.activity}</Link>
-        </p>
+        <div className="panel-actions">
+          <Link className="button" to={`/admin/audit?targetId=${user.id}`}>
+            {m.user.activity}
+          </Link>
+        </div>
       )}
     </Section>
   );
@@ -137,7 +148,7 @@ function DetailsForm({ user, onSaved }: { user: User; onSaved: (u: User) => void
   }
 
   return (
-    <Section title={m.user.details}>
+    <Section title={m.user.details} help={m.user.detailsHelp}>
       <form onSubmit={submit} noValidate>
         <Field
           label={m.common.name}
@@ -167,9 +178,11 @@ function DetailsForm({ user, onSaved }: { user: User; onSaved: (u: User) => void
         />
         <FormError error={error} />
         {saved && <SuccessAlert>{m.common.saved}</SuccessAlert>}
-        <button type="submit" disabled={busy}>
-          {m.common.save}
-        </button>
+        <div className="panel-actions">
+          <button type="submit" disabled={busy}>
+            {m.common.save}
+          </button>
+        </div>
       </form>
     </Section>
   );
@@ -214,9 +227,11 @@ function RoleForm({ user, onSaved }: { user: User; onSaved: (u: User) => void })
         />
         <FormError error={error} />
         {saved && <SuccessAlert>{m.common.saved}</SuccessAlert>}
-        <button type="submit" disabled={busy || role === user.role}>
-          {m.user.changeRole}
-        </button>
+        <div className="panel-actions">
+          <button type="submit" disabled={busy || role === user.role}>
+            {m.user.changeRole}
+          </button>
+        </div>
       </form>
     </Section>
   );
@@ -269,35 +284,48 @@ function ActionsSection({ user, onChanged }: { user: User; onChanged: () => void
   };
 
   return (
-    <Section title={m.user.actions}>
-      {notice && <SuccessAlert>{notice}</SuccessAlert>}
-      {!pending && <ErrorAlert error={error} />}
-      <ul className="list">
-        {canInvite && (
-          <li>
-            <span className="muted">{m.user.resendInviteHelp}</span>
-            <button type="button" className="secondary" disabled={busy} onClick={invite}>
-              {m.user.resendInvite}
-            </button>
-          </li>
-        )}
-        {canReset2fa && (
-          <li>
-            <span className="muted">{m.user.reset2faHelp}</span>
-            <button type="button" className="secondary" onClick={() => open('reset2fa')}>
-              {m.user.reset2fa}
-            </button>
-          </li>
-        )}
-        {canDelete && (
-          <li>
-            <span className="muted">{m.user.deleteHelp}</span>
+    <>
+      {(canInvite || canReset2fa) && (
+        <Section title={m.user.actions} help={m.user.actionsHelp}>
+          <ul className="rows">
+            {canInvite && (
+              <li>
+                <div className="row-main">
+                  <span className="row-title">{m.user.resendInvite}</span>
+                  <span className="row-meta">{m.user.resendInviteHelp}</span>
+                </div>
+                <button type="button" disabled={busy} onClick={invite}>
+                  {m.user.resendInvite}
+                </button>
+              </li>
+            )}
+            {canReset2fa && (
+              <li>
+                <div className="row-main">
+                  <span className="row-title">{m.user.reset2fa}</span>
+                  <span className="row-meta">{m.user.reset2faHelp}</span>
+                </div>
+                <button type="button" onClick={() => open('reset2fa')}>
+                  {m.user.reset2faShort}
+                </button>
+              </li>
+            )}
+          </ul>
+          {notice && <SuccessAlert>{notice}</SuccessAlert>}
+          {!pending && <ErrorAlert error={error} />}
+        </Section>
+      )}
+
+      {canDelete && (
+        <Section title={m.user.delete} help={m.user.deleteHelp} danger>
+          <p>{f(m.user.deleteWhat, { name: user.name })}</p>
+          <div className="panel-actions">
             <button type="button" className="danger" onClick={() => open('delete')}>
               {m.user.delete}
             </button>
-          </li>
-        )}
-      </ul>
+          </div>
+        </Section>
+      )}
 
       {pending && (
         <ConfirmDialog
@@ -314,6 +342,6 @@ function ActionsSection({ user, onChanged }: { user: User; onChanged: () => void
           onClose={() => setPending(null)}
         />
       )}
-    </Section>
+    </>
   );
 }
