@@ -80,6 +80,8 @@ describe('LoginPage — passkey', () => {
   });
 
   it('falha do navegador mostra o motivo e o detalhe técnico', async () => {
+    // o erro completo vai para o console de propósito (diagnóstico); aqui não precisa poluir o log
+    vi.spyOn(console, 'error').mockImplementation(() => {});
     mockFetch({
       'POST /api/v1/auth/passkeys/login/options': () =>
         json(200, { options, challengeToken: 'desafio' }),

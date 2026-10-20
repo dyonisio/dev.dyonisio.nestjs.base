@@ -34,13 +34,15 @@ export function useScrollMotion({ root, stages, onStage }: Options): ScrollMotio
 
   useEffect(() => {
     const el = root.current;
-    if (!el || window.matchMedia?.('(prefers-reduced-motion: reduce)').matches) return;
+    // Sem matchMedia (navegador muito antigo, jsdom nos testes) o GSAP não roda: a página fica parada
+    if (!el || typeof window.matchMedia !== 'function') return;
+    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
 
     let revert: (() => void) | undefined;
     let cancelled = false;
 
-    void Promise.all([import('gsap'), import('gsap/ScrollTrigger')]).then(
-      ([{ gsap }, { ScrollTrigger }]) => {
+    void Promise.all([import('gsap'), import('gsap/ScrollTrigger')])
+      .then(([{ gsap }, { ScrollTrigger }]) => {
         if (cancelled) return;
         gsap.registerPlugin(ScrollTrigger);
         const mm = gsap.matchMedia();
@@ -146,8 +148,11 @@ export function useScrollMotion({ root, stages, onStage }: Options): ScrollMotio
             once: true,
           });
         }
-      },
-    );
+      })
+      .catch((error: unknown) => {
+        // movimento é enfeite: se o GSAP falhar, a página continua inteira, só sem animação
+        console.warn('[landing] movimento desligado:', error);
+      });
 
     return () => {
       cancelled = true;
