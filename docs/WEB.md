@@ -101,6 +101,9 @@ etapas, números medidos no código e uma chamada que leva o e-mail para o cadas
   texto aqui; o layout não muda. Os números da seção "Medido no código" são reais: atualize quando mudarem.
 - **Imagens:** `public/landing/<idioma>/` são telas do próprio painel tiradas da pré-visualização (`preview.html`,
   dados de exemplo), e `console.mp4` é uma gravação dela. Ao mudar o painel, capture de novo.
+- **Movimento na rolagem:** [landing/scroll-motion.ts](../apps/web/src/landing/scroll-motion.ts), com GSAP + ScrollTrigger
+  carregados só nesta página: a janela do título se abre ao rolar, as telas têm paralaxe, o deploy fica preso
+  na tela passando pelas etapas (no desktop) e os números contam. Com "reduzir movimento" ligado, nada disso roda.
 - **Visual:** [LandingPage.css](../apps/web/src/pages/LandingPage.css), só com os tokens do painel (fonte, cores e
   o tema escuro vêm de graça).
 

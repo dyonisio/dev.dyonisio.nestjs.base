@@ -5,6 +5,7 @@ import { Preferences } from '../components/ui';
 import { API_URL, APP_NAME, LEGAL_OWNER, SUPPORT_EMAIL } from '../config';
 import { useI18n } from '../i18n/I18nProvider';
 import { LANDING, type LandingCopy } from '../landing/content';
+import { useScrollMotion } from '../landing/scroll-motion';
 import './LandingPage.css';
 
 /**
@@ -19,7 +20,13 @@ export function LandingPage() {
   const copy = LANDING[lang];
   const shots = `/landing/${lang}/`;
   const root = useRef<HTMLDivElement>(null);
+  const [stage, setStage] = useState(0);
   useReveal(root);
+  const goToStage = useScrollMotion({
+    root,
+    stages: copy.deploy.stages.length,
+    onStage: setStage,
+  });
 
   return (
     <div className="lp" ref={root}>
@@ -43,7 +50,14 @@ export function LandingPage() {
         <Hero copy={copy} />
         <Features copy={copy} shots={shots} />
         <NameIt copy={copy} />
-        <Deploy copy={copy} />
+        <Deploy
+          copy={copy}
+          stage={stage}
+          onSelect={(i) => {
+            // Com a seção presa na tela, escolher a etapa rola até ela; senão, só troca
+            if (!goToStage.current?.(i)) setStage(i);
+          }}
+        />
         <Numbers copy={copy} />
         <StartForm copy={copy} />
       </main>
@@ -69,7 +83,9 @@ function Hero({ copy }: { copy: LandingCopy }) {
   return (
     <section className="lp-hero" aria-labelledby="lp-title">
       <h1 id="lp-title" className="lp-hero-title">
-        <span className="lp-word">{first}</span>{' '}
+        <span className="lp-word">
+          <span className="lp-word-move is-first">{first}</span>
+        </span>{' '}
         {/* O texto da janela vem do CSS (attr): o título continua sendo só o nome do produto */}
         <span className="lp-frame" data-ui aria-hidden="true">
           <span className="lp-frame-inner">
@@ -81,7 +97,11 @@ function Hero({ copy }: { copy: LandingCopy }) {
             ))}
           </span>
         </span>{' '}
-        {rest.length > 0 && <span className="lp-word">{rest.join(' ')}</span>}
+        {rest.length > 0 && (
+          <span className="lp-word">
+            <span className="lp-word-move is-last">{rest.join(' ')}</span>
+          </span>
+        )}
       </h1>
       <div className="lp-hero-foot">
         <p className="lp-lead">{copy.hero.lead}</p>
@@ -117,21 +137,23 @@ function Features({ copy, shots }: { copy: LandingCopy; shots: string }) {
             <p data-reveal>{item.text}</p>
           </div>
           <figure className="lp-row-picture" data-reveal>
-            {item.image.endsWith('.mp4') ? (
-              <video
-                src={shots + item.image}
-                poster={shots + 'console-poster.jpg'}
-                autoPlay
-                muted
-                loop
-                playsInline
-                aria-label={item.alt}
-                width={1280}
-                height={800}
-              />
-            ) : (
-              <img src={shots + item.image} alt={item.alt} loading="lazy" />
-            )}
+            <div className="lp-parallax">
+              {item.image.endsWith('.mp4') ? (
+                <video
+                  src={shots + item.image}
+                  poster={shots + 'console-poster.jpg'}
+                  autoPlay
+                  muted
+                  loop
+                  playsInline
+                  aria-label={item.alt}
+                  width={1280}
+                  height={800}
+                />
+              ) : (
+                <img src={shots + item.image} alt={item.alt} loading="lazy" />
+              )}
+            </div>
           </figure>
         </article>
       ))}
@@ -245,8 +267,15 @@ function NameIt({ copy }: { copy: LandingCopy }) {
 
 // ---------------------------------------------------------------- deploy
 
-function Deploy({ copy }: { copy: LandingCopy }) {
-  const [stage, setStage] = useState(0);
+function Deploy({
+  copy,
+  stage,
+  onSelect,
+}: {
+  copy: LandingCopy;
+  stage: number;
+  onSelect: (index: number) => void;
+}) {
   const stages = copy.deploy.stages;
   const current = stages[stage]!;
   const site = window.location.host;
@@ -280,7 +309,7 @@ function Deploy({ copy }: { copy: LandingCopy }) {
             value={stage}
             aria-label={copy.deploy.sliderLabel}
             aria-valuetext={current.name}
-            onChange={(e) => setStage(Number(e.target.value))}
+            onChange={(e) => onSelect(Number(e.target.value))}
           />
         </div>
         <ol>
@@ -289,7 +318,7 @@ function Deploy({ copy }: { copy: LandingCopy }) {
               <button
                 type="button"
                 className={i === stage ? 'is-on' : undefined}
-                onClick={() => setStage(i)}
+                onClick={() => onSelect(i)}
               >
                 {s.name}
               </button>
@@ -321,7 +350,11 @@ function Numbers({ copy }: { copy: LandingCopy }) {
           const separator = decimals ? text.charAt(whole!.length) : '';
           return (
             <div key={figure.caption} className="lp-figure" data-reveal>
-              <dt className="lp-figure-value">
+              <dt
+                className="lp-figure-value"
+                data-value={figure.value}
+                data-decimals={figure.decimals ?? 0}
+              >
                 <span className="lp-whole">{whole}</span>
                 <span className="lp-decimals">{decimals ? separator + decimals : ''}</span>
               </dt>
