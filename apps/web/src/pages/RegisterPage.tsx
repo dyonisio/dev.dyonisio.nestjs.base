@@ -1,5 +1,5 @@
 import { useState, type FormEvent } from 'react';
-import { Link, useNavigate } from 'react-router';
+import { Link, useLocation, useNavigate } from 'react-router';
 import { toApiError, type ApiError } from '../api/client';
 import { useAuth } from '../auth/AuthProvider';
 import { SocialLogin } from '../components/SocialLogin';
@@ -11,7 +11,9 @@ export function RegisterPage() {
   const { m, lang } = useI18n();
   const { register } = useAuth();
   const navigate = useNavigate();
-  const [form, setForm] = useState({ name: '', email: '', password: '' });
+  // Vindo da página inicial ("teste o painel com [e-mail]"), o e-mail já chega preenchido
+  const fromLanding = (useLocation().state as { email?: string } | null)?.email ?? '';
+  const [form, setForm] = useState({ name: '', email: fromLanding, password: '' });
   const [error, setError] = useState<ApiError | null>(null);
   const [busy, setBusy] = useState(false);
 

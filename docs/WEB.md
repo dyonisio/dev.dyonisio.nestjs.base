@@ -35,6 +35,7 @@ A API precisa aceitar a origem do front no CORS. Em desenvolvimento, o `.env.exa
 
 | Rota | Tela | Observação |
 | --- | --- | --- |
+| `/` (sem login) | Página inicial | Apresenta o produto e leva a criar conta ou entrar. Logado, `/` é o Início do painel. Veja "Página inicial" abaixo |
 | `/login` | Login | E-mail e senha, link por e-mail ("entrar sem senha") ou Google/Apple. Em dois passos quando a conta tem 2FA |
 | `/register` | Cadastro | Também com Google/Apple |
 | `/forgot-password` | Esqueci a senha | A API responde igual exista o e-mail ou não |
@@ -87,6 +88,21 @@ VITE_APPLE_REDIRECT_URI=https://app.exemplo.com
 
 O código fica em [SocialLogin.tsx](../apps/web/src/components/SocialLogin.tsx). Cada login gera um *nonce* novo, que a API
 confere: um ID token capturado não serve para outro login.
+
+## Página inicial
+
+Quem abre `/` sem estar logado vê [LandingPage.tsx](../apps/web/src/pages/LandingPage.tsx) (o `RequireAuth` recebe
+`publicHome`); quem está logado continua no Início. A ideia da página: as formas reais de entrar (senha, link,
+Google, passkey, código) passam numa janela dentro do nome do produto. Seções: recursos com telas do painel,
+"dê o seu nome" (o visitante digita um nome e vê o painel e o comando `new-project` mudarem), o deploy em quatro
+etapas, números medidos no código e uma chamada que leva o e-mail para o cadastro.
+
+- **Texto:** [landing/content.ts](../apps/web/src/landing/content.ts), em pt-BR e inglês. Num produto novo, troque o
+  texto aqui; o layout não muda. Os números da seção "Medido no código" são reais: atualize quando mudarem.
+- **Imagens:** `public/landing/<idioma>/` são telas do próprio painel tiradas da pré-visualização (`preview.html`,
+  dados de exemplo), e `console.mp4` é uma gravação dela. Ao mudar o painel, capture de novo.
+- **Visual:** [LandingPage.css](../apps/web/src/pages/LandingPage.css), só com os tokens do painel (fonte, cores e
+  o tema escuro vêm de graça).
 
 ## Privacidade e Termos
 

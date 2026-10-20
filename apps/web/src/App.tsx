@@ -8,6 +8,7 @@ import { AuditPage } from './pages/admin/AuditPage';
 import { UserDetailPage } from './pages/admin/UserDetailPage';
 import { UsersPage } from './pages/admin/UsersPage';
 import { HomePage, NotFoundPage } from './pages/HomePage';
+import { LandingPage } from './pages/LandingPage';
 import { LegalPage } from './pages/LegalPage';
 import { LoginPage } from './pages/LoginPage';
 import { CreatePasswordPage, MagicLinkPage } from './pages/MagicLinkPages';
@@ -43,7 +44,8 @@ export function App() {
       {/* Logadas: todas dentro do layout com o menu */}
       <Route
         element={
-          <RequireAuth>
+          // Em /, quem não está logado vê a página inicial pública
+          <RequireAuth publicHome={<LandingPage />}>
             <AppLayout />
           </RequireAuth>
         }
