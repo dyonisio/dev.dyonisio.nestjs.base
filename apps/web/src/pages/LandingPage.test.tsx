@@ -26,10 +26,11 @@ beforeEach(() => setLanguage('en'));
 afterEach(() => vi.unstubAllGlobals());
 
 describe('página inicial pública', () => {
-  it('sem login, / mostra a página do produto (e não manda para o login)', () => {
+  it('sem login, / mostra a página do produto (e não manda para o login)', async () => {
     renderAnonymous();
 
-    expect(screen.getByRole('heading', { level: 1 })).toHaveTextContent(APP_NAME);
+    // a página é carregada sob demanda (lazy)
+    expect(await screen.findByRole('heading', { level: 1 })).toHaveTextContent(APP_NAME);
     expect(screen.getByRole('link', { name: 'Create an account' })).toHaveAttribute(
       'href',
       '/register',
@@ -51,7 +52,7 @@ describe('página inicial pública', () => {
 
   it('"give it your name": o comando e os recursos da AWS seguem o nome digitado', async () => {
     renderAnonymous();
-    const field = screen.getByLabelText('Your product name');
+    const field = await screen.findByLabelText('Your product name');
 
     await userEvent.clear(field);
     await userEvent.type(field, 'Café São João');
@@ -68,7 +69,7 @@ describe('página inicial pública', () => {
   it('o e-mail da chamada final chega preenchido no cadastro', async () => {
     renderAnonymous();
 
-    await userEvent.type(screen.getByLabelText('your email'), 'ana@example.com');
+    await userEvent.type(await screen.findByLabelText('your email'), 'ana@example.com');
     await userEvent.click(screen.getByRole('button', { name: 'start' }));
 
     expect(await screen.findByRole('heading', { name: 'Create your account' })).toBeInTheDocument();

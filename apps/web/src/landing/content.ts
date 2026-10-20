@@ -26,8 +26,8 @@ export interface Stage {
 
 export interface Figure {
   value: number;
-  /** Casas decimais mostradas. */
-  decimals?: number;
+  /** Logo depois do número, no mesmo tamanho (ex.: "%"). */
+  suffix?: string;
   caption: string;
 }
 
@@ -57,7 +57,7 @@ export interface LandingCopy {
     menu: string[];
   };
   deploy: { sliderLabel: string; stages: Stage[] };
-  numbers: { headingSoft: string; headingStrong: string; figures: Figure[] };
+  numbers: { heading: string; lead: string; figures: Figure[] };
   cta: { before: string; placeholder: string; submit: string; after: string };
   footer: { about: string; madeBy: string; top: string; contact: string; place: string };
 }
@@ -180,11 +180,11 @@ const pt: LandingCopy = {
     ],
   },
   numbers: {
-    headingSoft: 'Medido no código,',
-    headingStrong: 'não prometido',
+    heading: 'A base em números',
+    lead: 'Contados no próprio código desta versão, nada estimado. Os testes rodam a cada mudança, antes de qualquer deploy.',
     figures: [
       { value: 651, caption: 'testes automatizados, na API e no front' },
-      { value: 99.1, decimals: 1, caption: '% das linhas da API cobertas por testes' },
+      { value: 99, suffix: '%', caption: 'das linhas da API cobertas por testes' },
       { value: 59, caption: 'rotas na API, documentadas no Swagger' },
       { value: 13, caption: 'e-mails de sistema, em português e inglês' },
       { value: 15, caption: 'migrations, aplicadas antes de cada deploy' },
@@ -323,11 +323,11 @@ const en: LandingCopy = {
     ],
   },
   numbers: {
-    headingSoft: 'Measured in the code,',
-    headingStrong: 'not promised',
+    heading: 'The base in numbers',
+    lead: 'Counted in the code of this version, nothing estimated. The tests run on every change, before any deploy.',
     figures: [
       { value: 651, caption: 'automated tests, across the API and the front' },
-      { value: 99.1, decimals: 1, caption: '% of API lines covered by tests' },
+      { value: 99, suffix: '%', caption: 'of API lines covered by tests' },
       { value: 59, caption: 'API routes, documented in Swagger' },
       { value: 13, caption: 'system emails, in Portuguese and English' },
       { value: 15, caption: 'migrations, applied before every deploy' },

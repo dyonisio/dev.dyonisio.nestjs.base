@@ -102,8 +102,12 @@ etapas, números medidos no código e uma chamada que leva o e-mail para o cadas
 - **Imagens:** `public/landing/<idioma>/` são telas do próprio painel tiradas da pré-visualização (`preview.html`,
   dados de exemplo), e `console.mp4` é uma gravação dela. Ao mudar o painel, capture de novo.
 - **Movimento na rolagem:** [landing/scroll-motion.ts](../apps/web/src/landing/scroll-motion.ts), com GSAP + ScrollTrigger
-  carregados só nesta página: a janela do título se abre ao rolar, as telas têm paralaxe, o deploy fica preso
+  carregados só nesta página: a janela do título se abre ao rolar, o deploy fica preso
   na tela passando pelas etapas (no desktop) e os números contam. Com "reduzir movimento" ligado, nada disso roda.
+- **Entradas e trocas:** Motion (antigo Framer Motion): seções que sobem ao aparecer, a janela do título trocando de
+  forma de entrar, o terminal do deploy "digitando", os marcadores que deslizam (menu, exemplos, cor) e a resposta ao
+  toque nos botões. O menu rola com animação até a seção e marca a seção atual.
+- **Carregamento:** a página (com o Motion e o GSAP) é baixada sob demanda, só por quem abre `/` sem login.
 - **Visual:** [LandingPage.css](../apps/web/src/pages/LandingPage.css), só com os tokens do painel (fonte, cores e
   o tema escuro vêm de graça).
 

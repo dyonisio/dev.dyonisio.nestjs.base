@@ -6,7 +6,6 @@
  * continua no controle deslizante).
  *
  *  - Primeira tela: a janela de login dentro do nome se abre e as palavras se afastam.
- *  - Recursos: as telas do painel deslizam devagar dentro da moldura (paralaxe).
  *  - Deploy: a seção fica presa enquanto a rolagem passa pelas quatro etapas (desktop).
  *  - Números: contam até o valor quando aparecem.
  */
@@ -21,8 +20,15 @@ interface Options {
   onStage: (index: number) => void;
 }
 
-export function useScrollMotion({ root, stages, onStage }: Options): RefObject<GoToStage | null> {
+export interface ScrollMotion {
+  goToStage: RefObject<GoToStage | null>;
+  /** Rola com suavidade até a seção (os links do menu). */
+  scrollToId: (id: string) => void;
+}
+
+export function useScrollMotion({ root, stages, onStage }: Options): ScrollMotion {
   const goTo = useRef<GoToStage | null>(null);
+  const scrollTo = useRef<((target: HTMLElement) => void) | null>(null);
   const onStageRef = useRef(onStage);
   onStageRef.current = onStage;
 
@@ -38,6 +44,19 @@ export function useScrollMotion({ root, stages, onStage }: Options): RefObject<G
         if (cancelled) return;
         gsap.registerPlugin(ScrollTrigger);
         const mm = gsap.matchMedia();
+
+        // ---- menu: rolagem animada até a seção
+        scrollTo.current = (target) => {
+          const position = { y: window.scrollY };
+          const y = target.getBoundingClientRect().top + window.scrollY;
+          const distance = Math.abs(y - position.y);
+          gsap.to(position, {
+            y,
+            duration: Math.min(1.4, 0.5 + distance / 4000),
+            ease: 'power3.inOut',
+            onUpdate: () => window.scrollTo(0, position.y),
+          });
+        };
 
         mm.add(
           { desktop: '(min-width: 721px)', phone: '(max-width: 720px)' },
@@ -59,24 +78,6 @@ export function useScrollMotion({ root, stages, onStage }: Options): RefObject<G
               }
               door.to('.lp-hero-foot', { autoAlpha: 0, y: -40 }, 0);
             }
-
-            // ---- recursos: paralaxe das telas
-            gsap.utils.toArray<HTMLElement>('.lp-parallax').forEach((media) => {
-              gsap.fromTo(
-                media,
-                { yPercent: -6 },
-                {
-                  yPercent: 6,
-                  ease: 'none',
-                  scrollTrigger: {
-                    trigger: media.parentElement,
-                    start: 'top bottom',
-                    end: 'bottom top',
-                    scrub: true,
-                  },
-                },
-              );
-            });
 
             // ---- deploy: presa na tela, a rolagem escolhe a etapa
             const deploy = el.querySelector<HTMLElement>('.lp-deploy');
@@ -117,31 +118,18 @@ export function useScrollMotion({ root, stages, onStage }: Options): RefObject<G
 
         // ---- números: contam até o valor (uma vez)
         const counters = gsap.context(() => {
-          const lang = document.documentElement.lang || 'pt-BR';
           gsap.utils.toArray<HTMLElement>('.lp-figure-value').forEach((figure) => {
             const value = Number(figure.dataset.value);
-            const decimals = Number(figure.dataset.decimals ?? 0);
             const whole = figure.querySelector('.lp-whole');
-            const rest = figure.querySelector('.lp-decimals');
             if (!whole || !Number.isFinite(value)) return;
-            const format = new Intl.NumberFormat(lang, {
-              minimumFractionDigits: decimals,
-              maximumFractionDigits: decimals,
-            });
             const counter = { v: 0 };
-            const paint = () => {
-              const text = format.format(counter.v);
-              const [w, d] = text.split(/[.,](?=\d+$)/);
-              whole.textContent = w ?? text;
-              if (rest) rest.textContent = d ? text.charAt((w ?? '').length) + d : '';
-            };
             gsap.to(counter, {
               v: value,
               duration: 1.4,
               ease: 'power2.out',
-              onUpdate: paint,
+              onStart: () => (whole.textContent = '0'),
+              onUpdate: () => (whole.textContent = String(Math.round(counter.v))),
               scrollTrigger: { trigger: figure, start: 'top 88%', once: true },
-              onStart: paint,
             });
           });
         }, el);
@@ -165,8 +153,20 @@ export function useScrollMotion({ root, stages, onStage }: Options): RefObject<G
       cancelled = true;
       revert?.();
       goTo.current = null;
+      scrollTo.current = null;
     };
   }, [root, stages]);
 
-  return goTo;
+  const scrollToId = (id: string) => {
+    const target = document.getElementById(id);
+    if (!target) return;
+    // Sem o GSAP (ainda carregando, ou movimento reduzido): a rolagem do próprio navegador
+    if (scrollTo.current) scrollTo.current(target);
+    else {
+      const reduce = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
+      target.scrollIntoView({ behavior: reduce ? 'auto' : 'smooth' });
+    }
+  };
+
+  return { goToStage: goTo, scrollToId };
 }

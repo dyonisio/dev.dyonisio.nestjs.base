@@ -17,6 +17,7 @@
   "dependencies": {
     "@simplewebauthn/browser": "^13.3.0",
     "gsap": "^3.15.0",
+    "motion": "^12.43.0",
     "openapi-fetch": "^0.17.0",
     "qrcode": "^1.5.4",
     "react": "^19.3.1",

@@ -1,3 +1,4 @@
+import { lazy, Suspense } from 'react';
 import { Route, Routes } from 'react-router';
 import { AppLayout, RequirePermission } from './components/Layout';
 import { RequireAuth } from './components/RequireAuth';
@@ -8,13 +9,15 @@ import { AuditPage } from './pages/admin/AuditPage';
 import { UserDetailPage } from './pages/admin/UserDetailPage';
 import { UsersPage } from './pages/admin/UsersPage';
 import { HomePage, NotFoundPage } from './pages/HomePage';
-import { LandingPage } from './pages/LandingPage';
 import { LegalPage } from './pages/LegalPage';
 import { LoginPage } from './pages/LoginPage';
 import { CreatePasswordPage, MagicLinkPage } from './pages/MagicLinkPages';
 import { ForgotPasswordPage, ResetPasswordPage } from './pages/PasswordPages';
 import { RegisterPage } from './pages/RegisterPage';
 import { VerifyEmailPage } from './pages/VerifyEmailPage';
+
+// A página inicial pública (e o Motion/GSAP dela) só é baixada por quem abre / sem login
+const LandingPage = lazy(() => import('./pages/LandingPage'));
 
 /**
  * Rotas. As marcadas com (e-mail) recebem links dos e-mails da API: o caminho precisa ser
@@ -45,7 +48,13 @@ export function App() {
       <Route
         element={
           // Em /, quem não está logado vê a página inicial pública
-          <RequireAuth publicHome={<LandingPage />}>
+          <RequireAuth
+            publicHome={
+              <Suspense fallback={null}>
+                <LandingPage />
+              </Suspense>
+            }
+          >
             <AppLayout />
           </RequireAuth>
         }
