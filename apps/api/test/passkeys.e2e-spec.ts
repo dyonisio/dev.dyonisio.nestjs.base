@@ -8,6 +8,8 @@ import { AppModule } from '../src/app.module';
 import { configureApp } from '../src/app.setup';
 import { AuditAction } from '../src/audit/audit-action.enum';
 import { AuditLog } from '../src/audit/audit-log.entity';
+import { UserIdentity } from '../src/auth/social/entities/user-identity.entity';
+import { Role } from '../src/common/enums/role.enum';
 import { MailService } from '../src/mail/mail.service';
 import { User } from '../src/users/entities/user.entity';
 import { UsersService } from '../src/users/users.service';
@@ -289,6 +291,166 @@ describe('Passkeys (e2e)', () => {
           where: { action: AuditAction.AUTH_PASSKEY_REMOVED, actorId: dani.id },
         }),
       ).toBe(1);
+    });
+  });
+
+  describe('"confirme que é você" com passkey', () => {
+    let fabi: { id: string; token: string };
+    let device: FakeAuthenticator;
+
+    const reauthProof = async (token: string, signer = device) => {
+      const { options, challengeToken } = (
+        await as(token, http().post('/api/v1/auth/passkeys/reauth/options')).expect(200)
+      ).body as Options;
+      return { challengeToken, response: signer.login(options) };
+    };
+
+    beforeAll(async () => {
+      fabi = await createUser('fabi.passkey@test.com');
+      device = await addPasskey(fabi.token);
+    });
+
+    it('sem passkeys na conta, não há o que confirmar', async () => {
+      const gabi = await createUser('gabi.passkey@test.com');
+      const res = await as(gabi.token, http().post('/api/v1/auth/passkeys/reauth/options')).expect(
+        400,
+      );
+      expect(res.body.code).toBe('passkeys.none');
+    });
+
+    it('vale no lugar da senha E do código do 2FA (ex.: adicionar outra passkey)', async () => {
+      await usersRepo.update(fabi.id, { twoFactorEnabledAt: new Date() });
+      const proof = await reauthProof(fabi.token);
+      const res = await as(fabi.token, http().post('/api/v1/auth/passkeys/register/options'))
+        .send({ passkey: proof })
+        .expect(200);
+      await usersRepo.update(fabi.id, { twoFactorEnabledAt: null });
+
+      expect(res.body.challengeToken).toEqual(expect.any(String));
+    });
+
+    it('a mesma prova não serve duas vezes', async () => {
+      const proof = await reauthProof(fabi.token);
+      await as(fabi.token, http().post('/api/v1/auth/passkeys/register/options'))
+        .send({ passkey: proof })
+        .expect(200);
+      const again = await as(fabi.token, http().post('/api/v1/auth/passkeys/register/options'))
+        .send({ passkey: proof })
+        .expect(400);
+      expect(again.body.code).toBe('passkeys.challengeExpired');
+    });
+
+    it('passkey de OUTRA conta não confirma', async () => {
+      const hugo = await createUser('hugo.passkey@test.com');
+      const hugosDevice = await addPasskey(hugo.token);
+      // desafio emitido para a Fabi, assinado com a passkey do Hugo
+      const proof = await reauthProof(fabi.token, hugosDevice);
+      const res = await as(fabi.token, http().post('/api/v1/auth/passkeys/register/options'))
+        .send({ passkey: proof })
+        .expect(400);
+      expect(res.body.code).toBe('passkeys.verificationFailed');
+    });
+
+    it('desafio de outra conta não confirma', async () => {
+      const ivo = await createUser('ivo.passkey@test.com');
+      await addPasskey(ivo.token);
+      const proof = await reauthProof(fabi.token);
+      const res = await as(ivo.token, http().post('/api/v1/auth/passkeys/register/options'))
+        .send({ passkey: proof })
+        .expect(400);
+      expect(res.body.code).toBe('passkeys.challengeExpired');
+    });
+
+    it('vale para ações da conta (excluir a conta)', async () => {
+      const proof = await reauthProof(fabi.token);
+      await as(fabi.token, http().delete('/api/v1/users/me')).send({ passkey: proof }).expect(204);
+    });
+  });
+
+  describe('formas de login de um usuário (admin)', () => {
+    let admin: string;
+    let julia: { id: string; token: string };
+    let device: FakeAuthenticator;
+
+    beforeAll(async () => {
+      await app.get(UsersService).create(
+        {
+          name: 'Admin',
+          email: 'admin.passkey@test.com',
+          password: 'Senha123',
+          role: Role.ADMIN,
+        },
+        { emailVerified: true },
+      );
+      admin = (
+        await http()
+          .post('/api/v1/auth/login')
+          .send({ email: 'admin.passkey@test.com', password: 'Senha123' })
+          .expect(200)
+      ).body.accessToken;
+      julia = await createUser('julia.passkey@test.com');
+      device = await addPasskey(julia.token);
+      const identities = app.get<Repository<UserIdentity>>(getRepositoryToken(UserIdentity));
+      await identities.save(
+        identities.create({
+          userId: julia.id,
+          provider: 'google',
+          providerUserId: 'google-julia',
+          email: 'julia@gmail.com',
+        }),
+      );
+    });
+
+    const methods = async () =>
+      (await as(admin, http().get(`/api/v1/users/${julia.id}/login-methods`)).expect(200)).body;
+
+    it('lista senha, Google/Apple e passkeys (sem nada secreto)', async () => {
+      const body = await methods();
+
+      expect(body.hasPassword).toBe(true);
+      expect(body.identities).toEqual([expect.objectContaining({ provider: 'google' })]);
+      expect(body.passkeys).toEqual([expect.objectContaining({ name: 'Chrome · Windows' })]);
+      expect(JSON.stringify(body)).not.toMatch(/publicKey|credentialId|providerUserId|password"/);
+    });
+
+    it('quem não é admin não vê nem remove', async () => {
+      await as(julia.token, http().get(`/api/v1/users/${julia.id}/login-methods`)).expect(403);
+      const [p] = (await methods()).passkeys;
+      await as(julia.token, http().delete(`/api/v1/users/${julia.id}/passkeys/${p.id}`)).expect(
+        403,
+      );
+    });
+
+    it('as rotas /users/me/... continuam sendo do próprio usuário', async () => {
+      await as(julia.token, http().get('/api/v1/users/me/passkeys')).expect(200);
+      await as(julia.token, http().get('/api/v1/users/me/identities')).expect(200);
+    });
+
+    it('remove a passkey: ela para de entrar na hora, e a auditoria mostra o admin', async () => {
+      const [p] = (await methods()).passkeys;
+      await as(admin, http().delete(`/api/v1/users/${julia.id}/passkeys/${p.id}`)).expect(204);
+
+      expect((await methods()).passkeys).toEqual([]);
+      expect((await loginWith(device)).status).toBe(401);
+      const log = await audit.findOne({
+        where: { action: AuditAction.AUTH_PASSKEY_REMOVED, targetId: julia.id },
+      });
+      expect(log?.metadata).toMatchObject({ byAdmin: true });
+      expect(log?.actorId).not.toBe(julia.id);
+    });
+
+    it('desvincula o Google, mesmo sendo a única forma além da senha', async () => {
+      await as(admin, http().delete(`/api/v1/users/${julia.id}/identities/google`)).expect(204);
+      expect((await methods()).identities).toEqual([]);
+
+      await as(admin, http().delete(`/api/v1/users/${julia.id}/identities/google`)).expect(404);
+      await as(admin, http().delete(`/api/v1/users/${julia.id}/identities/orkut`)).expect(400);
+    });
+
+    it('usuário ou passkey inexistente: 404', async () => {
+      const ghost = '00000000-0000-4000-8000-000000000000';
+      await as(admin, http().get(`/api/v1/users/${ghost}/login-methods`)).expect(404);
+      await as(admin, http().delete(`/api/v1/users/${julia.id}/passkeys/${ghost}`)).expect(404);
     });
   });
 });

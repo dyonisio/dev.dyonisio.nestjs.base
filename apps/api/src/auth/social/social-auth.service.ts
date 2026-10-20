@@ -78,6 +78,21 @@ export class SocialAuthService {
     });
   }
 
+  /**
+   * O admin desvincula o Google/Apple de alguém (ex.: vinculado por um invasor). Sem a trava de
+   * "última forma de login": a pessoa sempre pode entrar pelo link mágico ou criar uma senha
+   * pelo "esqueci a senha".
+   */
+  async unlinkByAdmin(userId: string, provider: string): Promise<void> {
+    await this.users.getById(userId);
+    const { affected } = await this.identities.delete({ userId, provider });
+    if (!affected) throw new NotFoundException(i18nKey('social.identityNotFound'));
+    await this.audit.record(AuditAction.AUTH_SOCIAL_UNLINKED, {
+      target: { type: 'user', id: userId },
+      metadata: { provider, byAdmin: true },
+    });
+  }
+
   private async findLinkedUser(profile: SocialProfile): Promise<User | null> {
     const identity = await this.identities.findOne({
       where: { provider: profile.provider, providerUserId: profile.subject },

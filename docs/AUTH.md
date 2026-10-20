@@ -74,6 +74,16 @@ encerra todas (`users:update`). Fica na auditoria como `session.revoked` com `by
 fica com o motivo `revoked-by-admin`. A senha **não** muda: se for invasão, a pessoa ainda precisa trocá-la
 (ou o admin desativa a conta). No painel: página do usuário → "Dispositivos conectados".
 
+**Formas de login de outra pessoa (admin):** encerrar as sessões não basta se o invasor cadastrou uma passkey ou
+vinculou um Google — ele entraria de novo. `GET /users/:id/login-methods` (`users:read`) mostra se há senha (nunca a
+senha), os Google/Apple vinculados e as passkeys; `DELETE /users/:id/passkeys/:passkeyId` e
+`DELETE /users/:id/identities/:provider` removem (`users:update`), com `byAdmin: true` na auditoria. Desvincular não
+tem a trava de "última forma de login": a pessoa sempre pode entrar pelo link mágico ou criar uma senha pelo "esqueci
+a senha". No painel: página do usuário → "Formas de login".
+
+**Roteiro "invadiram minha conta":** 1) Formas de login: remova o que a pessoa não reconhece; 2) Dispositivos
+conectados: "Desconectar de todos"; 3) peça para a pessoa trocar a senha (ou desative a conta até falar com ela).
+
 > Toda requisição autenticada faz 1 consulta ao banco (sessão + usuário). É o preço de revogar na hora; com o
 > pool de conexões e o índice, custa poucos milissegundos.
 
@@ -235,8 +245,10 @@ Ações sensíveis pedem prova de identidade, porque um access token roubado (XS
 | Com senha | `currentPassword` |
 | Sem senha (só Google/Apple) | nada, mas o login precisa ter sido há menos de `REAUTH_WINDOW_SECONDS` (10 min). Senão: **401 `account.reauthRequired`** e o front pede para entrar de novo |
 | Com 2FA (qualquer uma) | também `code` |
+| Com passkey (qualquer uma) | **ou**, no lugar de tudo acima: `passkey: { challengeToken, response }` — o desafio vem de `POST /auth/passkeys/reauth/options` e só aceita passkeys da própria conta. Vale pela senha **e** pelo código (a passkey já prova os dois fatores) |
 
-Usado em: trocar e-mail, excluir a conta, ativar o 2FA. Também tem limite de 10 tentativas de senha a cada 15 min por usuário.
+Usado em: trocar e-mail, excluir a conta, ativar o 2FA, adicionar uma passkey. No front, a janela mostra
+"Confirmar com passkey" quando a conta tem uma e o navegador suporta. Também tem limite de 10 tentativas de senha a cada 15 min por usuário.
 
 ### Trocar o e-mail
 

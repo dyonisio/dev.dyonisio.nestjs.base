@@ -1,6 +1,7 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { Transform } from 'class-transformer';
-import { IsEmail, IsOptional, Matches, MaxLength } from 'class-validator';
+import { Transform, Type } from 'class-transformer';
+import { IsEmail, IsOptional, Matches, MaxLength, ValidateNested } from 'class-validator';
+import { PasskeyProofDto } from '../../../auth/passkeys/dto/passkey.dto';
 import { IsBoundedString } from '../../../common/validators/text.validators';
 import { i18nValidationMessage } from '../../../i18n/i18n-validation';
 
@@ -9,6 +10,7 @@ import { i18nValidationMessage } from '../../../i18n/i18n-validation';
  *  - `currentPassword`: obrigatória para quem tem senha
  *  - `code`: obrigatório para quem tem 2FA (código do app ou de recuperação)
  * Contas sem senha (só login social) precisam ter entrado há poucos minutos.
+ * Ou, no lugar de tudo isso: `passkey` (uma passkey da conta assinando o desafio).
  */
 export class ReauthDto {
   @ApiPropertyOptional({
@@ -28,6 +30,16 @@ export class ReauthDto {
     message: i18nValidationMessage('validation.twoFactorCode'),
   })
   code?: string;
+
+  @ApiPropertyOptional({
+    type: PasskeyProofDto,
+    description:
+      'Instead of password and code: a passkey of the account signing a challenge from `POST /auth/passkeys/reauth/options`',
+  })
+  @IsOptional()
+  @ValidateNested()
+  @Type(() => PasskeyProofDto)
+  passkey?: PasskeyProofDto;
 }
 
 export class ChangeEmailDto extends ReauthDto {

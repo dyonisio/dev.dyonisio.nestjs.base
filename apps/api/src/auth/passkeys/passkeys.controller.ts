@@ -106,6 +106,21 @@ export class PasskeysController {
     return PasskeyDto.from(await this.passkeys.register(userId, dto));
   }
 
+  @Post('auth/passkeys/reauth/options')
+  @Auth()
+  @AllowUnverified()
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({
+    summary: 'Confirm it is you with a passkey',
+    description:
+      'For sensitive actions (change email, delete account, add a passkey, turn on 2FA): sign this challenge with one of your passkeys and send `{ passkey: { challengeToken, response } }` in place of the password and code.',
+  })
+  @ApiOkResponse({ type: PasskeyOptionsDto })
+  @ApiErrors([400, 'The account has no passkeys'])
+  reauthOptions(@CurrentUser('id') userId: string): Promise<PasskeyOptionsDto> {
+    return this.passkeys.reauthOptions(userId);
+  }
+
   @Get('users/me/passkeys')
   @Auth()
   @AllowUnverified()

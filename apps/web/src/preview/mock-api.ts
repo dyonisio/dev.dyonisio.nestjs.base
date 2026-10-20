@@ -75,6 +75,10 @@ export function installMockApi(me: User) {
     }
     if (route === 'GET /users/me/sessions') return json(200, sessions);
     if (route === 'GET /users/me/passkeys') return json(200, passkeys);
+    // Formas de login de outro usuário (admin)
+    if (req.method === 'GET' && /^\/users\/[^/]+\/login-methods$/.test(path)) {
+      return json(200, { ...identities, passkeys });
+    }
     // Sessões de outro usuário (admin): as mesmas do exemplo, sem a "deste dispositivo"
     if (req.method === 'GET' && /^\/users\/[^/]+\/sessions$/.test(path)) {
       return json(

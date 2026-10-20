@@ -878,6 +878,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/auth/passkeys/reauth/options": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Confirm it is you with a passkey
+         * @description For sensitive actions (change email, delete account, add a passkey, turn on 2FA): sign this challenge with one of your passkeys and send `{ passkey: { challengeToken, response } }` in place of the password and code.
+         */
+        post: operations["PasskeysController_reauthOptions_v1"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/users/me/passkeys": {
         parameters: {
             query?: never;
@@ -914,6 +934,66 @@ export interface paths {
         head?: never;
         /** Rename a passkey */
         patch: operations["PasskeysController_rename_v1"];
+        trace?: never;
+    };
+    "/api/v1/users/{id}/login-methods": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * A user's sign-in methods
+         * @description Password (whether it is set), linked Google/Apple and passkeys. Permission: `users:read`.
+         */
+        get: operations["AdminLoginMethodsController_list_v1"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/users/{id}/passkeys/{passkeyId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /**
+         * Remove a user's passkey
+         * @description It stops working right away. Recorded in the audit log. Permission: `users:update`.
+         */
+        delete: operations["AdminLoginMethodsController_removePasskey_v1"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/users/{id}/identities/{provider}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /**
+         * Unlink a user's Google/Apple account
+         * @description Allowed even if it is the only way in: the person can still use the email sign-in link or set a password via "forgot password". Permission: `users:update`.
+         */
+        delete: operations["AdminLoginMethodsController_unlink_v1"];
+        options?: never;
+        head?: never;
+        patch?: never;
         trace?: never;
     };
     "/api/health": {
@@ -1020,6 +1100,14 @@ export interface components {
             /** @description Present only on validation errors */
             errors?: components["schemas"]["ValidationErrorItemDto"][];
         };
+        PasskeyProofDto: {
+            /** @description Signed challenge received with the options */
+            challengeToken: string;
+            /** @description What the browser returned (the JSON of the credential), as-is */
+            response: {
+                [key: string]: unknown;
+            };
+        };
         ChangeEmailDto: {
             /**
              * @description Required if the account has a password
@@ -1031,6 +1119,8 @@ export interface components {
              * @example 123456
              */
             code?: string;
+            /** @description Instead of password and code: a passkey of the account signing a challenge from `POST /auth/passkeys/reauth/options` */
+            passkey?: components["schemas"]["PasskeyProofDto"];
             /** @example jane.new@example.com */
             newEmail: string;
         };
@@ -1070,6 +1160,8 @@ export interface components {
              * @example 123456
              */
             code?: string;
+            /** @description Instead of password and code: a passkey of the account signing a challenge from `POST /auth/passkeys/reauth/options` */
+            passkey?: components["schemas"]["PasskeyProofDto"];
         };
         User: {
             /** Format: uuid */
@@ -1512,6 +1604,19 @@ export interface components {
         RenamePasskeyDto: {
             /** @example Work laptop */
             name: string;
+        };
+        AdminIdentityDto: {
+            /** @enum {string} */
+            provider: "google" | "apple";
+            email: string | null;
+            /** Format: date-time */
+            createdAt: string;
+        };
+        AdminLoginMethodsDto: {
+            /** @description The account has a password (the password itself is never shown) */
+            hasPassword: boolean;
+            identities: components["schemas"]["AdminIdentityDto"][];
+            passkeys: components["schemas"]["PasskeyDto"][];
         };
     };
     responses: never;
@@ -4036,6 +4141,46 @@ export interface operations {
             };
         };
     };
+    PasskeysController_reauthOptions_v1: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Language for error messages */
+                "Accept-Language"?: "en" | "pt-BR";
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PasskeyOptionsDto"];
+                };
+            };
+            /** @description The account has no passkeys */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponseDto"];
+                };
+            };
+            /** @description Missing, invalid or expired token, or the session was ended */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponseDto"];
+                };
+            };
+        };
+    };
     PasskeysController_list_v1: {
         parameters: {
             query?: never;
@@ -4161,6 +4306,184 @@ export interface operations {
                 };
             };
             /** @description Passkey not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponseDto"];
+                };
+            };
+        };
+    };
+    AdminLoginMethodsController_list_v1: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Language for error messages */
+                "Accept-Language"?: "en" | "pt-BR";
+            };
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AdminLoginMethodsDto"];
+                };
+            };
+            /** @description Invalid id */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponseDto"];
+                };
+            };
+            /** @description Missing, invalid or expired token, or the session was ended */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponseDto"];
+                };
+            };
+            /** @description Requires the permission(s): users:read */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponseDto"];
+                };
+            };
+            /** @description User not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponseDto"];
+                };
+            };
+        };
+    };
+    AdminLoginMethodsController_removePasskey_v1: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Language for error messages */
+                "Accept-Language"?: "en" | "pt-BR";
+            };
+            path: {
+                id: string;
+                passkeyId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Invalid id */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponseDto"];
+                };
+            };
+            /** @description Missing, invalid or expired token, or the session was ended */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponseDto"];
+                };
+            };
+            /** @description Requires the permission(s): users:update */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponseDto"];
+                };
+            };
+            /** @description User or passkey not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponseDto"];
+                };
+            };
+        };
+    };
+    AdminLoginMethodsController_unlink_v1: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Language for error messages */
+                "Accept-Language"?: "en" | "pt-BR";
+            };
+            path: {
+                id: string;
+                provider: "google" | "apple";
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Invalid id or provider */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponseDto"];
+                };
+            };
+            /** @description Missing, invalid or expired token, or the session was ended */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponseDto"];
+                };
+            };
+            /** @description Requires the permission(s): users:update */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponseDto"];
+                };
+            };
+            /** @description User not found or provider not linked */
             404: {
                 headers: {
                     [name: string]: unknown;

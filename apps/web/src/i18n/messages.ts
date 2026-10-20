@@ -134,6 +134,7 @@ const en = {
     recentLogin: 'Your account has no password, so this requires a recent sign-in.',
     signInAgain: 'Sign in again',
     reauthRequired: 'For your security, sign in again to do this.',
+    usePasskey: 'Confirm with a passkey',
   },
   profile: {
     title: 'My account',
@@ -355,6 +356,18 @@ const en = {
     signOutAllText:
       'Every device is signed out right away and will need to sign in again. The password stays the same.',
     sessionsEnded: 'Signed out of every device.',
+    methods: 'Sign-in methods',
+    methodsHelp:
+      'How this person can get in. If someone else got into the account, remove what the person does not recognize: ending the sessions does not stop a passkey or a linked Google account from signing in again.',
+    passwordSet: 'Set (the password itself is never shown).',
+    passwordNotSet: 'Not set.',
+    passkey: 'Passkey',
+    removePasskeyConfirm: 'Remove the passkey “{name}” from {user}?',
+    removePasskeyText: 'It stops working right away. The person can add a new one later.',
+    unlinkConfirm: 'Unlink {provider} from {user}?',
+    unlinkText:
+      'The person can no longer sign in with {provider}. They can still use the email sign-in link, or create a password with “Forgot your password?”.',
+    methodRemoved: 'Removed. Recorded in the audit log.',
   },
   audit: {
     title: 'Audit log',
@@ -564,6 +577,7 @@ const ptBR: Dict = {
     recentLogin: 'Sua conta não tem senha, então isto exige um login recente.',
     signInAgain: 'Entrar de novo',
     reauthRequired: 'Por segurança, entre de novo para fazer isto.',
+    usePasskey: 'Confirmar com passkey',
   },
   profile: {
     title: 'Minha conta',
@@ -790,6 +804,18 @@ const ptBR: Dict = {
     signOutAllText:
       'Todos os dispositivos saem na hora e precisam entrar de novo. A senha continua a mesma.',
     sessionsEnded: 'Desconectado de todos os dispositivos.',
+    methods: 'Formas de login',
+    methodsHelp:
+      'Como esta pessoa consegue entrar. Se alguém invadiu a conta, remova o que ela não reconhecer: encerrar as sessões não impede uma passkey ou um Google vinculado de entrar de novo.',
+    passwordSet: 'Definida (a senha em si nunca é mostrada).',
+    passwordNotSet: 'Não definida.',
+    passkey: 'Passkey',
+    removePasskeyConfirm: 'Remover a passkey “{name}” de {user}?',
+    removePasskeyText: 'Ela para de funcionar na hora. A pessoa pode adicionar outra depois.',
+    unlinkConfirm: 'Desvincular o {provider} de {user}?',
+    unlinkText:
+      'A pessoa não consegue mais entrar com o {provider}. Ela ainda pode usar o link de acesso por e-mail, ou criar uma senha em “Esqueceu a senha?”.',
+    methodRemoved: 'Removido. Fica registrado na auditoria.',
   },
   audit: {
     title: 'Auditoria',

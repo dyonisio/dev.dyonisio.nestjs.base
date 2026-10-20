@@ -6,6 +6,7 @@ import { can, ROLES, type Role } from '../../auth/permissions';
 import type { User } from '../../auth/session';
 import {
   Avatar,
+  Badge,
   Checkbox,
   ConfirmDialog,
   ErrorAlert,
@@ -21,7 +22,7 @@ import {
 import { Icon } from '../../components/Icon';
 import { useI18n } from '../../i18n/I18nProvider';
 import type { Language } from '../../i18n/language';
-import { describeUserAgent, formatDateTime } from '../../lib/format';
+import { describeUserAgent, formatDate, formatDateTime } from '../../lib/format';
 import { useAction, useQuery } from '../../lib/hooks';
 import { UserStatus } from './UsersPage';
 
@@ -66,6 +67,7 @@ export function UserDetailPage() {
       {can(me, 'users:update') && <DetailsForm user={user} onSaved={changed} />}
       {can(me, 'users:manage-roles') && <RoleForm user={user} onSaved={changed} />}
       <SessionsSection user={user} />
+      <LoginMethodsSection user={user} />
       <ActionsSection user={user} onChanged={query.reload} />
     </>
   );
@@ -360,6 +362,148 @@ function SessionsSection({ user }: { user: User }) {
           error={error}
           onConfirm={revokeAll}
           onClose={() => setConfirmAll(false)}
+        />
+      )}
+    </Section>
+  );
+}
+
+type MethodToRemove =
+  | { kind: 'passkey'; id: string; name: string }
+  | { kind: 'identity'; provider: 'google' | 'apple' }
+  | null;
+
+/**
+ * Formas de login da pessoa (senha, Google/Apple, passkeys). No "invadiram minha conta",
+ * encerrar as sessões não basta: uma passkey ou um Google vinculado pelo invasor o deixaria
+ * entrar de novo. Ver pede users:read; remover pede users:update.
+ */
+function LoginMethodsSection({ user }: { user: User }) {
+  const { m, f, lang } = useI18n();
+  const { user: me } = useAuth();
+  const id = user.id;
+  const methods = useQuery(
+    () => api.GET('/api/v1/users/{id}/login-methods', { params: { path: { id } } }),
+    [id],
+  );
+  const [removing, setRemoving] = useState<MethodToRemove>(null);
+  const [notice, setNotice] = useState<string | null>(null);
+  const { run, busy, error, setError } = useAction();
+  const canRemove = can(me, 'users:update');
+
+  if (!can(me, 'users:read')) return null;
+
+  const ask = (next: MethodToRemove) => {
+    setError(null);
+    setNotice(null);
+    setRemoving(next);
+  };
+
+  const remove = () =>
+    void run(async () => {
+      if (!removing) return;
+      const { error: apiError } =
+        removing.kind === 'passkey'
+          ? await api.DELETE('/api/v1/users/{id}/passkeys/{passkeyId}', {
+              params: { path: { id, passkeyId: removing.id } },
+            })
+          : await api.DELETE('/api/v1/users/{id}/identities/{provider}', {
+              params: { path: { id, provider: removing.provider } },
+            });
+      if (apiError) throw apiError;
+      setRemoving(null);
+      setNotice(m.user.methodRemoved);
+      methods.reload();
+    });
+
+  const data = methods.data;
+  const providerName = (p: string) => p.charAt(0).toUpperCase() + p.slice(1);
+
+  return (
+    <Section title={m.user.methods} help={m.user.methodsHelp}>
+      {methods.loading && !data && <p className="muted">{m.common.loading}</p>}
+      {!removing && <ErrorAlert error={methods.error ?? error} />}
+      {data && (
+        <ul className="rows">
+          <li>
+            <div className="row-main">
+              <span className="row-title">{m.security.methodPassword}</span>
+              <span className="row-meta">
+                {data.hasPassword ? m.user.passwordSet : m.user.passwordNotSet}
+              </span>
+            </div>
+          </li>
+          {data.identities.map((i) => (
+            <li key={i.provider}>
+              <div className="row-main">
+                <span className="row-title">{providerName(i.provider)}</span>
+                <span className="row-meta">
+                  {[i.email, f(m.security.linkedOn, { date: formatDate(lang, i.createdAt) })]
+                    .filter(Boolean)
+                    .join(' · ')}
+                </span>
+              </div>
+              {canRemove && (
+                <button
+                  type="button"
+                  onClick={() =>
+                    ask({ kind: 'identity', provider: i.provider as 'google' | 'apple' })
+                  }
+                >
+                  {m.security.unlink}
+                </button>
+              )}
+            </li>
+          ))}
+          {data.passkeys.map((p) => (
+            <li key={p.id}>
+              <div className="row-main">
+                <span className="row-title">
+                  {m.user.passkey}: {p.name}
+                  {p.backedUp && <Badge>{m.passkeys.synced}</Badge>}
+                </span>
+                <span className="row-meta">
+                  {[
+                    f(m.passkeys.createdAt, { date: formatDate(lang, p.createdAt) }),
+                    p.lastUsedAt
+                      ? f(m.security.lastUsed, { date: formatDateTime(lang, p.lastUsedAt) })
+                      : m.passkeys.neverUsed,
+                  ].join(' · ')}
+                </span>
+              </div>
+              {canRemove && (
+                <button
+                  type="button"
+                  onClick={() => ask({ kind: 'passkey', id: p.id, name: p.name })}
+                >
+                  {m.passkeys.remove}
+                </button>
+              )}
+            </li>
+          ))}
+        </ul>
+      )}
+      {notice && <SuccessAlert>{notice}</SuccessAlert>}
+      {removing && (
+        <ConfirmDialog
+          title={
+            removing.kind === 'passkey'
+              ? f(m.user.removePasskeyConfirm, { name: removing.name, user: user.name })
+              : f(m.user.unlinkConfirm, {
+                  provider: providerName(removing.provider),
+                  user: user.name,
+                })
+          }
+          text={
+            removing.kind === 'passkey'
+              ? m.user.removePasskeyText
+              : f(m.user.unlinkText, { provider: providerName(removing.provider) })
+          }
+          confirmLabel={removing.kind === 'passkey' ? m.passkeys.remove : m.security.unlink}
+          busy={busy}
+          error={error}
+          onConfirm={remove}
+          onClose={() => setRemoving(null)}
         />
       )}
     </Section>

@@ -96,7 +96,8 @@
     "alreadyRegistered": "Esta passkey já está na sua conta",
     "limit": "Você pode ter no máximo {max} passkeys. Remova uma antes",
     "invalid": "Esta passkey não vale para este site",
-    "notFound": "Passkey não encontrada"
+    "notFound": "Passkey não encontrada",
+    "none": "Esta conta não tem passkeys"
   },
   "validation": {
     "isEmail": "{field} deve ser um e-mail válido",

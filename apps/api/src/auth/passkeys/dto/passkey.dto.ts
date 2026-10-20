@@ -19,7 +19,8 @@ export class PasskeyOptionsDto {
   challengeToken: string;
 }
 
-class WebAuthnResponseDto {
+/** O que o navegador devolveu para um desafio de passkey, mais o desafio assinado. */
+export class PasskeyProofDto {
   @ApiProperty({ description: 'Signed challenge received with the options' })
   @IsString()
   @MaxLength(2048, { message: i18nValidationMessage() })
@@ -34,7 +35,7 @@ class WebAuthnResponseDto {
   response: Record<string, unknown>;
 }
 
-export class RegisterPasskeyDto extends WebAuthnResponseDto {
+export class RegisterPasskeyDto extends PasskeyProofDto {
   @ApiPropertyOptional({
     example: 'MacBook',
     maxLength: 100,
@@ -45,7 +46,7 @@ export class RegisterPasskeyDto extends WebAuthnResponseDto {
   name?: string;
 }
 
-export class PasskeyLoginDto extends WebAuthnResponseDto {}
+export class PasskeyLoginDto extends PasskeyProofDto {}
 
 export class RenamePasskeyDto {
   @ApiProperty({ example: 'Work laptop', maxLength: 100 })
@@ -81,4 +82,27 @@ export class PasskeyDto {
     const { id, name, deviceType, backedUp, createdAt, lastUsedAt } = p;
     return { id, name, deviceType, backedUp, createdAt, lastUsedAt };
   }
+}
+
+export class AdminIdentityDto {
+  @ApiProperty({ enum: ['google', 'apple'] })
+  provider: string;
+
+  @ApiProperty({ type: String, nullable: true })
+  email: string | null;
+
+  @ApiProperty()
+  createdAt: Date;
+}
+
+/** Formas de login de um usuário, vistas pelo admin (sem nada secreto). */
+export class AdminLoginMethodsDto {
+  @ApiProperty({ description: 'The account has a password (the password itself is never shown)' })
+  hasPassword: boolean;
+
+  @ApiProperty({ type: [AdminIdentityDto] })
+  identities: AdminIdentityDto[];
+
+  @ApiProperty({ type: [PasskeyDto] })
+  passkeys: PasskeyDto[];
 }

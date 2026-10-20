@@ -11,6 +11,7 @@ import {
 } from '../../auth/passkey';
 import {
   emptyReauth,
+  PasskeyConfirm,
   reauthBody,
   ReauthDialog,
   ReauthFields,
@@ -82,18 +83,18 @@ function TwoFactorSection({ hasPassword }: { hasPassword: boolean }) {
     setStep(next);
   };
 
-  // 1. confirma a identidade e gera o segredo
+  // 1. confirma a identidade (senha, login recente ou passkey) e gera o segredo
+  async function setup(proof: ReauthProof) {
+    const { data, error: apiError } = await api.POST('/api/v1/auth/2fa/setup', { body: proof });
+    if (apiError || !data) throw apiError;
+    // QR gerado no navegador: o segredo nunca vai para um serviço de terceiros
+    const qr = await QRCode.toDataURL(data.otpauthUrl, { margin: 1, width: 200 });
+    go({ name: 'scan', secret: data.secret, qr });
+  }
+
   const startSetup = (e: FormEvent) => {
     e.preventDefault();
-    void run(async () => {
-      const { data, error: apiError } = await api.POST('/api/v1/auth/2fa/setup', {
-        body: reauthBody(reauth),
-      });
-      if (apiError || !data) throw apiError;
-      // QR gerado no navegador: o segredo nunca vai para um serviço de terceiros
-      const qr = await QRCode.toDataURL(data.otpauthUrl, { margin: 1, width: 200 });
-      go({ name: 'scan', secret: data.secret, qr });
-    });
+    void run(() => setup(reauthBody(reauth)));
   };
 
   // 2. confirma com o primeiro código do app → ativa e mostra os códigos de recuperação
@@ -194,6 +195,7 @@ function TwoFactorSection({ hasPassword }: { hasPassword: boolean }) {
             withCode={false}
           />
           <FormError error={error} />
+          <PasskeyConfirm busy={busy} run={run} onProof={setup} />
           <div className="panel-actions">
             {cancel}
             <button

@@ -1,5 +1,6 @@
 import { HttpException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
+import { PasskeyVerifier } from '../../auth/passkeys/passkey-verifier.service';
 import { TwoFactorService } from '../../auth/two-factor/two-factor.service';
 import { RequestContext } from '../../common/request-context/request-context';
 import { DatabaseThrottlerStorage } from '../../rate-limit/database-throttler.storage';
@@ -13,12 +14,14 @@ describe('ReauthService', () => {
   const sessions = { findById: jest.fn() };
   const twoFactor = { verifyCode: jest.fn() };
   const attempts = { increment: jest.fn() };
+  const passkeys = { confirmReauth: jest.fn() };
   const service = new ReauthService(
     users as unknown as UsersService,
     sessions as unknown as SessionService,
     twoFactor as unknown as TwoFactorService,
     attempts as unknown as DatabaseThrottlerStorage,
     { get: (_k: string, d: unknown) => d } as unknown as ConfigService,
+    passkeys as unknown as PasskeyVerifier,
   );
   const minutesAgo = (m: number) => new Date(Date.now() - m * 60_000);
 

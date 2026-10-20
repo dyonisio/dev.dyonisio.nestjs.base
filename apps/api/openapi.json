@@ -4007,6 +4007,69 @@
         ]
       }
     },
+    "/api/v1/auth/passkeys/reauth/options": {
+      "post": {
+        "description": "For sensitive actions (change email, delete account, add a passkey, turn on 2FA): sign this challenge with one of your passkeys and send `{ passkey: { challengeToken, response } }` in place of the password and code.",
+        "operationId": "PasskeysController_reauthOptions_v1",
+        "parameters": [
+          {
+            "in": "header",
+            "name": "Accept-Language",
+            "required": false,
+            "description": "Language for error messages",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "en",
+                "pt-BR"
+              ],
+              "default": "en"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PasskeyOptionsDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "The account has no passkeys",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing, invalid or expired token, or the session was ended",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Confirm it is you with a passkey",
+        "tags": [
+          "Auth / Passkeys"
+        ]
+      }
+    },
     "/api/v1/users/me/passkeys": {
       "get": {
         "operationId": "PasskeysController_list_v1",
@@ -4223,6 +4286,285 @@
         "summary": "Remove a passkey",
         "tags": [
           "Auth / Passkeys",
+          "Users"
+        ]
+      }
+    },
+    "/api/v1/users/{id}/login-methods": {
+      "get": {
+        "description": "Password (whether it is set), linked Google/Apple and passkeys. Permission: `users:read`.",
+        "operationId": "AdminLoginMethodsController_list_v1",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "header",
+            "name": "Accept-Language",
+            "required": false,
+            "description": "Language for error messages",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "en",
+                "pt-BR"
+              ],
+              "default": "en"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AdminLoginMethodsDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid id",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing, invalid or expired token, or the session was ended",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Requires the permission(s): users:read",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "User not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "A user's sign-in methods",
+        "tags": [
+          "Users"
+        ]
+      }
+    },
+    "/api/v1/users/{id}/passkeys/{passkeyId}": {
+      "delete": {
+        "description": "It stops working right away. Recorded in the audit log. Permission: `users:update`.",
+        "operationId": "AdminLoginMethodsController_removePasskey_v1",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "passkeyId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "header",
+            "name": "Accept-Language",
+            "required": false,
+            "description": "Language for error messages",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "en",
+                "pt-BR"
+              ],
+              "default": "en"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": ""
+          },
+          "400": {
+            "description": "Invalid id",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing, invalid or expired token, or the session was ended",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Requires the permission(s): users:update",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "User or passkey not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Remove a user's passkey",
+        "tags": [
+          "Users"
+        ]
+      }
+    },
+    "/api/v1/users/{id}/identities/{provider}": {
+      "delete": {
+        "description": "Allowed even if it is the only way in: the person can still use the email sign-in link or set a password via \"forgot password\". Permission: `users:update`.",
+        "operationId": "AdminLoginMethodsController_unlink_v1",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "provider",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "enum": [
+                "google",
+                "apple"
+              ],
+              "type": "string"
+            }
+          },
+          {
+            "in": "header",
+            "name": "Accept-Language",
+            "required": false,
+            "description": "Language for error messages",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "en",
+                "pt-BR"
+              ],
+              "default": "en"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": ""
+          },
+          "400": {
+            "description": "Invalid id or provider",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing, invalid or expired token, or the session was ended",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Requires the permission(s): users:update",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "User not found or provider not linked",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Unlink a user's Google/Apple account",
+        "tags": [
           "Users"
         ]
       }
@@ -4495,6 +4837,24 @@
           "message"
         ]
       },
+      "PasskeyProofDto": {
+        "type": "object",
+        "properties": {
+          "challengeToken": {
+            "type": "string",
+            "description": "Signed challenge received with the options"
+          },
+          "response": {
+            "type": "object",
+            "additionalProperties": true,
+            "description": "What the browser returned (the JSON of the credential), as-is"
+          }
+        },
+        "required": [
+          "challengeToken",
+          "response"
+        ]
+      },
       "ChangeEmailDto": {
         "type": "object",
         "properties": {
@@ -4507,6 +4867,14 @@
             "type": "string",
             "example": "123456",
             "description": "Required if 2FA is enabled: authenticator code or a recovery code"
+          },
+          "passkey": {
+            "description": "Instead of password and code: a passkey of the account signing a challenge from `POST /auth/passkeys/reauth/options`",
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/PasskeyProofDto"
+              }
+            ]
           },
           "newEmail": {
             "type": "string",
@@ -4596,6 +4964,14 @@
             "type": "string",
             "example": "123456",
             "description": "Required if 2FA is enabled: authenticator code or a recovery code"
+          },
+          "passkey": {
+            "description": "Instead of password and code: a passkey of the account signing a challenge from `POST /auth/passkeys/reauth/options`",
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/PasskeyProofDto"
+              }
+            ]
           }
         }
       },
@@ -5540,6 +5916,57 @@
         },
         "required": [
           "name"
+        ]
+      },
+      "AdminIdentityDto": {
+        "type": "object",
+        "properties": {
+          "provider": {
+            "type": "string",
+            "enum": [
+              "google",
+              "apple"
+            ]
+          },
+          "email": {
+            "type": "string",
+            "nullable": true
+          },
+          "createdAt": {
+            "format": "date-time",
+            "type": "string"
+          }
+        },
+        "required": [
+          "provider",
+          "email",
+          "createdAt"
+        ]
+      },
+      "AdminLoginMethodsDto": {
+        "type": "object",
+        "properties": {
+          "hasPassword": {
+            "type": "boolean",
+            "description": "The account has a password (the password itself is never shown)"
+          },
+          "identities": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/AdminIdentityDto"
+            }
+          },
+          "passkeys": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PasskeyDto"
+            }
+          }
+        },
+        "required": [
+          "hasPassword",
+          "identities",
+          "passkeys"
         ]
       }
     }

@@ -1,7 +1,15 @@
 import { useState, type FormEvent, type ReactNode } from 'react';
-import { type ApiError } from '../api/client';
+import { api, type ApiError } from '../api/client';
+import type { components } from '../api/schema';
 import { useAuth } from '../auth/AuthProvider';
 import { useLoginMethods } from '../auth/login-methods';
+import {
+  PasskeyBrowserError,
+  passkeyFailureMessage,
+  passkeysSupported,
+  signWithPasskey,
+  type PasskeyFailure,
+} from '../auth/passkey';
 import { useI18n } from '../i18n/I18nProvider';
 import { useAction } from '../lib/hooks';
 import { Field, fieldError, FormError, Modal } from './ui';
@@ -16,8 +24,71 @@ export const emptyReauth: ReauthValue = { currentPassword: '', code: '' };
 // Formas de login da pessoa logada: uma busca compartilhada por todas as telas
 export { refreshLoginMethods, useLoginMethods } from '../auth/login-methods';
 
-/** A "prova de identidade" no formato da API. */
-export type ReauthProof = { currentPassword?: string; code?: string };
+/** A "prova de identidade" no formato da API: senha (+ código) OU uma passkey da conta. */
+export type ReauthProof = components['schemas']['ReauthDto'];
+
+/**
+ * Confirma com uma passkey da própria conta (digital, rosto ou PIN): vale pela senha e pelo
+ * código do 2FA. `null` = a pessoa cancelou no navegador.
+ */
+export async function passkeyProof(
+  failures: Record<PasskeyFailure, string>,
+): Promise<ReauthProof | null> {
+  const { data: start, error } = await api.POST('/api/v1/auth/passkeys/reauth/options');
+  if (error || !start) throw error;
+  let response;
+  try {
+    response = await signWithPasskey(start.options);
+  } catch (e) {
+    if (!(e instanceof PasskeyBrowserError)) throw e;
+    throw {
+      statusCode: 0,
+      code: 'client',
+      message: passkeyFailureMessage(failures, e),
+    } satisfies ApiError;
+  }
+  return response ? { passkey: { challengeToken: start.challengeToken, response } } : null;
+}
+
+/** A conta tem passkey e o navegador sabe usar: mostra o "Confirmar com passkey". */
+export function useCanConfirmWithPasskey(): boolean {
+  const methods = useLoginMethods();
+  return passkeysSupported() && (methods.data?.passkeys ?? 0) > 0;
+}
+
+/** "ou [Confirmar com passkey]": chama `onProof` com a prova (nada, se a pessoa cancelar). */
+export function PasskeyConfirm({
+  busy,
+  onProof,
+  run,
+}: {
+  busy: boolean;
+  onProof: (proof: ReauthProof) => Promise<void>;
+  run: (action: () => Promise<void>) => Promise<unknown>;
+}) {
+  const { m } = useI18n();
+  if (!useCanConfirmWithPasskey()) return null;
+  return (
+    <div className="reauth-passkey">
+      <div className="divider">
+        <span>{m.common.or}</span>
+      </div>
+      <button
+        type="button"
+        className="wide-secondary"
+        disabled={busy}
+        onClick={() =>
+          void run(async () => {
+            const proof = await passkeyProof(m.passkeys.failures);
+            if (proof) await onProof(proof);
+          })
+        }
+      >
+        {m.reauth.usePasskey}
+      </button>
+    </div>
+  );
+}
 
 /** Corpo da "prova de identidade" no formato da API (só os campos preenchidos). */
 export function reauthBody(value: ReauthValue): ReauthProof {
@@ -132,6 +203,7 @@ export function ReauthDialog({
           legend={false}
         />
         <FormError error={error} />
+        <PasskeyConfirm busy={busy} run={run} onProof={onConfirm} />
         <div className="panel-actions">
           <button type="button" onClick={onClose}>
             {m.common.cancel}

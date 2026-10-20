@@ -6,6 +6,7 @@ import {
   UnauthorizedException,
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
+import { PasskeyVerifier } from '../../auth/passkeys/passkey-verifier.service';
 import { TwoFactorService } from '../../auth/two-factor/two-factor.service';
 import { verifyPassword } from '../../common/crypto/password-hash';
 import { RequestContext } from '../../common/request-context/request-context';
@@ -23,7 +24,8 @@ const WINDOW_MS = 15 * 60 * 1000;
  * Um access token roubado (XSS, celular desbloqueado...) não basta para elas:
  *  - quem tem senha precisa informá-la;
  *  - quem não tem (só login social) precisa ter entrado há pouco (REAUTH_WINDOW_SECONDS);
- *  - quem tem 2FA precisa também do código.
+ *  - quem tem 2FA precisa também do código;
+ *  - OU uma passkey da conta, que sozinha vale pelos dois (aparelho + biometria/PIN).
  */
 @Injectable()
 export class ReauthService {
@@ -33,11 +35,18 @@ export class ReauthService {
     private readonly twoFactor: TwoFactorService,
     private readonly attempts: DatabaseThrottlerStorage,
     private readonly config: ConfigService,
+    private readonly passkeys: PasskeyVerifier,
   ) {}
 
   async confirm(userId: string, proof: ReauthDto, options: { skipTwoFactor?: boolean } = {}) {
     const user = await this.users.findByIdWithPassword(userId);
     if (!user) throw new UnauthorizedException(i18nKey('auth.sessionExpired'));
+
+    // Passkey da conta (com biometria/PIN): vale como senha + código do 2FA
+    if (proof.passkey) {
+      await this.passkeys.confirmReauth(userId, proof.passkey);
+      return user;
+    }
 
     if (user.password) {
       if (!proof.currentPassword) {

@@ -5,8 +5,9 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 import { MailModule } from '../mail/mail.module';
 import { SessionsModule } from '../sessions/sessions.module';
 import { User } from '../users/entities/user.entity';
-import { RateLimitStorageModule } from '../rate-limit/rate-limit.module';
+import { AdminLoginMethodsController } from './admin-login-methods.controller';
 import { Passkey } from './passkeys/entities/passkey.entity';
+import { PasskeyCoreModule } from './passkeys/passkey-core.module';
 import { PasskeyService } from './passkeys/passkey.service';
 import { PasskeysController } from './passkeys/passkeys.controller';
 import { UserIdentity } from './social/entities/user-identity.entity';
@@ -37,7 +38,7 @@ import { TwoFactorModule } from './two-factor/two-factor.module';
     MailModule,
     PassportModule,
     TwoFactorModule,
-    RateLimitStorageModule, // desafios de passkey de uso único
+    PasskeyCoreModule,
   ],
   controllers: [
     AuthController,
@@ -49,6 +50,8 @@ import { TwoFactorModule } from './two-factor/two-factor.module';
     AdminTwoFactorController,
     SocialAuthController,
     PasskeysController,
+    // Depois dos de /users/me/...: o "me" nunca é lido como :id
+    AdminLoginMethodsController,
   ],
   providers: [
     AuthService,
