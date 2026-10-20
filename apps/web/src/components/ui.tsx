@@ -29,8 +29,21 @@ export function AuthCard({ title, children }: { title: string; children: ReactNo
         <h1>{title}</h1>
         {children}
       </div>
+      <LegalLinks />
       <Preferences />
     </main>
+  );
+}
+
+/** "Privacidade · Termos", no rodapé das telas públicas. */
+export function LegalLinks() {
+  const { m } = useI18n();
+  return (
+    <nav className="legal-links" aria-label={m.legal.nav}>
+      <Link to="/privacy">{m.legal.privacy}</Link>
+      <span aria-hidden="true">·</span>
+      <Link to="/terms">{m.legal.terms}</Link>
+    </nav>
   );
 }
 

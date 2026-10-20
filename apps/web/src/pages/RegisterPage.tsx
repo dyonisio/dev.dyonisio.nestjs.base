@@ -69,6 +69,12 @@ export function RegisterPage() {
         >
           {m.register.title}
         </button>
+        <p className="muted agree">
+          {m.legal.agreeBefore}
+          <Link to="/terms">{m.legal.terms}</Link>
+          {m.legal.agreeAnd}
+          <Link to="/privacy">{m.legal.privacy}</Link>.
+        </p>
       </form>
       {/* Google/Apple: conta nova já nasce confirmada. Se o e-mail já tinha conta com 2FA,
           o login pede o código — a tela de login continua de onde parou. */}

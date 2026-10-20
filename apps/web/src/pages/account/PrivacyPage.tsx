@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { api } from '../../api/client';
 import { session } from '../../auth/session';
 import { ReauthDialog, type ReauthProof } from '../../components/Reauth';
+import { Link } from 'react-router';
 import { ErrorAlert, PageHeader, Section } from '../../components/ui';
 import { useI18n } from '../../i18n/I18nProvider';
 import { flash } from '../../lib/flash';
@@ -13,7 +14,15 @@ export function PrivacyPage() {
   const { m } = useI18n();
   return (
     <>
-      <PageHeader title={m.privacy.title} subtitle={m.privacy.subtitle} />
+      <PageHeader
+        title={m.privacy.title}
+        subtitle={m.privacy.subtitle}
+        actions={
+          <Link className="button" to="/privacy">
+            {m.legal.readPolicy}
+          </Link>
+        }
+      />
       <ExportSection />
       <DeleteSection />
     </>

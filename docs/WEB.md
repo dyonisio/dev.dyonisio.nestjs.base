@@ -42,6 +42,7 @@ A API precisa aceitar a origem do front no CORS. Em desenvolvimento, o `.env.exa
 | `/verify-email?token=` | Confirmação de e-mail | Link do cadastro e da troca de e-mail; confirma sozinho ao abrir |
 | `/magic-link?token=` | Entrar pelo link | Link do "entrar sem senha". Pede um clique em "Entrar" (filtros de e-mail abrem links e gastariam o de uso único). Com 2FA, segue para o código |
 | `/create-password` | Crie sua senha | Exige login. Obrigatória para quem entrou pelo link sem ter senha nem Google/Apple (ex.: convidado) |
+| `/privacy`, `/terms` | Política de Privacidade e Termos de Uso | Abrem com ou sem login. São os links pedidos pelo Google/Apple na tela de consentimento; o cadastro e o rodapé das telas públicas apontam para elas |
 
 ### Logadas (menu no topo)
 
@@ -86,6 +87,19 @@ VITE_APPLE_REDIRECT_URI=https://app.exemplo.com
 
 O código fica em [SocialLogin.tsx](../apps/web/src/components/SocialLogin.tsx). Cada login gera um *nonce* novo, que a API
 confere: um ID token capturado não serve para outro login.
+
+## Privacidade e Termos
+
+As páginas `/privacy` e `/terms` vêm de [legal/content.ts](../apps/web/src/legal/content.ts), em pt-BR e inglês. O texto
+descreve o que a base realmente faz: dados guardados, prazos (sessões 30 dias, auditoria 365, exclusão definitiva
+30 dias após excluir a conta, logs 14), hospedagem na AWS nos EUA, cookie de sessão e preferências no navegador,
+e onde a pessoa exerce os direitos da LGPD (baixar dados, excluir conta).
+
+- **Responsável e contato:** `VITE_LEGAL_OWNER` (padrão: o nome do produto) e `VITE_SUPPORT_EMAIL`. No deploy vêm das
+  variáveis `LEGAL_OWNER` e `SUPPORT_EMAIL` do GitHub. Em `LEGAL_OWNER`, use o nome da empresa (ou o seu) e, se houver,
+  o CNPJ: ex. `Acme Ltda (CNPJ 00.000.000/0001-00)`.
+- **Ao mudar o sistema** (novo dado, novo serviço de terceiros, outro prazo): atualize o texto e `LEGAL_UPDATED_AT`.
+- É um ponto de partida, não um parecer jurídico: revise com quem cuida da parte legal do produto.
 
 ## Pré-visualização (sem API e sem login)
 

@@ -8,6 +8,7 @@ import { AuditPage } from './pages/admin/AuditPage';
 import { UserDetailPage } from './pages/admin/UserDetailPage';
 import { UsersPage } from './pages/admin/UsersPage';
 import { HomePage, NotFoundPage } from './pages/HomePage';
+import { LegalPage } from './pages/LegalPage';
 import { LoginPage } from './pages/LoginPage';
 import { CreatePasswordPage, MagicLinkPage } from './pages/MagicLinkPages';
 import { ForgotPasswordPage, ResetPasswordPage } from './pages/PasswordPages';
@@ -24,6 +25,9 @@ export function App() {
       {/* Públicas */}
       <Route path="/login" element={<LoginPage />} /> {/* (e-mail) */}
       <Route path="/register" element={<RegisterPage />} />
+      {/* Abrem com ou sem login: links do Google/Apple (tela de consentimento) e do cadastro */}
+      <Route path="/privacy" element={<LegalPage doc="privacy" />} />
+      <Route path="/terms" element={<LegalPage doc="terms" />} />
       <Route path="/forgot-password" element={<ForgotPasswordPage />} />
       <Route path="/reset-password" element={<ResetPasswordPage />} /> {/* (e-mail) */}
       <Route path="/verify-email" element={<VerifyEmailPage />} /> {/* (e-mail) */}

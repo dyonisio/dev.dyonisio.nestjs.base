@@ -9,7 +9,8 @@
 #   3. Em cada environment, crie as variáveis: AWS_ROLE_ARN (ARN da role), FRONTEND_URL,
 #      MAIL_FROM, SUPPORT_EMAIL e, opcionalmente, ALARM_EMAIL, GOOGLE_CLIENT_IDS, APPLE_CLIENT_IDS,
 #      FALLBACK_LANGUAGE (idioma de quem ainda não escolheu um: en ou pt-BR; padrão en),
-#      APP_NAME (nome do produto na API e no front; padrão "NestJS Base").
+#      APP_NAME (nome do produto na API e no front; padrão "NestJS Base"),
+#      LEGAL_OWNER (quem responde pelos dados nas páginas de Privacidade e Termos; padrão: APP_NAME).
 #   4. Domínios próprios (opcional, docs/DEPLOY_WEB.md): API_DOMAIN + API_CERTIFICATE_ARN e
 #      WEB_DOMAIN + WEB_CERTIFICATE_ARN. Login social no front: WEB_GOOGLE_CLIENT_ID,
 #      WEB_APPLE_CLIENT_ID, WEB_APPLE_REDIRECT_URI.
@@ -231,6 +232,8 @@ jobs:
         env:
           VITE_API_URL: ${{ steps.api.outputs.api_origin }}
           VITE_APP_NAME: ${{ vars.APP_NAME }}
+          VITE_SUPPORT_EMAIL: ${{ vars.SUPPORT_EMAIL }}
+          VITE_LEGAL_OWNER: ${{ vars.LEGAL_OWNER }}
           VITE_GOOGLE_CLIENT_ID: ${{ vars.WEB_GOOGLE_CLIENT_ID }}
           VITE_APPLE_CLIENT_ID: ${{ vars.WEB_APPLE_CLIENT_ID }}
           VITE_APPLE_REDIRECT_URI: ${{ vars.WEB_APPLE_REDIRECT_URI }}

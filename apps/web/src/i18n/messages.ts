@@ -223,6 +223,15 @@ const en = {
       'To link Google or Apple, sign out and use “Continue with Google/Apple” with the same email as this account.',
     noIdentities: 'No Google or Apple account linked.',
   },
+  legal: {
+    privacy: 'Privacy Policy',
+    terms: 'Terms of Service',
+    nav: 'Legal',
+    updatedAt: 'Last updated: {date}',
+    agreeBefore: 'By creating an account, you agree to the ',
+    agreeAnd: ' and the ',
+    readPolicy: 'Read the Privacy Policy',
+  },
   passkeys: {
     title: 'Passkeys',
     help: 'Sign in with your fingerprint, face or device PIN instead of a password. A passkey cannot be phished: it only works on this site.',
@@ -670,6 +679,15 @@ const ptBR: Dict = {
     linkHelp:
       'Para vincular Google ou Apple, saia e use “Continuar com Google/Apple” com o mesmo e-mail desta conta.',
     noIdentities: 'Nenhuma conta Google ou Apple vinculada.',
+  },
+  legal: {
+    privacy: 'Política de Privacidade',
+    terms: 'Termos de Uso',
+    nav: 'Documentos legais',
+    updatedAt: 'Última atualização: {date}',
+    agreeBefore: 'Ao criar a conta, você concorda com os ',
+    agreeAnd: ' e a ',
+    readPolicy: 'Ler a Política de Privacidade',
   },
   passkeys: {
     title: 'Passkeys',

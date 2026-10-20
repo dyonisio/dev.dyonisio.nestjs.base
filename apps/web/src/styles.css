@@ -1405,6 +1405,66 @@ a.plain:hover .row-title {
   margin-bottom: 20px;
 }
 
+/* ---------- Privacidade e Termos (/privacy, /terms) ---------- */
+
+.auth.legal {
+  place-content: start center;
+}
+
+.auth.legal .auth-brand {
+  color: inherit;
+  text-decoration: none;
+}
+
+.legal-card {
+  width: min(720px, calc(100vw - 32px));
+  line-height: 1.6;
+}
+
+.legal-card h1 {
+  margin-bottom: 4px;
+}
+
+.legal-card > p.muted {
+  margin: 0 0 20px;
+}
+
+.legal-card h2 {
+  margin: 28px 0 8px;
+  font-size: 16px;
+}
+
+.legal-card p,
+.legal-card ul {
+  margin: 0 0 12px;
+}
+
+.legal-card ul {
+  padding-left: 20px;
+}
+
+.legal-card li + li {
+  margin-top: 6px;
+}
+
+.legal-links {
+  display: flex;
+  justify-content: center;
+  gap: 8px;
+  font-size: 13px;
+  color: var(--muted);
+}
+
+.legal-links a {
+  color: inherit;
+}
+
+.auth-card p.agree {
+  margin: 12px 0 0;
+  font-size: 13px;
+  text-align: center;
+}
+
 .auth-card > h1 + p.muted {
   margin: -12px 0 16px;
 }
