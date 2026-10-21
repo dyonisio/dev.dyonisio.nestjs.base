@@ -68,7 +68,11 @@
                 "user.self_deleted",
                 "user.data_exported",
                 "user.anonymized",
-                "session.revoked"
+                "session.revoked",
+                "payment.paid",
+                "payment.refunded",
+                "subscription.started",
+                "subscription.canceled"
               ]
             }
           },
@@ -4623,6 +4627,414 @@
           "Health"
         ]
       }
+    },
+    "/api/v1/payments/plans": {
+      "get": {
+        "description": "Each plan lists the enabled platforms (PAYMENT_PROVIDERS) that can charge it. With none, payments are off.",
+        "operationId": "PaymentsController_plans_v1",
+        "parameters": [
+          {
+            "in": "header",
+            "name": "Accept-Language",
+            "required": false,
+            "description": "Language for error messages",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "en",
+                "pt-BR"
+              ],
+              "default": "en"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PlansResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "summary": "Plans for sale",
+        "tags": [
+          "Payments"
+        ]
+      }
+    },
+    "/api/v1/payments/checkout": {
+      "post": {
+        "description": "Creates the charge on the platform and returns its payment page. Send `provider` only when more than one platform can charge the plan. The purchase becomes `paid` only after the platform confirms it (webhook or `POST /payments/:id/confirm`).",
+        "operationId": "PaymentsController_checkout_v1",
+        "parameters": [
+          {
+            "in": "header",
+            "name": "Accept-Language",
+            "required": false,
+            "description": "Language for error messages",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "en",
+                "pt-BR"
+              ],
+              "default": "en"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CheckoutDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CheckoutResponseDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Payments off, platform not available for the plan, choose a platform, or already owned",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing, invalid or expired token, or the session was ended",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Plan not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Start a purchase or subscription",
+        "tags": [
+          "Payments"
+        ]
+      }
+    },
+    "/api/v1/payments/{id}/confirm": {
+      "post": {
+        "description": "Asks the platform how the charge is. Send the query parameters the platform added to the return URL in `params`.",
+        "operationId": "PaymentsController_confirm_v1",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "header",
+            "name": "Accept-Language",
+            "required": false,
+            "description": "Language for error messages",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "en",
+                "pt-BR"
+              ],
+              "default": "en"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ConfirmPaymentDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PaymentDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid id",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing, invalid or expired token, or the session was ended",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Purchase not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Check a purchase with the platform (back from the checkout)",
+        "tags": [
+          "Payments"
+        ]
+      }
+    },
+    "/api/v1/users/me/billing": {
+      "get": {
+        "operationId": "PaymentsController_billing_v1",
+        "parameters": [
+          {
+            "in": "header",
+            "name": "Accept-Language",
+            "required": false,
+            "description": "Language for error messages",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "en",
+                "pt-BR"
+              ],
+              "default": "en"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BillingDto"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing, invalid or expired token, or the session was ended",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "My plan, subscription and purchases",
+        "tags": [
+          "Payments",
+          "Users"
+        ]
+      }
+    },
+    "/api/v1/users/me/subscriptions/{id}/cancel": {
+      "post": {
+        "description": "Stripe keeps it until the end of the paid period (`cancelAtPeriodEnd`); AbacatePay cancels right away.",
+        "operationId": "PaymentsController_cancel_v1",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "header",
+            "name": "Accept-Language",
+            "required": false,
+            "description": "Language for error messages",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "en",
+                "pt-BR"
+              ],
+              "default": "en"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SubscriptionDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid id",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing, invalid or expired token, or the session was ended",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Subscription not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Cancel my subscription",
+        "tags": [
+          "Payments",
+          "Users"
+        ]
+      }
+    },
+    "/api/v1/payments/webhooks/{provider}": {
+      "post": {
+        "description": "Configure this URL on the platform. Verified per platform; the body is never trusted on its own.",
+        "operationId": "PaymentsController_webhook_v1",
+        "parameters": [
+          {
+            "name": "provider",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "enum": [
+                "stripe",
+                "infinitepay",
+                "abacatepay"
+              ],
+              "type": "string"
+            }
+          },
+          {
+            "in": "header",
+            "name": "Accept-Language",
+            "required": false,
+            "description": "Language for error messages",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "en",
+                "pt-BR"
+              ],
+              "default": "en"
+            }
+          }
+        ],
+        "responses": {
+          "400": {
+            "description": "Signature, secret or payload invalid",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Platform not enabled",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "summary": "Webhook from a payment platform",
+        "tags": [
+          "Payments"
+        ]
+      }
     }
   },
   "info": {
@@ -4683,7 +5095,11 @@
               "user.self_deleted",
               "user.data_exported",
               "user.anonymized",
-              "session.revoked"
+              "session.revoked",
+              "payment.paid",
+              "payment.refunded",
+              "subscription.started",
+              "subscription.canceled"
             ],
             "example": "user.role_changed"
           },
@@ -4935,6 +5351,20 @@
               "type": "object"
             }
           },
+          "payments": {
+            "description": "Purchases (payments module)",
+            "type": "array",
+            "items": {
+              "type": "object"
+            }
+          },
+          "subscriptions": {
+            "description": "Subscriptions (payments module)",
+            "type": "array",
+            "items": {
+              "type": "object"
+            }
+          },
           "activity": {
             "description": "Audit events by or about the user",
             "type": "array",
@@ -4949,6 +5379,8 @@
           "security",
           "sessions",
           "files",
+          "payments",
+          "subscriptions",
           "activity"
         ]
       },
@@ -5967,6 +6399,320 @@
           "hasPassword",
           "identities",
           "passkeys"
+        ]
+      },
+      "PlanDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "example": "pro-monthly"
+          },
+          "kind": {
+            "type": "string",
+            "enum": [
+              "one_time",
+              "subscription"
+            ]
+          },
+          "interval": {
+            "type": "string",
+            "enum": [
+              "month",
+              "year"
+            ]
+          },
+          "amount": {
+            "type": "number",
+            "example": 2990,
+            "description": "In cents"
+          },
+          "currency": {
+            "type": "string",
+            "example": "BRL"
+          },
+          "name": {
+            "type": "string",
+            "example": "Pro, monthly"
+          },
+          "description": {
+            "type": "string"
+          },
+          "providers": {
+            "type": "array",
+            "description": "Enabled platforms that can charge this plan, in order of preference",
+            "items": {
+              "type": "string",
+              "enum": [
+                "stripe",
+                "infinitepay",
+                "abacatepay"
+              ]
+            }
+          }
+        },
+        "required": [
+          "id",
+          "kind",
+          "amount",
+          "currency",
+          "name",
+          "description",
+          "providers"
+        ]
+      },
+      "ProviderInfoDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "enum": [
+              "stripe",
+              "infinitepay",
+              "abacatepay"
+            ]
+          },
+          "methods": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "enum": [
+                "card",
+                "pix",
+                "boleto"
+              ]
+            }
+          }
+        },
+        "required": [
+          "id",
+          "methods"
+        ]
+      },
+      "PlansResponseDto": {
+        "type": "object",
+        "properties": {
+          "plans": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PlanDto"
+            }
+          },
+          "providers": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ProviderInfoDto"
+            }
+          }
+        },
+        "required": [
+          "plans",
+          "providers"
+        ]
+      },
+      "CheckoutDto": {
+        "type": "object",
+        "properties": {
+          "planId": {
+            "type": "string",
+            "example": "pro-monthly"
+          },
+          "provider": {
+            "type": "string",
+            "enum": [
+              "stripe",
+              "infinitepay",
+              "abacatepay"
+            ],
+            "description": "Required only when more than one enabled platform can charge the plan"
+          }
+        },
+        "required": [
+          "planId"
+        ]
+      },
+      "CheckoutResponseDto": {
+        "type": "object",
+        "properties": {
+          "url": {
+            "type": "string",
+            "description": "The platform's payment page: send the person there"
+          },
+          "paymentId": {
+            "type": "string",
+            "format": "uuid"
+          }
+        },
+        "required": [
+          "url",
+          "paymentId"
+        ]
+      },
+      "ConfirmPaymentDto": {
+        "type": "object",
+        "properties": {
+          "params": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "string"
+            },
+            "description": "The query parameters the platform added to the return URL (e.g. InfinitePay transaction_nsu and slug)"
+          }
+        }
+      },
+      "PaymentDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "planId": {
+            "type": "string"
+          },
+          "kind": {
+            "type": "string",
+            "enum": [
+              "one_time",
+              "subscription"
+            ]
+          },
+          "provider": {
+            "type": "string",
+            "enum": [
+              "stripe",
+              "infinitepay",
+              "abacatepay"
+            ]
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "pending",
+              "paid",
+              "failed",
+              "canceled",
+              "refunded"
+            ]
+          },
+          "amount": {
+            "type": "number",
+            "description": "In cents"
+          },
+          "currency": {
+            "type": "string"
+          },
+          "paidAt": {
+            "format": "date-time",
+            "type": "string",
+            "nullable": true
+          },
+          "createdAt": {
+            "format": "date-time",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "planId",
+          "kind",
+          "provider",
+          "status",
+          "amount",
+          "currency",
+          "paidAt",
+          "createdAt"
+        ]
+      },
+      "SubscriptionDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "planId": {
+            "type": "string"
+          },
+          "provider": {
+            "type": "string",
+            "enum": [
+              "stripe",
+              "infinitepay",
+              "abacatepay"
+            ]
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "active",
+              "past_due",
+              "canceled"
+            ]
+          },
+          "cancelAtPeriodEnd": {
+            "type": "boolean",
+            "description": "Canceled, but the paid period still counts until currentPeriodEnd"
+          },
+          "currentPeriodEnd": {
+            "format": "date-time",
+            "type": "string",
+            "nullable": true
+          },
+          "canceledAt": {
+            "format": "date-time",
+            "type": "string",
+            "nullable": true
+          },
+          "createdAt": {
+            "format": "date-time",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "planId",
+          "provider",
+          "status",
+          "cancelAtPeriodEnd",
+          "currentPeriodEnd",
+          "canceledAt",
+          "createdAt"
+        ]
+      },
+      "BillingDto": {
+        "type": "object",
+        "properties": {
+          "plan": {
+            "type": "string",
+            "enum": [
+              "free",
+              "pro"
+            ],
+            "description": "pro = paid the lifetime plan, or has a subscription that is not canceled"
+          },
+          "subscription": {
+            "nullable": true,
+            "description": "The current subscription, if any",
+            "type": "object",
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/SubscriptionDto"
+              }
+            ]
+          },
+          "payments": {
+            "description": "Most recent first",
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PaymentDto"
+            }
+          }
+        },
+        "required": [
+          "plan",
+          "subscription",
+          "payments"
         ]
       }
     }

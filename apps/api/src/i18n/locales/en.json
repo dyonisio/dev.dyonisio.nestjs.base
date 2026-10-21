@@ -90,6 +90,18 @@
     "identityNotFound": "This sign-in method is not linked to your account",
     "lastLoginMethod": "You cannot remove your only sign-in method. Set a password first"
   },
+  "payments": {
+    "planNotFound": "Plan not found",
+    "unavailable": "Payments are not available for this plan right now",
+    "providerUnavailable": "This payment platform is not available for this plan",
+    "chooseProvider": "Choose how you want to pay",
+    "providerFailed": "The payment platform did not respond. Please try again",
+    "invalidWebhook": "Invalid payment notification",
+    "alreadySubscribed": "You already have an active subscription to this plan",
+    "alreadyPurchased": "You already own this plan",
+    "notFound": "Purchase not found",
+    "subscriptionNotFound": "Subscription not found"
+  },
   "passkeys": {
     "challengeExpired": "This passkey request expired. Please try again",
     "verificationFailed": "The passkey could not be verified. Please try again",

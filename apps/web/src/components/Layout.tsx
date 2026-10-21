@@ -44,6 +44,7 @@ export function AppLayout() {
         { to: '/account', label: m.nav.account, icon: 'user' },
         { to: '/account/security', label: m.nav.security, icon: 'shield' },
         { to: '/account/privacy', label: m.nav.privacy, icon: 'lock' },
+        { to: '/billing', label: m.nav.billing, icon: 'card' },
       ],
     },
     {

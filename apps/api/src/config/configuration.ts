@@ -77,6 +77,36 @@ export default () => {
         .map((o) => o.trim().replace(/\/$/, ''))
         .filter(Boolean),
     },
+    /**
+     * Pagamentos (exemplo): plataformas ligadas, na ordem de preferência. Vazio = desligado.
+     * Cada uma só liga com as chaves dela. Veja docs/PAYMENTS.md.
+     */
+    payments: {
+      providers: (process.env.PAYMENT_PROVIDERS ?? '')
+        .split(',')
+        .map((p) => p.trim().toLowerCase())
+        .filter(Boolean),
+      /** Endereço público da API, para a URL de webhook que vai na cobrança (InfinitePay). */
+      publicApiUrl: process.env.PAYMENTS_PUBLIC_API_URL || process.env.APP_URL || '',
+      stripe: {
+        secretKey: process.env.STRIPE_SECRET_KEY || undefined,
+        webhookSecret: process.env.STRIPE_WEBHOOK_SECRET || undefined,
+      },
+      infinitepay: { handle: process.env.INFINITEPAY_HANDLE || undefined },
+      abacatepay: {
+        apiKey: process.env.ABACATEPAY_API_KEY || undefined,
+        webhookSecret: process.env.ABACATEPAY_WEBHOOK_SECRET || undefined,
+        /** "plano:produto,plano:produto" (ex.: pro-lifetime:prod_abc,pro-monthly:prod_def) */
+        products: Object.fromEntries(
+          (process.env.ABACATEPAY_PRODUCTS ?? '')
+            .split(',')
+            .map((pair) => pair.split(':').map((v) => v.trim()))
+            .filter(
+              (pair): pair is [string, string] => pair.length === 2 && !!pair[0] && !!pair[1],
+            ),
+        ),
+      },
+    },
     session: {
       /** Idade máxima de uma sessão, mesmo usada todo dia (depois disso, login de novo). */
       maxAgeDays: toInt(process.env.SESSION_MAX_AGE_DAYS, 90),

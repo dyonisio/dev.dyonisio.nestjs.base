@@ -6,6 +6,8 @@ import { Not, Repository } from 'typeorm';
 import { AuditAction } from '../../audit/audit-action.enum';
 import { AuditService } from '../../audit/audit.service';
 import { Passkey } from '../../auth/passkeys/entities/passkey.entity';
+import { Payment } from '../../payments/entities/payment.entity';
+import { Subscription } from '../../payments/entities/subscription.entity';
 import { UserIdentity } from '../../auth/social/entities/user-identity.entity';
 import { Role } from '../../common/enums/role.enum';
 import { FilesService } from '../../files/files.service';
@@ -87,6 +89,11 @@ export class AccountService {
         this.audit.listForUser(userId),
       ],
     );
+    // compras e assinaturas (módulo de pagamentos): só o que a pessoa reconhece, sem ids das plataformas
+    const [payments, subscriptions] = await Promise.all([
+      this.repo.manager.find(Payment, { where: { userId }, order: { createdAt: 'ASC' } }),
+      this.repo.manager.find(Subscription, { where: { userId }, order: { createdAt: 'ASC' } }),
+    ]);
     await this.audit.record(AuditAction.USER_DATA_EXPORTED, { actorId: userId });
 
     return {
@@ -124,6 +131,27 @@ export class AccountService {
         status,
         createdAt,
       })),
+      payments: payments.map(
+        ({ planId, provider, status, amount, currency, paidAt, createdAt }) => ({
+          planId,
+          provider,
+          status,
+          amount,
+          currency,
+          paidAt,
+          createdAt,
+        }),
+      ),
+      subscriptions: subscriptions.map(
+        ({ planId, provider, status, currentPeriodEnd, canceledAt, createdAt }) => ({
+          planId,
+          provider,
+          status,
+          currentPeriodEnd,
+          canceledAt,
+          createdAt,
+        }),
+      ),
       activity: activity.map(({ action, createdAt, ip, userAgent, metadata }) => ({
         action,
         createdAt,

@@ -100,6 +100,9 @@ jobs:
           FALLBACK_LANGUAGE: ${{ vars.FALLBACK_LANGUAGE }}
           APP_NAME: ${{ vars.APP_NAME }}
           GOOGLE_CLIENT_IDS: ${{ vars.GOOGLE_CLIENT_IDS }}
+          PAYMENT_PROVIDERS: ${{ vars.PAYMENT_PROVIDERS }}
+          INFINITEPAY_HANDLE: ${{ vars.INFINITEPAY_HANDLE }}
+          ABACATEPAY_PRODUCTS: ${{ vars.ABACATEPAY_PRODUCTS }}
           APPLE_CLIENT_IDS: ${{ vars.APPLE_CLIENT_IDS }}
           STAGE: ${{ inputs.stage }}
           REGION: ${{ vars.AWS_REGION || 'us-east-1' }}
@@ -131,6 +134,10 @@ jobs:
           [ -n "$FALLBACK_LANGUAGE" ] && params+=(--param="fallbackLanguage=$FALLBACK_LANGUAGE")
           [ -n "$APP_NAME" ] && params+=(--param="appName=$APP_NAME")
           [ -n "$GOOGLE_CLIENT_IDS" ] && params+=(--param="googleClientIds=$GOOGLE_CLIENT_IDS")
+          [ -n "$PAYMENT_PROVIDERS" ] && params+=(--param="paymentProviders=$PAYMENT_PROVIDERS")
+          [ -n "$INFINITEPAY_HANDLE" ] && params+=(--param="infinitepayHandle=$INFINITEPAY_HANDLE")
+          [ -n "$ABACATEPAY_PRODUCTS" ] && params+=(--param="abacatepayProducts=$ABACATEPAY_PRODUCTS")
+          [ -n "$API_DOMAIN" ] && params+=(--param="paymentsPublicApiUrl=https://$API_DOMAIN")
           [ -n "$APPLE_CLIENT_IDS" ] && params+=(--param="appleClientIds=$APPLE_CLIENT_IDS")
           if [ -n "$API_DOMAIN" ] && [ -n "$API_CERTIFICATE_ARN" ]; then
             params+=(--param="apiDomain=$API_DOMAIN" --param="apiCertificateArn=$API_CERTIFICATE_ARN")

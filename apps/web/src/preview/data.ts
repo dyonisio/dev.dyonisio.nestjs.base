@@ -123,6 +123,62 @@ export const identities = {
   passkeys: 2,
 };
 
+export const plans: components['schemas']['PlansResponseDto'] = {
+  plans: [
+    {
+      id: 'pro-lifetime',
+      kind: 'one_time',
+      amount: 9900,
+      currency: 'BRL',
+      name: 'Pro vitalício',
+      description: 'Paga uma vez e fica com o Pro para sempre.',
+      providers: ['stripe', 'infinitepay', 'abacatepay'],
+    },
+    {
+      id: 'pro-monthly',
+      kind: 'subscription',
+      interval: 'month',
+      amount: 2990,
+      currency: 'BRL',
+      name: 'Pro mensal',
+      description: 'Cobrado todo mês. Cancele quando quiser.',
+      providers: ['stripe', 'abacatepay'],
+    },
+  ],
+  providers: [
+    { id: 'stripe', methods: ['card'] },
+    { id: 'infinitepay', methods: ['pix', 'card'] },
+    { id: 'abacatepay', methods: ['pix', 'card'] },
+  ],
+};
+
+export const billing: components['schemas']['BillingDto'] = {
+  plan: 'pro',
+  subscription: {
+    id: '5b1c0001-0000-4000-8000-000000000001',
+    planId: 'pro-monthly',
+    provider: 'stripe',
+    status: 'active',
+    cancelAtPeriodEnd: false,
+    currentPeriodEnd: days(-18),
+    canceledAt: null,
+    createdAt: days(42),
+  },
+  payments: [
+    {
+      id: '5b1c0002-0000-4000-8000-000000000002',
+      planId: 'pro-monthly',
+      kind: 'subscription',
+      provider: 'stripe',
+      status: 'paid',
+      amount: 2990,
+      currency: 'BRL',
+      paidAt: days(42),
+      createdAt: days(42),
+    },
+  ],
+};
+
 export const passkeys: components['schemas']['PasskeyDto'][] = [
   {
     id: '7d1c0001-0000-4000-8000-000000000001',

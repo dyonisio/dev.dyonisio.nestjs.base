@@ -800,6 +800,11 @@ fieldset.reauth > p {
   gap: 8px;
 }
 
+/* um seletor ao lado do botão (ex.: como pagar), sem ocupar a linha toda */
+.row-actions select {
+  width: auto;
+}
+
 .row-main {
   display: grid;
   gap: 2px;

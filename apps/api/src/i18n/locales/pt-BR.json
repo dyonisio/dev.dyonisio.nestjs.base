@@ -90,6 +90,18 @@
     "identityNotFound": "Esta forma de login não está vinculada à sua conta",
     "lastLoginMethod": "Você não pode remover a única forma de entrar na conta. Defina uma senha antes"
   },
+  "payments": {
+    "planNotFound": "Plano não encontrado",
+    "unavailable": "Pagamentos não estão disponíveis para este plano agora",
+    "providerUnavailable": "Esta forma de pagamento não está disponível para este plano",
+    "chooseProvider": "Escolha como quer pagar",
+    "providerFailed": "A plataforma de pagamento não respondeu. Tente de novo",
+    "invalidWebhook": "Aviso de pagamento inválido",
+    "alreadySubscribed": "Você já tem uma assinatura ativa deste plano",
+    "alreadyPurchased": "Você já tem este plano",
+    "notFound": "Compra não encontrada",
+    "subscriptionNotFound": "Assinatura não encontrada"
+  },
   "passkeys": {
     "challengeExpired": "O pedido da passkey expirou. Tente de novo",
     "verificationFailed": "Não foi possível verificar a passkey. Tente de novo",

@@ -37,6 +37,12 @@ export enum AuditAction {
 
   // Sessões
   SESSION_REVOKED = 'session.revoked',
+
+  // Pagamentos
+  PAYMENT_PAID = 'payment.paid',
+  PAYMENT_REFUNDED = 'payment.refunded',
+  SUBSCRIPTION_STARTED = 'subscription.started',
+  SUBSCRIPTION_CANCELED = 'subscription.canceled',
 }
 
 export type AuditTargetType = 'user' | 'session';

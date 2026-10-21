@@ -15,7 +15,12 @@ import { ReauthService } from './reauth.service';
 
 /** Os fluxos completos (HTTP + banco) estão em test/account.e2e-spec.ts. */
 describe('AccountService', () => {
-  const repo = { exists: jest.fn(), count: jest.fn(), softDelete: jest.fn() };
+  const repo = {
+    exists: jest.fn(),
+    count: jest.fn(),
+    softDelete: jest.fn(),
+    manager: { find: jest.fn().mockResolvedValue([]) },
+  };
   const identities = { find: jest.fn() };
   const passkeys = { find: jest.fn() };
   const users = { getById: jest.fn(), findByIdWithPassword: jest.fn() };
@@ -103,6 +108,30 @@ describe('AccountService', () => {
       { id: 'f', purpose: 'avatar', contentType: 'image/png', size: 1, status: 'ready', key: 'k' },
     ]);
     audit.listForUser.mockResolvedValue([{ action: 'auth.login', createdAt: at, requestId: 'r' }]);
+    repo.manager.find
+      .mockResolvedValueOnce([
+        {
+          planId: 'pro-lifetime',
+          provider: 'stripe',
+          status: 'paid',
+          amount: 9900,
+          currency: 'BRL',
+          paidAt: at,
+          createdAt: at,
+          providerRef: 'cs_secreto',
+        },
+      ])
+      .mockResolvedValueOnce([
+        {
+          planId: 'pro-monthly',
+          provider: 'abacatepay',
+          status: 'active',
+          currentPeriodEnd: null,
+          canceledAt: null,
+          createdAt: at,
+          providerSubscriptionId: 'subs_secreto',
+        },
+      ]);
 
     const data = await service.exportData('u');
 
@@ -116,6 +145,13 @@ describe('AccountService', () => {
     expect(data.sessions[0]).not.toHaveProperty('tokens');
     expect(data.files[0]).not.toHaveProperty('key');
     expect(data.activity[0]).toMatchObject({ action: 'auth.login' });
+    expect(data.payments).toEqual([
+      expect.objectContaining({ planId: 'pro-lifetime', status: 'paid', amount: 9900 }),
+    ]);
+    expect(data.subscriptions).toEqual([
+      expect.objectContaining({ planId: 'pro-monthly', status: 'active' }),
+    ]);
+    expect(JSON.stringify(data)).not.toMatch(/cs_secreto|subs_secreto/);
     expect(JSON.stringify(data)).not.toContain('hash');
     expect(JSON.stringify(data)).not.toContain('chave');
     expect(audit.record).toHaveBeenCalledWith('user.data_exported', { actorId: 'u' });

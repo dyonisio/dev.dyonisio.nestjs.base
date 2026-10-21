@@ -10,7 +10,7 @@
 import type { Language } from '../i18n/language';
 
 /** Data da última mudança nos textos (aparece no topo das duas páginas). */
-export const LEGAL_UPDATED_AT = '2026-10-20';
+export const LEGAL_UPDATED_AT = '2026-10-21';
 
 /** Um parágrafo, ou uma lista (array de itens). */
 export type Block = string | string[];
@@ -45,6 +45,7 @@ const privacyPt: LegalDocument = {
           'Login com Google ou Apple: o identificador da sua conta no provedor, o e-mail e o nome que ele informa. Não recebemos sua senha do Google ou da Apple nem acesso aos seus outros dados neles.',
           'Sessões e segurança: endereço IP, navegador e sistema (user agent), e as datas de login e de uso, para mostrar seus dispositivos conectados e avisar sobre acessos novos.',
           'Registro de atividades (auditoria): ações relevantes de segurança e administração, como login, troca de senha ou de e-mail, com data, IP e navegador.',
+          'Compras e assinaturas: o plano, o valor, a data e a situação do pagamento. Os dados do cartão ou do Pix você informa na página da plataforma de pagamento; nós nunca os recebemos.',
         ],
       ],
     },
@@ -67,6 +68,7 @@ const privacyPt: LegalDocument = {
         [
           'Amazon Web Services (AWS): hospedagem do sistema, do banco de dados, dos arquivos e envio dos e-mails. Os servidores ficam nos Estados Unidos.',
           'Google e Apple: apenas se você escolher entrar com eles.',
+          'Plataformas de pagamento (Stripe, InfinitePay ou AbacatePay, conforme a que você escolher): apenas se você comprar algo. Elas recebem seu nome, e-mail e o valor da compra, e processam o pagamento segundo as próprias políticas.',
         ],
         'Por usar servidores nos Estados Unidos, há transferência internacional de dados, feita com fornecedores que adotam medidas de segurança adequadas (art. 33 da LGPD).',
       ],
@@ -137,6 +139,7 @@ const privacyEn: LegalDocument = {
           'Sign in with Google or Apple: your account identifier at the provider, and the email and name it shares. We never receive your Google or Apple password, nor access to your other data there.',
           'Sessions and security: IP address, browser and operating system (user agent), and sign-in and activity dates, to show your signed-in devices and alert you about new sign-ins.',
           'Activity log (audit): relevant security and administration actions, such as sign-ins and password or email changes, with date, IP and browser.',
+          'Purchases and subscriptions: the plan, amount, date and payment status. You enter your card or Pix details on the payment platform’s own page; we never receive them.',
         ],
       ],
     },
@@ -159,6 +162,7 @@ const privacyEn: LegalDocument = {
         [
           'Amazon Web Services (AWS): hosting of the system, database and files, and email delivery. Servers are located in the United States.',
           'Google and Apple: only if you choose to sign in with them.',
+          'Payment platforms (Stripe, InfinitePay or AbacatePay, whichever you choose): only if you buy something. They receive your name, email and the purchase amount, and process the payment under their own policies.',
         ],
         'Because servers are in the United States, data is transferred internationally, to providers that adopt adequate security measures.',
       ],

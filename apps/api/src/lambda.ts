@@ -14,7 +14,8 @@ let cachedServer: Promise<Handler> | undefined;
 async function bootstrap(): Promise<Handler> {
   // abortOnError: false — falha ao subir vira exceção (logada abaixo), em vez de encerrar o processo
   const app = configureApp(
-    await NestFactory.create(AppModule, { bufferLogs: true, abortOnError: false }),
+    // rawBody: os webhooks de pagamento conferem a assinatura sobre o corpo exato
+    await NestFactory.create(AppModule, { bufferLogs: true, abortOnError: false, rawBody: true }),
   );
   await app.init();
   return serverlessExpress({ app: app.getHttpAdapter().getInstance() });

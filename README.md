@@ -25,6 +25,7 @@ só com as regras do seu negócio.
 | **Permissões** | Roles (`admin`, `manager`, `user`) como pacotes de **permissões** (`users:read`, `audit:read`...); tudo fechado por padrão |
 | **Minha conta (LGPD)** | Troca de e-mail confirmada pelo novo endereço, exclusão da conta com anonimização após 30 dias, exportação dos dados |
 | **Alertas de segurança** | E-mail ao dono em login de dispositivo novo, troca de senha/e-mail, 2FA ligado/desligado, Google/Apple vinculado |
+| **Pagamentos (exemplo)** | Pagamento único e assinatura com **Stripe**, **InfinitePay** ou **AbacatePay**, trocáveis como módulo (uma variável liga as plataformas; com mais de uma, o cliente escolhe); confirmação sempre com a plataforma, webhooks verificados |
 | **Usuários (admin)** | CRUD com busca, ordenação e paginação; exclusão reversível; ver e encerrar as sessões de um usuário; trilha de auditoria |
 | **Arquivos** | Upload genérico direto para o S3 (URL pré-assinada), validação do conteúdo real, avatar como primeiro uso, limpeza automática |
 | **E-mails** | Templates separados por e-mail **e por idioma**, SMTP ou Amazon SES, envio síncrono ou por fila (SQS + DLQ) |
@@ -123,6 +124,7 @@ identidade atual fica em `project.json`, então dá para rodar de novo. No fim e
 | --- | --- |
 | [Começar um projeto novo](docs/GETTING_STARTED.md) | Checklist para transformar esta base no **seu** projeto (nomes, segredos, o que remover) |
 | [Arquitetura](docs/ARCHITECTURE.md) | Como uma requisição percorre a API, os módulos, as convenções e a autorização |
+| [Pagamentos](docs/PAYMENTS.md) | Stripe, InfinitePay e AbacatePay: planos, checkout, webhooks, assinaturas e como ligar cada uma |
 | [Autenticação e conta](docs/AUTH.md) | Sessões, refresh, e-mail, senha, 2FA, login social, "minha conta", alertas |
 | [Funcionalidades](docs/FEATURES.md) | Usuários, auditoria, arquivos, e-mails, idiomas, rate limiting, manutenção, logs |
 | [Receitas](docs/GUIDES.md) | Passo a passo: novo módulo, nova permissão, migration, e-mail, tipo de upload, tarefa agendada, idioma |

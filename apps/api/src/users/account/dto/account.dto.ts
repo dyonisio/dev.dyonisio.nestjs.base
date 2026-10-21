@@ -81,6 +81,12 @@ export class AccountExportDto {
   @ApiProperty({ isArray: true, type: Object, description: 'Uploaded files (metadata)' })
   files: Record<string, unknown>[];
 
+  @ApiProperty({ isArray: true, type: Object, description: 'Purchases (payments module)' })
+  payments: Record<string, unknown>[];
+
+  @ApiProperty({ isArray: true, type: Object, description: 'Subscriptions (payments module)' })
+  subscriptions: Record<string, unknown>[];
+
   @ApiProperty({ isArray: true, type: Object, description: 'Audit events by or about the user' })
   activity: Record<string, unknown>[];
 }

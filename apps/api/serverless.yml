@@ -54,6 +54,17 @@ provider:
     GOOGLE_CLIENT_IDS: ${param:googleClientIds, ''}
     APPLE_CLIENT_IDS: ${param:appleClientIds, ''}
 
+    # Pagamentos (exemplo). Plataformas ligadas: "stripe,infinitepay,abacatepay" (vazio = desligado).
+    # As chaves secretas vêm do SSM; sem elas a plataforma fica desligada. Veja docs/PAYMENTS.md
+    PAYMENT_PROVIDERS: ${param:paymentProviders, ''}
+    PAYMENTS_PUBLIC_API_URL: ${param:paymentsPublicApiUrl, ''}
+    INFINITEPAY_HANDLE: ${param:infinitepayHandle, ''}
+    ABACATEPAY_PRODUCTS: ${param:abacatepayProducts, ''}
+    STRIPE_SECRET_KEY: ${ssm:/${self:service}/${sls:stage}/STRIPE_SECRET_KEY, ''}
+    STRIPE_WEBHOOK_SECRET: ${ssm:/${self:service}/${sls:stage}/STRIPE_WEBHOOK_SECRET, ''}
+    ABACATEPAY_API_KEY: ${ssm:/${self:service}/${sls:stage}/ABACATEPAY_API_KEY, ''}
+    ABACATEPAY_WEBHOOK_SECRET: ${ssm:/${self:service}/${sls:stage}/ABACATEPAY_WEBHOOK_SECRET, ''}
+
     # E-mail via Amazon SES usando a IAM role da função (sem credenciais SMTP)
     MAIL_TRANSPORT: ses
     MAIL_FROM: ${param:mailFrom}

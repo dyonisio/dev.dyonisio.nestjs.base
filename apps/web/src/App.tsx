@@ -2,6 +2,7 @@ import { lazy, Suspense } from 'react';
 import { Route, Routes } from 'react-router';
 import { AppLayout, RequirePermission } from './components/Layout';
 import { RequireAuth } from './components/RequireAuth';
+import { BillingPage, BillingReturnPage } from './pages/account/BillingPage';
 import { PrivacyPage } from './pages/account/PrivacyPage';
 import { ProfilePage } from './pages/account/ProfilePage';
 import { SecurityPage } from './pages/account/SecurityPage';
@@ -63,6 +64,9 @@ export function App() {
         <Route path="/account" element={<ProfilePage />} />
         <Route path="/account/security" element={<SecurityPage />} /> {/* (e-mail) */}
         <Route path="/account/privacy" element={<PrivacyPage />} />
+        <Route path="/billing" element={<BillingPage />} />
+        {/* volta do checkout das plataformas de pagamento */}
+        <Route path="/billing/return" element={<BillingReturnPage />} />
         <Route
           path="/admin/users"
           element={

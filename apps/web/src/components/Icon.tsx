@@ -3,6 +3,7 @@
  * Desenhados aqui para não depender de biblioteca; acrescente um caminho novo em PATHS.
  */
 const PATHS = {
+  card: 'M2.5 4h11a1 1 0 0 1 1 1v6a1 1 0 0 1-1 1h-11a1 1 0 0 1-1-1V5a1 1 0 0 1 1-1Zm-1 3h13M4 9.5h2.5',
   home: 'M3 7.5 8 3l5 4.5V13a.5.5 0 0 1-.5.5h-3v-4h-3v4h-3A.5.5 0 0 1 3 13Z',
   user: 'M8 8a2.75 2.75 0 1 0 0-5.5A2.75 2.75 0 0 0 8 8Zm-5 5.5c.4-2.4 2.5-4 5-4s4.6 1.6 5 4',
   shield: 'M8 2 3 4v3.6c0 3 2.1 5.5 5 6.4 2.9-.9 5-3.4 5-6.4V4Z',

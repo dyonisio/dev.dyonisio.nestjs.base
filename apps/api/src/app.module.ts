@@ -19,6 +19,7 @@ import { HealthModule } from './health/health.module';
 import { I18nModule } from './i18n/i18n.module';
 import { MailModule } from './mail/mail.module';
 import { MaintenanceModule } from './maintenance/maintenance.module';
+import { PaymentsModule } from './payments/payments.module';
 import { AppThrottlerGuard } from './rate-limit/app-throttler.guard';
 import { RateLimitModule } from './rate-limit/rate-limit.module';
 import { UsersModule } from './users/users.module';
@@ -48,6 +49,7 @@ import { UsersModule } from './users/users.module';
     FilesModule,
     HealthModule,
     MaintenanceModule,
+    PaymentsModule,
   ],
   providers: [
     // Ordem importa: 1) rate limit (barra abuso antes de qualquer consulta ao banco de usuários)

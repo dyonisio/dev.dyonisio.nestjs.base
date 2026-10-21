@@ -1016,6 +1016,123 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/payments/plans": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Plans for sale
+         * @description Each plan lists the enabled platforms (PAYMENT_PROVIDERS) that can charge it. With none, payments are off.
+         */
+        get: operations["PaymentsController_plans_v1"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/payments/checkout": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Start a purchase or subscription
+         * @description Creates the charge on the platform and returns its payment page. Send `provider` only when more than one platform can charge the plan. The purchase becomes `paid` only after the platform confirms it (webhook or `POST /payments/:id/confirm`).
+         */
+        post: operations["PaymentsController_checkout_v1"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/payments/{id}/confirm": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Check a purchase with the platform (back from the checkout)
+         * @description Asks the platform how the charge is. Send the query parameters the platform added to the return URL in `params`.
+         */
+        post: operations["PaymentsController_confirm_v1"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/users/me/billing": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** My plan, subscription and purchases */
+        get: operations["PaymentsController_billing_v1"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/users/me/subscriptions/{id}/cancel": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Cancel my subscription
+         * @description Stripe keeps it until the end of the paid period (`cancelAtPeriodEnd`); AbacatePay cancels right away.
+         */
+        post: operations["PaymentsController_cancel_v1"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/payments/webhooks/{provider}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Webhook from a payment platform
+         * @description Configure this URL on the platform. Verified per platform; the body is never trusted on its own.
+         */
+        post: operations["PaymentsController_webhook_v1"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -1027,7 +1144,7 @@ export interface components {
              * @example user.role_changed
              * @enum {string}
              */
-            action: "auth.login" | "auth.login_failed" | "auth.logout" | "auth.refresh_token_reuse" | "auth.password_changed" | "auth.password_reset" | "auth.magic_link_sent" | "auth.email_verified" | "auth.2fa_enabled" | "auth.2fa_disabled" | "auth.2fa_failed" | "auth.2fa_recovery_code_used" | "auth.2fa_recovery_codes_regenerated" | "auth.2fa_reset_by_admin" | "auth.social_linked" | "auth.social_unlinked" | "auth.passkey_added" | "auth.passkey_removed" | "user.registered" | "user.created" | "user.invitation_sent" | "user.updated" | "user.role_changed" | "user.deleted" | "user.restored" | "user.avatar_changed" | "user.email_change_requested" | "user.email_changed" | "user.self_deleted" | "user.data_exported" | "user.anonymized" | "session.revoked";
+            action: "auth.login" | "auth.login_failed" | "auth.logout" | "auth.refresh_token_reuse" | "auth.password_changed" | "auth.password_reset" | "auth.magic_link_sent" | "auth.email_verified" | "auth.2fa_enabled" | "auth.2fa_disabled" | "auth.2fa_failed" | "auth.2fa_recovery_code_used" | "auth.2fa_recovery_codes_regenerated" | "auth.2fa_reset_by_admin" | "auth.social_linked" | "auth.social_unlinked" | "auth.passkey_added" | "auth.passkey_removed" | "user.registered" | "user.created" | "user.invitation_sent" | "user.updated" | "user.role_changed" | "user.deleted" | "user.restored" | "user.avatar_changed" | "user.email_change_requested" | "user.email_changed" | "user.self_deleted" | "user.data_exported" | "user.anonymized" | "session.revoked" | "payment.paid" | "payment.refunded" | "subscription.started" | "subscription.canceled";
             /**
              * Format: uuid
              * @description Who performed the action (null = anonymous, e.g. failed login)
@@ -1146,6 +1263,10 @@ export interface components {
             sessions: Record<string, never>[];
             /** @description Uploaded files (metadata) */
             files: Record<string, never>[];
+            /** @description Purchases (payments module) */
+            payments: Record<string, never>[];
+            /** @description Subscriptions (payments module) */
+            subscriptions: Record<string, never>[];
             /** @description Audit events by or about the user */
             activity: Record<string, never>[];
         };
@@ -1618,6 +1739,102 @@ export interface components {
             identities: components["schemas"]["AdminIdentityDto"][];
             passkeys: components["schemas"]["PasskeyDto"][];
         };
+        PlanDto: {
+            /** @example pro-monthly */
+            id: string;
+            /** @enum {string} */
+            kind: "one_time" | "subscription";
+            /** @enum {string} */
+            interval?: "month" | "year";
+            /**
+             * @description In cents
+             * @example 2990
+             */
+            amount: number;
+            /** @example BRL */
+            currency: string;
+            /** @example Pro, monthly */
+            name: string;
+            description: string;
+            /** @description Enabled platforms that can charge this plan, in order of preference */
+            providers: ("stripe" | "infinitepay" | "abacatepay")[];
+        };
+        ProviderInfoDto: {
+            /** @enum {string} */
+            id: "stripe" | "infinitepay" | "abacatepay";
+            methods: ("card" | "pix" | "boleto")[];
+        };
+        PlansResponseDto: {
+            plans: components["schemas"]["PlanDto"][];
+            providers: components["schemas"]["ProviderInfoDto"][];
+        };
+        CheckoutDto: {
+            /** @example pro-monthly */
+            planId: string;
+            /**
+             * @description Required only when more than one enabled platform can charge the plan
+             * @enum {string}
+             */
+            provider?: "stripe" | "infinitepay" | "abacatepay";
+        };
+        CheckoutResponseDto: {
+            /** @description The platform's payment page: send the person there */
+            url: string;
+            /** Format: uuid */
+            paymentId: string;
+        };
+        ConfirmPaymentDto: {
+            /** @description The query parameters the platform added to the return URL (e.g. InfinitePay transaction_nsu and slug) */
+            params?: {
+                [key: string]: string;
+            };
+        };
+        PaymentDto: {
+            /** Format: uuid */
+            id: string;
+            planId: string;
+            /** @enum {string} */
+            kind: "one_time" | "subscription";
+            /** @enum {string} */
+            provider: "stripe" | "infinitepay" | "abacatepay";
+            /** @enum {string} */
+            status: "pending" | "paid" | "failed" | "canceled" | "refunded";
+            /** @description In cents */
+            amount: number;
+            currency: string;
+            /** Format: date-time */
+            paidAt: string | null;
+            /** Format: date-time */
+            createdAt: string;
+        };
+        SubscriptionDto: {
+            /** Format: uuid */
+            id: string;
+            planId: string;
+            /** @enum {string} */
+            provider: "stripe" | "infinitepay" | "abacatepay";
+            /** @enum {string} */
+            status: "active" | "past_due" | "canceled";
+            /** @description Canceled, but the paid period still counts until currentPeriodEnd */
+            cancelAtPeriodEnd: boolean;
+            /** Format: date-time */
+            currentPeriodEnd: string | null;
+            /** Format: date-time */
+            canceledAt: string | null;
+            /** Format: date-time */
+            createdAt: string;
+        };
+        BillingDto: {
+            /**
+             * @description pro = paid the lifetime plan, or has a subscription that is not canceled
+             * @enum {string}
+             */
+            plan: "free" | "pro";
+            /** @description The current subscription, if any */
+            subscription: components["schemas"]["SubscriptionDto"] | null;
+            /** @description Most recent first */
+            payments: components["schemas"]["PaymentDto"][];
+        };
     };
     responses: never;
     parameters: never;
@@ -1634,7 +1851,7 @@ export interface operations {
                 page?: number;
                 /** @description Items per page */
                 limit?: number;
-                action?: "auth.login" | "auth.login_failed" | "auth.logout" | "auth.refresh_token_reuse" | "auth.password_changed" | "auth.password_reset" | "auth.magic_link_sent" | "auth.email_verified" | "auth.2fa_enabled" | "auth.2fa_disabled" | "auth.2fa_failed" | "auth.2fa_recovery_code_used" | "auth.2fa_recovery_codes_regenerated" | "auth.2fa_reset_by_admin" | "auth.social_linked" | "auth.social_unlinked" | "auth.passkey_added" | "auth.passkey_removed" | "user.registered" | "user.created" | "user.invitation_sent" | "user.updated" | "user.role_changed" | "user.deleted" | "user.restored" | "user.avatar_changed" | "user.email_change_requested" | "user.email_changed" | "user.self_deleted" | "user.data_exported" | "user.anonymized" | "session.revoked";
+                action?: "auth.login" | "auth.login_failed" | "auth.logout" | "auth.refresh_token_reuse" | "auth.password_changed" | "auth.password_reset" | "auth.magic_link_sent" | "auth.email_verified" | "auth.2fa_enabled" | "auth.2fa_disabled" | "auth.2fa_failed" | "auth.2fa_recovery_code_used" | "auth.2fa_recovery_codes_regenerated" | "auth.2fa_reset_by_admin" | "auth.social_linked" | "auth.social_unlinked" | "auth.passkey_added" | "auth.passkey_removed" | "user.registered" | "user.created" | "user.invitation_sent" | "user.updated" | "user.role_changed" | "user.deleted" | "user.restored" | "user.avatar_changed" | "user.email_change_requested" | "user.email_changed" | "user.self_deleted" | "user.data_exported" | "user.anonymized" | "session.revoked" | "payment.paid" | "payment.refunded" | "subscription.started" | "subscription.canceled";
                 /** @description Who performed the actions */
                 actorId?: string;
                 /** @description Affected record (e.g. a user id) */
@@ -4521,6 +4738,252 @@ export interface operations {
                 };
                 content: {
                     "application/json": unknown;
+                };
+            };
+        };
+    };
+    PaymentsController_plans_v1: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Language for error messages */
+                "Accept-Language"?: "en" | "pt-BR";
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PlansResponseDto"];
+                };
+            };
+        };
+    };
+    PaymentsController_checkout_v1: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Language for error messages */
+                "Accept-Language"?: "en" | "pt-BR";
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CheckoutDto"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CheckoutResponseDto"];
+                };
+            };
+            /** @description Payments off, platform not available for the plan, choose a platform, or already owned */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponseDto"];
+                };
+            };
+            /** @description Missing, invalid or expired token, or the session was ended */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponseDto"];
+                };
+            };
+            /** @description Plan not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponseDto"];
+                };
+            };
+        };
+    };
+    PaymentsController_confirm_v1: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Language for error messages */
+                "Accept-Language"?: "en" | "pt-BR";
+            };
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ConfirmPaymentDto"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PaymentDto"];
+                };
+            };
+            /** @description Invalid id */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponseDto"];
+                };
+            };
+            /** @description Missing, invalid or expired token, or the session was ended */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponseDto"];
+                };
+            };
+            /** @description Purchase not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponseDto"];
+                };
+            };
+        };
+    };
+    PaymentsController_billing_v1: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Language for error messages */
+                "Accept-Language"?: "en" | "pt-BR";
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BillingDto"];
+                };
+            };
+            /** @description Missing, invalid or expired token, or the session was ended */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponseDto"];
+                };
+            };
+        };
+    };
+    PaymentsController_cancel_v1: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Language for error messages */
+                "Accept-Language"?: "en" | "pt-BR";
+            };
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SubscriptionDto"];
+                };
+            };
+            /** @description Invalid id */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponseDto"];
+                };
+            };
+            /** @description Missing, invalid or expired token, or the session was ended */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponseDto"];
+                };
+            };
+            /** @description Subscription not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponseDto"];
+                };
+            };
+        };
+    };
+    PaymentsController_webhook_v1: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Language for error messages */
+                "Accept-Language"?: "en" | "pt-BR";
+            };
+            path: {
+                provider: "stripe" | "infinitepay" | "abacatepay";
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Signature, secret or payload invalid */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponseDto"];
+                };
+            };
+            /** @description Platform not enabled */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponseDto"];
                 };
             };
         };
