@@ -1874,6 +1874,8 @@ export interface components {
              * @enum {string}
              */
             plan: "free" | "pro";
+            /** @description Paid a one-time (lifetime) plan: Pro forever, nothing else to buy */
+            lifetime: boolean;
             /** @description The current subscription, if any */
             subscription: components["schemas"]["SubscriptionDto"] | null;
             /** @description Most recent first */

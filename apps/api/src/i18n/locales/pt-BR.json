@@ -101,7 +101,8 @@
     "alreadyPurchased": "Você já tem este plano",
     "notFound": "Compra não encontrada",
     "subscriptionNotFound": "Assinatura não encontrada",
-    "planExists": "Já existe um plano com este id"
+    "planExists": "Já existe um plano com este id",
+    "alreadyLifetime": "Você já tem o Pro para sempre: não há mais nada a comprar"
   },
   "passkeys": {
     "challengeExpired": "O pedido da passkey expirou. Tente de novo",

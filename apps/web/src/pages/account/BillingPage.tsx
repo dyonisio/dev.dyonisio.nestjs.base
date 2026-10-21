@@ -36,9 +36,11 @@ export function BillingPage() {
         title={m.billing.title}
         subtitle={
           billing.data
-            ? billing.data.plan === 'pro'
-              ? m.billing.onPro
-              : m.billing.onFree
+            ? billing.data.lifetime
+              ? m.billing.onLifetime
+              : billing.data.plan === 'pro'
+                ? m.billing.onPro
+                : m.billing.onFree
             : undefined
         }
       />
@@ -133,7 +135,10 @@ function PlansSection({
                 {plan.description}
               </span>
             </div>
-            {!owned(plan) && plan.providers.length > 0 && (
+            {!owned(plan) && billing?.lifetime && (
+              <span className="muted">{m.billing.includedInLifetime}</span>
+            )}
+            {!owned(plan) && !billing?.lifetime && plan.providers.length > 0 && (
               <div className="row-actions">
                 {plan.providers.length > 1 && (
                   <select
@@ -153,13 +158,13 @@ function PlansSection({
                 </button>
               </div>
             )}
-            {!owned(plan) && plan.providers.length === 0 && anyProvider && (
+            {!owned(plan) && !billing?.lifetime && plan.providers.length === 0 && anyProvider && (
               <span className="muted">{m.billing.planOff}</span>
             )}
           </li>
         ))}
       </ul>
-      {plans.length > 0 && plans.some((p) => p.providers.length === 1) && (
+      {!billing?.lifetime && plans.some((p) => p.providers.length === 1) && (
         <p className="muted step-gap">
           {f(m.billing.singleProvider, {
             provider: providerLabel(plans.find((p) => p.providers.length === 1)!.providers[0]!),
@@ -206,6 +211,9 @@ function SubscriptionSection({
 
   return (
     <Section title={m.billing.subscription} help={m.billing.subscriptionHelp}>
+      {billing.lifetime && sub.status !== 'canceled' && !sub.cancelAtPeriodEnd && (
+        <p className="alert alert-warning panel-alert">{m.billing.lifetimeAndSubscription}</p>
+      )}
       <div className="status-line">
         <span className="row-main">
           <span className="row-title">

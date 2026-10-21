@@ -259,6 +259,10 @@ const en = {
   billing: {
     title: 'Plan',
     onPro: 'You are on Pro.',
+    onLifetime: 'You have Pro for life.',
+    includedInLifetime: 'Already included in your lifetime Pro',
+    lifetimeAndSubscription:
+      'You already have Pro for life. Cancel this subscription so you are not charged again.',
     onFree: 'You are on the free plan.',
     plans: 'Plans',
     plansHelp:
@@ -808,6 +812,10 @@ const ptBR: Dict = {
   billing: {
     title: 'Plano',
     onPro: 'Você está no Pro.',
+    onLifetime: 'Você tem o Pro para sempre.',
+    includedInLifetime: 'Já incluído no seu Pro vitalício',
+    lifetimeAndSubscription:
+      'Você já tem o Pro para sempre. Cancele esta assinatura para não ser cobrado de novo.',
     onFree: 'Você está no plano gratuito.',
     plans: 'Planos',
     plansHelp:

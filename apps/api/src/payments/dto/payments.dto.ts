@@ -177,6 +177,11 @@ export class BillingDto {
   plan: 'free' | 'pro';
 
   @ApiProperty({
+    description: 'Paid a one-time (lifetime) plan: Pro forever, nothing else to buy',
+  })
+  lifetime: boolean;
+
+  @ApiProperty({
     type: SubscriptionDto,
     nullable: true,
     description: 'The current subscription, if any',

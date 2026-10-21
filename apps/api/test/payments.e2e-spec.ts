@@ -187,10 +187,14 @@ describe('Pagamentos (e2e)', () => {
       const paid = await payments.findOneByOrFail({ id: res.body.paymentId });
       expect(paid.status).toBe('paid');
 
-      // já comprou: não compra de novo
+      // já comprou: não compra de novo, nem assina o mensal (o Pro já é dele para sempre)
       expect((await checkout(token, 'pro-lifetime', 'stripe').expect(400)).body.code).toBe(
         'payments.alreadyPurchased',
       );
+      expect((await checkout(token, 'pro-monthly', 'stripe').expect(400)).body.code).toBe(
+        'payments.alreadyLifetime',
+      );
+      expect(await billing(token)).toMatchObject({ plan: 'pro', lifetime: true });
     });
 
     it('webhook sem a assinatura certa é recusado', async () => {

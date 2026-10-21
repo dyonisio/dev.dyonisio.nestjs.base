@@ -65,6 +65,9 @@ os dois de exemplo de [plans.ts](../apps/api/src/payments/plans.ts): `pro-lifeti
 - **Tipo e ciclo não mudam** depois de criado: compras e assinaturas antigas dependem deles. Crie outro plano.
 - **Não se apaga plano**, só se tira de venda: some de `/billing`, e quem comprou continua com ele.
 - O "é Pro?" está em `PaymentsService.billing()`: qualquer plano único pago, ou uma assinatura não cancelada.
+- **Quem tem o vitalício não compra mais nada:** a tela mostra "Já incluído no seu Pro vitalício" e a API recusa
+  (`payments.alreadyLifetime`). Quem já assinava e comprou o vitalício vê um aviso para cancelar a assinatura (a
+  API não cancela sozinha: é cobrança na plataforma, a pessoa decide).
 
 ## Ligar
 

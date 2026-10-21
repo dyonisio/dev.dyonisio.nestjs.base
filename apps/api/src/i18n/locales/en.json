@@ -101,7 +101,8 @@
     "alreadyPurchased": "You already own this plan",
     "notFound": "Purchase not found",
     "subscriptionNotFound": "Subscription not found",
-    "planExists": "A plan with this id already exists"
+    "planExists": "A plan with this id already exists",
+    "alreadyLifetime": "You already have Pro for life: there is nothing else to buy"
   },
   "passkeys": {
     "challengeExpired": "This passkey request expired. Please try again",

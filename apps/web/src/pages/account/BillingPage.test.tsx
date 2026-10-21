@@ -35,7 +35,7 @@ const plans = {
     { id: 'infinitepay', methods: ['pix', 'card'] },
   ],
 };
-const free = { plan: 'free', subscription: null, payments: [] };
+const free = { plan: 'free', lifetime: false, subscription: null, payments: [] };
 
 afterEach(() => {
   vi.unstubAllGlobals();
@@ -83,6 +83,7 @@ describe('Plano (/billing)', () => {
       'GET /api/v1/users/me/billing': () =>
         json(200, {
           plan: 'pro',
+          lifetime: false,
           subscription: {
             id: 's1',
             planId: 'pro-monthly',
@@ -108,6 +109,60 @@ describe('Plano (/billing)', () => {
       (c) => new URL(requestOf(c).url).pathname === '/api/v1/users/me/subscriptions/s1/cancel',
     );
     expect(cancel).toBe(true);
+  });
+});
+
+describe('Plano vitalício', () => {
+  const lifetimePayment = {
+    id: 'p1',
+    planId: 'pro-lifetime',
+    kind: 'one_time',
+    provider: 'stripe',
+    status: 'paid',
+    amount: 9900,
+    currency: 'BRL',
+    paidAt: '2026-10-01T12:00:00.000Z',
+    createdAt: '2026-10-01T12:00:00.000Z',
+  };
+
+  it('com o vitalício, o mensal não se compra: já está incluído', async () => {
+    renderApp('/billing', makeUser(), {
+      'GET /api/v1/payments/plans': () => json(200, plans),
+      'GET /api/v1/users/me/billing': () =>
+        json(200, { plan: 'pro', lifetime: true, subscription: null, payments: [lifetimePayment] }),
+    });
+
+    expect(await screen.findByText('You have Pro for life.')).toBeInTheDocument();
+    expect(screen.getByText('Already included in your lifetime Pro')).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Subscribe' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Buy' })).not.toBeInTheDocument();
+  });
+
+  it('assinava e comprou o vitalício: avisa para cancelar a assinatura', async () => {
+    renderApp('/billing', makeUser(), {
+      'GET /api/v1/payments/plans': () => json(200, plans),
+      'GET /api/v1/users/me/billing': () =>
+        json(200, {
+          plan: 'pro',
+          lifetime: true,
+          subscription: {
+            id: 's1',
+            planId: 'pro-monthly',
+            provider: 'stripe',
+            status: 'active',
+            cancelAtPeriodEnd: false,
+            currentPeriodEnd: '2026-11-21T12:00:00.000Z',
+            canceledAt: null,
+            createdAt: '2026-09-21T12:00:00.000Z',
+          },
+          payments: [lifetimePayment],
+        }),
+    });
+
+    expect(
+      await screen.findByText(/Cancel this subscription so you are not charged again/),
+    ).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Cancel subscription' })).toBeInTheDocument();
   });
 });
 

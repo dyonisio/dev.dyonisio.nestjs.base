@@ -124,6 +124,7 @@ export class PaymentsService {
     const lifetime = payments.some((p) => p.status === 'paid' && p.kind === 'one_time');
     return {
       plan: lifetime || subscriptions.some((s) => s.status !== 'canceled') ? 'pro' : 'free',
+      lifetime,
       subscription: current ? SubscriptionDto.from(current) : null,
       payments: payments
         .filter((p) => p.status !== 'pending' || Date.now() - p.createdAt.getTime() < 86_400_000)
@@ -180,6 +181,12 @@ export class PaymentsService {
       });
       if (paid) throw new BadRequestException(i18nKey('payments.alreadyPurchased'));
     }
+    // Já tem o vitalício (exemplo: qualquer plano único pago): o Pro é dele para sempre, e
+    // assinar ou comprar outro plano só o faria pagar à toa
+    const lifetime = await this.payments.exists({
+      where: { userId, kind: 'one_time', status: 'paid' },
+    });
+    if (lifetime) throw new BadRequestException(i18nKey('payments.alreadyLifetime'));
   }
 
   /** Aplica o que a plataforma confirmou. Repetir o mesmo aviso não muda nada (idempotente). */

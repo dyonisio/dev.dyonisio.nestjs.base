@@ -188,6 +188,7 @@ export const adminPlans: components['schemas']['AdminPlanDto'][] = [
 
 export const billing: components['schemas']['BillingDto'] = {
   plan: 'pro',
+  lifetime: false,
   subscription: {
     id: '5b1c0001-0000-4000-8000-000000000001',
     planId: 'pro-monthly',

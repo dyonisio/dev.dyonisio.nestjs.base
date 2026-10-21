@@ -6954,6 +6954,10 @@
             ],
             "description": "pro = paid the lifetime plan, or has a subscription that is not canceled"
           },
+          "lifetime": {
+            "type": "boolean",
+            "description": "Paid a one-time (lifetime) plan: Pro forever, nothing else to buy"
+          },
           "subscription": {
             "nullable": true,
             "description": "The current subscription, if any",
@@ -6974,6 +6978,7 @@
         },
         "required": [
           "plan",
+          "lifetime",
           "subscription",
           "payments"
         ]
