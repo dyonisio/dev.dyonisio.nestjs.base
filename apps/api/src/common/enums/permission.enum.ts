@@ -18,6 +18,7 @@ export enum Permission {
   USERS_MANAGE_ROLES = 'users:manage-roles',
   USERS_RESET_2FA = 'users:reset-2fa',
   AUDIT_READ = 'audit:read',
+  PLANS_MANAGE = 'plans:manage',
 }
 
 export const ROLE_PERMISSIONS: Record<Role, readonly Permission[]> = {

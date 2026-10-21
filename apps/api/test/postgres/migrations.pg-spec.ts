@@ -47,6 +47,7 @@ describe('Migrations (Postgres)', () => {
       'migrations',
       'passkeys',
       'payments',
+      'plans',
       'rate_limits',
       'refresh_tokens',
       'sessions',

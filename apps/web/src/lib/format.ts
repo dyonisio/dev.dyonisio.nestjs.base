@@ -60,3 +60,8 @@ export function downloadJson(filename: string, data: unknown) {
   a.click();
   URL.revokeObjectURL(url);
 }
+
+/** Centavos → "R$ 29,90" no idioma da tela. */
+export function formatMoney(lang: Language, cents: number, currency: string): string {
+  return new Intl.NumberFormat(lang, { style: 'currency', currency }).format(cents / 100);
+}

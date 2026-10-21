@@ -72,7 +72,9 @@
                 "payment.paid",
                 "payment.refunded",
                 "subscription.started",
-                "subscription.canceled"
+                "subscription.canceled",
+                "plan.created",
+                "plan.updated"
               ]
             }
           },
@@ -5035,6 +5037,264 @@
           "Payments"
         ]
       }
+    },
+    "/api/v1/admin/plans": {
+      "get": {
+        "description": "Permission: `plans:manage`.",
+        "operationId": "AdminPlansController_list_v1",
+        "parameters": [
+          {
+            "in": "header",
+            "name": "Accept-Language",
+            "required": false,
+            "description": "Language for error messages",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "en",
+                "pt-BR"
+              ],
+              "default": "en"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/AdminPlanDto"
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing, invalid or expired token, or the session was ended",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Requires the permission(s): plans:manage",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "All plans (on sale or not)",
+        "tags": [
+          "Payments"
+        ]
+      },
+      "post": {
+        "description": "Recorded in the audit log. Permission: `plans:manage`.",
+        "operationId": "AdminPlansController_create_v1",
+        "parameters": [
+          {
+            "in": "header",
+            "name": "Accept-Language",
+            "required": false,
+            "description": "Language for error messages",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "en",
+                "pt-BR"
+              ],
+              "default": "en"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreatePlanDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AdminPlanDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Validation failed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing, invalid or expired token, or the session was ended",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Requires the permission(s): plans:manage",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "A plan with this id already exists",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Create a plan",
+        "tags": [
+          "Payments"
+        ]
+      }
+    },
+    "/api/v1/admin/plans/{id}": {
+      "patch": {
+        "description": "A new price applies to new purchases only: past payments keep theirs, and active subscriptions keep the price they had on the platform. Kind and interval cannot change. Recorded in the audit log. Permission: `plans:manage`.",
+        "operationId": "AdminPlansController_update_v1",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "header",
+            "name": "Accept-Language",
+            "required": false,
+            "description": "Language for error messages",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "en",
+                "pt-BR"
+              ],
+              "default": "en"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdatePlanDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AdminPlanDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Validation failed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing, invalid or expired token, or the session was ended",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Requires the permission(s): plans:manage",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Plan not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Change a plan (price, names, on sale)",
+        "tags": [
+          "Payments"
+        ]
+      }
     }
   },
   "info": {
@@ -5099,7 +5359,9 @@
               "payment.paid",
               "payment.refunded",
               "subscription.started",
-              "subscription.canceled"
+              "subscription.canceled",
+              "plan.created",
+              "plan.updated"
             ],
             "example": "user.role_changed"
           },
@@ -5448,7 +5710,8 @@
                 "users:delete",
                 "users:manage-roles",
                 "users:reset-2fa",
-                "audit:read"
+                "audit:read",
+                "plans:manage"
               ]
             }
           },
@@ -6714,6 +6977,181 @@
           "subscription",
           "payments"
         ]
+      },
+      "AdminPlanDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "example": "pro-monthly"
+          },
+          "kind": {
+            "type": "string",
+            "enum": [
+              "one_time",
+              "subscription"
+            ]
+          },
+          "interval": {
+            "type": "string",
+            "enum": [
+              "month",
+              "year"
+            ],
+            "nullable": true
+          },
+          "amount": {
+            "type": "number",
+            "example": 2990,
+            "description": "In cents"
+          },
+          "currency": {
+            "type": "string",
+            "example": "BRL"
+          },
+          "nameEn": {
+            "type": "string"
+          },
+          "namePt": {
+            "type": "string"
+          },
+          "descriptionEn": {
+            "type": "string"
+          },
+          "descriptionPt": {
+            "type": "string"
+          },
+          "active": {
+            "type": "boolean",
+            "description": "On sale (shown on /billing)"
+          },
+          "sortOrder": {
+            "type": "number"
+          },
+          "createdAt": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "updatedAt": {
+            "format": "date-time",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "kind",
+          "interval",
+          "amount",
+          "currency",
+          "nameEn",
+          "namePt",
+          "descriptionEn",
+          "descriptionPt",
+          "active",
+          "sortOrder",
+          "createdAt",
+          "updatedAt"
+        ]
+      },
+      "CreatePlanDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "example": "pro-yearly",
+            "description": "Stable id (lowercase letters, numbers and hyphens). Cannot be changed later."
+          },
+          "kind": {
+            "type": "string",
+            "enum": [
+              "one_time",
+              "subscription"
+            ],
+            "description": "Cannot be changed later"
+          },
+          "interval": {
+            "type": "string",
+            "enum": [
+              "month",
+              "year"
+            ],
+            "description": "Required for subscriptions. Cannot be changed later"
+          },
+          "amount": {
+            "type": "number",
+            "example": 2990,
+            "description": "In cents (50 at least: the Stripe minimum)"
+          },
+          "nameEn": {
+            "type": "string",
+            "example": "Pro, yearly",
+            "maxLength": 80
+          },
+          "namePt": {
+            "type": "string",
+            "example": "Pro anual",
+            "maxLength": 80
+          },
+          "descriptionEn": {
+            "type": "string",
+            "maxLength": 200
+          },
+          "descriptionPt": {
+            "type": "string",
+            "maxLength": 200
+          },
+          "active": {
+            "type": "boolean",
+            "default": true
+          },
+          "sortOrder": {
+            "type": "number",
+            "default": 0
+          }
+        },
+        "required": [
+          "id",
+          "kind",
+          "amount",
+          "nameEn",
+          "namePt"
+        ]
+      },
+      "UpdatePlanDto": {
+        "type": "object",
+        "properties": {
+          "amount": {
+            "type": "number",
+            "example": 2990,
+            "description": "In cents (50 at least: the Stripe minimum)"
+          },
+          "nameEn": {
+            "type": "string",
+            "example": "Pro, yearly",
+            "maxLength": 80
+          },
+          "namePt": {
+            "type": "string",
+            "example": "Pro anual",
+            "maxLength": 80
+          },
+          "descriptionEn": {
+            "type": "string",
+            "maxLength": 200
+          },
+          "descriptionPt": {
+            "type": "string",
+            "maxLength": 200
+          },
+          "active": {
+            "type": "boolean",
+            "default": true
+          },
+          "sortOrder": {
+            "type": "number",
+            "default": 0
+          }
+        }
       }
     }
   }

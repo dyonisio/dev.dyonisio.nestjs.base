@@ -46,7 +46,7 @@ export class PaymentsController {
       'Each plan lists the enabled platforms (PAYMENT_PROVIDERS) that can charge it. With none, payments are off.',
   })
   @ApiOkResponse({ type: PlansResponseDto })
-  plans(): PlansResponseDto {
+  plans(): Promise<PlansResponseDto> {
     return this.payments.plans();
   }
 

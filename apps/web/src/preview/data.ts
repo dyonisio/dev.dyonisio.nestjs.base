@@ -21,6 +21,7 @@ const ALL: Permission[] = [
   'users:manage-roles',
   'users:reset-2fa',
   'audit:read',
+  'plans:manage',
 ];
 
 function user(
@@ -151,6 +152,39 @@ export const plans: components['schemas']['PlansResponseDto'] = {
     { id: 'abacatepay', methods: ['pix', 'card'] },
   ],
 };
+
+export const adminPlans: components['schemas']['AdminPlanDto'][] = [
+  {
+    id: 'pro-lifetime',
+    kind: 'one_time',
+    interval: null,
+    amount: 9900,
+    currency: 'BRL',
+    nameEn: 'Pro, lifetime',
+    namePt: 'Pro vitalício',
+    descriptionEn: 'Pay once, keep Pro forever.',
+    descriptionPt: 'Paga uma vez e fica com o Pro para sempre.',
+    active: true,
+    sortOrder: 0,
+    createdAt: days(60),
+    updatedAt: days(60),
+  },
+  {
+    id: 'pro-monthly',
+    kind: 'subscription',
+    interval: 'month',
+    amount: 2990,
+    currency: 'BRL',
+    nameEn: 'Pro, monthly',
+    namePt: 'Pro mensal',
+    descriptionEn: 'Billed every month. Cancel any time.',
+    descriptionPt: 'Cobrado todo mês. Cancele quando quiser.',
+    active: true,
+    sortOrder: 1,
+    createdAt: days(60),
+    updatedAt: days(60),
+  },
+];
 
 export const billing: components['schemas']['BillingDto'] = {
   plan: 'pro',

@@ -1,6 +1,6 @@
 import type { Payment } from '../entities/payment.entity';
 import type { Subscription } from '../entities/subscription.entity';
-import type { Plan, PlanKind } from '../plans';
+import type { Plan, PlanKind } from '../entities/plan.entity';
 
 export type ProviderId = 'stripe' | 'infinitepay' | 'abacatepay';
 export const PROVIDER_IDS: readonly ProviderId[] = ['stripe', 'infinitepay', 'abacatepay'];
@@ -19,6 +19,17 @@ export interface CheckoutInput {
   cancelUrl: string;
   /** Onde a plataforma avisa a API (webhook). */
   webhookUrl: string;
+  /** Produtos que a API já criou nesta plataforma para este plano (quem cobra por produto). */
+  products: ProductStore;
+}
+
+/**
+ * Para plataformas que só cobram produtos cadastrados nelas (AbacatePay): a API cria o produto
+ * na primeira compra de cada preço e guarda o id aqui (plan.providerProducts).
+ */
+export interface ProductStore {
+  get(key: string): string | undefined;
+  save(key: string, productId: string): Promise<void>;
 }
 
 export interface CheckoutResult {
@@ -60,9 +71,6 @@ export interface PaymentProvider {
   /** O que ela sabe fazer: a tela só oferece o que funciona. */
   readonly supports: Record<PlanKind, boolean>;
   readonly methods: readonly PaymentMethod[];
-
-  /** Além do tipo (único/assinatura), se este plano dá para cobrar aqui (ex.: produto cadastrado). */
-  supportsPlan?(plan: Plan): boolean;
 
   createCheckout(input: CheckoutInput): Promise<CheckoutResult>;
 

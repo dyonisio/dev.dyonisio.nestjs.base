@@ -1,15 +1,29 @@
 import { createHmac } from 'crypto';
 import type { Payment } from '../entities/payment.entity';
 import type { Subscription } from '../entities/subscription.entity';
-import { findPlan } from '../plans';
+import { DEFAULT_PLANS, type Plan } from '../plans';
 import { ABACATEPAY_PUBLIC_KEY, AbacatePayProvider } from './abacatepay.provider';
 import { InfinitePayProvider } from './infinitepay.provider';
 import type { CheckoutInput, WebhookRequest } from './payment-provider';
 import { StripeProvider } from './stripe.provider';
 
 /** Os fluxos completos (HTTP + banco) estão em test/payments.e2e-spec.ts; aqui, os casos de borda. */
-const life = findPlan('pro-lifetime')!;
-const monthly = findPlan('pro-monthly')!;
+const plan = (id: string) =>
+  ({ ...DEFAULT_PLANS.find((p) => p.id === id)!, active: true, providerProducts: null }) as Plan;
+const life = plan('pro-lifetime');
+const monthly = plan('pro-monthly');
+/** O "cadastro de produtos" do plano, em memória. */
+const memoryProducts = (initial: Record<string, string> = {}) => {
+  const saved: Record<string, string> = { ...initial };
+  return {
+    saved,
+    get: (key: string) => saved[key],
+    save: (key: string, id: string) => {
+      saved[key] = id;
+      return Promise.resolve();
+    },
+  };
+};
 const payment = (extra: Partial<Payment> = {}) =>
   ({ id: 'pay-1', kind: 'one_time', providerRef: 'ref-1', amount: 9900, ...extra }) as Payment;
 const input = (plan = life): CheckoutInput => ({
@@ -20,6 +34,7 @@ const input = (plan = life): CheckoutInput => ({
   successUrl: 'https://front/ok',
   cancelUrl: 'https://front/no',
   webhookUrl: 'https://api/hook',
+  products: memoryProducts(),
 });
 const webhook = (body: unknown, extra: Partial<WebhookRequest> = {}): WebhookRequest => ({
   rawBody: Buffer.from(typeof body === 'string' ? body : JSON.stringify(body)),
@@ -257,7 +272,6 @@ describe('AbacatePayProvider', () => {
     const provider = new AbacatePayProvider({
       apiKey: 'key',
       webhookSecret: 'seg',
-      products: { 'pro-lifetime': 'prod_life', 'pro-monthly': 'prod_month' },
       fetch: fetch.fn,
     });
     return { provider, calls: fetch.calls };
@@ -274,18 +288,48 @@ describe('AbacatePayProvider', () => {
     });
   };
 
-  it('só atende o plano que tem produto cadastrado', () => {
-    const { provider } = make(() => ({ body: {} }));
-    expect(provider.supportsPlan(life)).toBe(true);
-    expect(provider.supportsPlan({ ...life, id: 'outro' })).toBe(false);
+  it('cria o produto uma vez por preço (com ciclo na assinatura) e reaproveita', async () => {
+    let n = 0;
+    const { provider, calls } = make((url) =>
+      url.endsWith('/products/create')
+        ? { body: { data: { id: `prod_${++n}` } } }
+        : { body: { data: { id: 'bill_1', url: 'https://pay/1' } } },
+    );
+    const products = memoryProducts();
+    const sent = () =>
+      calls.map((c) => JSON.parse(c.init?.body as string) as Record<string, unknown>);
+
+    await provider.createCheckout({ ...input(monthly), products });
+    await provider.createCheckout({ ...input(monthly), products });
+    expect(calls.filter((c) => c.url.endsWith('/products/create'))).toHaveLength(1);
+    expect(sent()[0]).toMatchObject({ price: 2990, currency: 'BRL', cycle: 'MONTHLY' });
+    expect(sent()[1]).toMatchObject({ items: [{ id: 'prod_1', quantity: 1 }] });
+
+    // preço novo: produto novo; o único vai sem ciclo; anual vira ANNUALLY
+    await provider.createCheckout({ ...input({ ...monthly, amount: 3990 }), products });
+    await provider.createCheckout({ ...input(life), products });
+    await provider.createCheckout({
+      ...input({ ...monthly, id: 'pro-yearly', interval: 'year', amount: 29900 }),
+      products,
+    });
+    const created = sent().filter((b) => 'price' in b);
+    expect(created.map((b) => [b.price, b.cycle])).toEqual([
+      [2990, 'MONTHLY'],
+      [3990, 'MONTHLY'],
+      [9900, undefined],
+      [29900, 'ANNUALLY'],
+    ]);
+    expect(Object.values(products.saved)).toEqual(['prod_1', 'prod_2', 'prod_3', 'prod_4']);
   });
 
-  it('plano sem produto, ou resposta incompleta: erro', async () => {
+  it('resposta incompleta ao criar o produto ou a cobrança: erro', async () => {
     const { provider } = make(() => ({ body: { data: {} } }));
-    await expect(
-      provider.createCheckout({ ...input(), plan: { ...life, id: 'outro' } }),
-    ).rejects.toThrow('payments.providerUnavailable');
     await expect(provider.createCheckout(input())).rejects.toThrow('payments.providerFailed');
+    // o produto nasce, mas a cobrança volta sem url
+    const half = make((url) => ({
+      body: { data: url.endsWith('/products/create') ? { id: 'prod_x' } : {} },
+    })).provider;
+    await expect(half.createCheckout(input())).rejects.toThrow('payments.providerFailed');
   });
 
   it('erro da AbacatePay (mesmo com HTTP 200 e "error"): falha clara', async () => {

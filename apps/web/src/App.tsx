@@ -7,6 +7,7 @@ import { PrivacyPage } from './pages/account/PrivacyPage';
 import { ProfilePage } from './pages/account/ProfilePage';
 import { SecurityPage } from './pages/account/SecurityPage';
 import { AuditPage } from './pages/admin/AuditPage';
+import { PlansPage } from './pages/admin/PlansPage';
 import { UserDetailPage } from './pages/admin/UserDetailPage';
 import { UsersPage } from './pages/admin/UsersPage';
 import { HomePage, NotFoundPage } from './pages/HomePage';
@@ -80,6 +81,14 @@ export function App() {
           element={
             <RequirePermission permission="users:read">
               <UserDetailPage />
+            </RequirePermission>
+          }
+        />
+        <Route
+          path="/admin/plans"
+          element={
+            <RequirePermission permission="plans:manage">
+              <PlansPage />
             </RequirePermission>
           }
         />

@@ -43,6 +43,8 @@ export enum AuditAction {
   PAYMENT_REFUNDED = 'payment.refunded',
   SUBSCRIPTION_STARTED = 'subscription.started',
   SUBSCRIPTION_CANCELED = 'subscription.canceled',
+  PLAN_CREATED = 'plan.created',
+  PLAN_UPDATED = 'plan.updated',
 }
 
-export type AuditTargetType = 'user' | 'session';
+export type AuditTargetType = 'user' | 'session' | 'plan';

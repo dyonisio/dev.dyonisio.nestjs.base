@@ -15,7 +15,6 @@ Object.assign(process.env, {
   INFINITEPAY_HANDLE: 'loja-teste',
   ABACATEPAY_API_KEY: 'abc_dev_e2e',
   ABACATEPAY_WEBHOOK_SECRET: 'segredo-do-webhook',
-  ABACATEPAY_PRODUCTS: 'pro-lifetime:prod_life,pro-monthly:prod_month',
 });
 
 type Json = Record<string, unknown>;
@@ -33,11 +32,15 @@ describe('Pagamentos (e2e)', () => {
   const http = () => request(app.getHttpServer());
   const as = (token: string, req: request.Test) => req.set('Authorization', `Bearer ${token}`);
 
-  async function createUser(email: string): Promise<string> {
+  async function createUser(email: string, role?: 'admin'): Promise<string> {
     const { UsersService } = await import('../src/users/users.service');
+    const { Role } = await import('../src/common/enums/role.enum');
     await app
       .get(UsersService)
-      .create({ name: 'Ana', email, password: 'Senha123' }, { emailVerified: true });
+      .create(
+        { name: 'Ana', email, password: 'Senha123', ...(role ? { role: Role.ADMIN } : {}) },
+        { emailVerified: true },
+      );
     const res = await http()
       .post('/api/v1/auth/login')
       .send({ email, password: 'Senha123' })
@@ -355,12 +358,19 @@ describe('Pagamentos (e2e)', () => {
   });
 
   describe('AbacatePay', () => {
-    it('pagamento único: produto do plano; webhook com secret e assinatura', async () => {
+    it('pagamento único: cria o produto do plano; webhook com secret e assinatura', async () => {
       const token = await createUser('abacate@test.com');
-      fakeApi = () => ({ data: { id: 'bill_1', url: 'https://app.abacatepay.com/pay/bill_1' } });
+      fakeApi = (url) =>
+        url.endsWith('/products/create')
+          ? { data: { id: 'prod_life' } }
+          : { data: { id: 'bill_1', url: 'https://app.abacatepay.com/pay/bill_1' } };
 
       const res = await checkout(token, 'pro-lifetime', 'abacatepay').expect(200);
       expect(res.body.url).toBe('https://app.abacatepay.com/pay/bill_1');
+      expect(calls.find((c) => c.url.endsWith('/v2/products/create'))!.body).toMatchObject({
+        price: 9900,
+        currency: 'BRL',
+      });
       const created = calls.filter((c) => c.url.endsWith('/v2/checkouts/create')).at(-1)!.body;
       expect(created).toMatchObject({
         items: [{ id: 'prod_life', quantity: 1 }],
@@ -386,7 +396,9 @@ describe('Pagamentos (e2e)', () => {
       fakeApi = (url) =>
         url.endsWith('/subscriptions/cancel')
           ? { data: { id: 'subs_1', status: 'CANCELLED' } }
-          : { data: { id: 'bill_sub', url: 'https://app.abacatepay.com/pay/bill_sub' } };
+          : url.endsWith('/products/create')
+            ? { data: { id: 'prod_month' } }
+            : { data: { id: 'bill_sub', url: 'https://app.abacatepay.com/pay/bill_sub' } };
 
       const res = await checkout(token, 'pro-monthly', 'abacatepay').expect(200);
       expect(calls.at(-1)!.url).toMatch(/\/v2\/subscriptions\/create$/);
@@ -409,6 +421,103 @@ describe('Pagamentos (e2e)', () => {
       expect(calls.at(-1)!.body).toEqual({ id: 'subs_1' });
       state = await billing(token);
       expect(state).toMatchObject({ plan: 'free', subscription: { status: 'canceled' } });
+    });
+  });
+
+  describe('planos pelo admin', () => {
+    const publicPlans = async () =>
+      (await http().get('/api/v1/payments/plans').expect(200)).body.plans as {
+        id: string;
+        amount: number;
+        providers: string[];
+      }[];
+
+    it('só com plans:manage', async () => {
+      const token = await createUser('sem-permissao@test.com');
+      await as(token, http().get('/api/v1/admin/plans')).expect(403);
+      await as(token, http().patch('/api/v1/admin/plans/pro-lifetime'))
+        .send({ amount: 100 })
+        .expect(403);
+    });
+
+    it('preço novo vale para a próxima compra; a AbacatePay ganha outro produto', async () => {
+      const admin = await createUser('admin-planos@test.com', 'admin');
+      const res = await as(admin, http().patch('/api/v1/admin/plans/pro-lifetime'))
+        .send({ amount: 14900, namePt: 'Pro para sempre' })
+        .expect(200);
+      expect(res.body).toMatchObject({
+        amount: 14900,
+        namePt: 'Pro para sempre',
+        kind: 'one_time',
+      });
+      expect(res.body).not.toHaveProperty('providerProducts');
+      expect((await publicPlans()).find((p) => p.id === 'pro-lifetime')?.amount).toBe(14900);
+
+      const token = await createUser('preco-novo@test.com');
+      fakeApi = () => ({ url: 'https://checkout.infinitepay.io/novo' });
+      const buy = await checkout(token, 'pro-lifetime', 'infinitepay').expect(200);
+      expect(calls.at(-1)!.body).toMatchObject({ items: [{ price: 14900 }] });
+      expect((await payments.findOneByOrFail({ id: buy.body.paymentId })).amount).toBe(14900);
+
+      let products = 0;
+      fakeApi = (url) =>
+        url.endsWith('/products/create')
+          ? { data: { id: `prod_${++products}` } }
+          : { data: { id: 'bill_n', url: 'https://app.abacatepay.com/pay/bill_n' } };
+      await checkout(token, 'pro-lifetime', 'abacatepay').expect(200);
+      await checkout(token, 'pro-lifetime', 'abacatepay').expect(200);
+      expect(products).toBe(1); // um produto por preço, não por compra
+      expect(calls.filter((c) => c.url.endsWith('/products/create')).at(-1)!.body).toMatchObject({
+        price: 14900,
+      });
+
+      const log = await audit.findOneByOrFail({ action: 'plan.updated' as never });
+      expect(log).toMatchObject({ targetType: 'plan', targetId: 'pro-lifetime' });
+      expect(log.metadata).toMatchObject({ from: 9900, to: 14900 });
+    });
+
+    it('cria plano, recusa id repetido ou inválido, e tira de venda', async () => {
+      const admin = await createUser('admin-novo-plano@test.com', 'admin');
+      const plan = {
+        id: 'pro-yearly',
+        kind: 'subscription',
+        interval: 'year',
+        amount: 29900,
+        nameEn: 'Pro, yearly',
+        namePt: 'Pro anual',
+        sortOrder: 5,
+      };
+      await as(admin, http().post('/api/v1/admin/plans')).send(plan).expect(201);
+      expect((await publicPlans()).find((p) => p.id === 'pro-yearly')?.providers).toEqual([
+        'stripe',
+        'abacatepay',
+      ]);
+      expect(
+        (await as(admin, http().post('/api/v1/admin/plans')).send(plan).expect(409)).body.code,
+      ).toBe('payments.planExists');
+      await as(admin, http().post('/api/v1/admin/plans'))
+        .send({ ...plan, id: 'Com Espaço' })
+        .expect(400);
+      // tipo e ciclo não mudam depois de criado
+      await as(admin, http().patch('/api/v1/admin/plans/pro-yearly'))
+        .send({ kind: 'one_time' })
+        .expect(400);
+
+      await as(admin, http().patch('/api/v1/admin/plans/pro-yearly'))
+        .send({ active: false })
+        .expect(200);
+      expect((await publicPlans()).map((p) => p.id)).not.toContain('pro-yearly');
+      const token = await createUser('fora-de-venda@test.com');
+      await checkout(token, 'pro-yearly', 'stripe').expect(404);
+
+      const all = (await as(admin, http().get('/api/v1/admin/plans')).expect(200)).body as {
+        id: string;
+        active: boolean;
+      }[];
+      expect(all.find((p) => p.id === 'pro-yearly')).toMatchObject({ active: false });
+      await as(admin, http().patch('/api/v1/admin/plans/nao-existe'))
+        .send({ amount: 100 })
+        .expect(404);
     });
   });
 

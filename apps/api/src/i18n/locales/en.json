@@ -100,7 +100,8 @@
     "alreadySubscribed": "You already have an active subscription to this plan",
     "alreadyPurchased": "You already own this plan",
     "notFound": "Purchase not found",
-    "subscriptionNotFound": "Subscription not found"
+    "subscriptionNotFound": "Subscription not found",
+    "planExists": "A plan with this id already exists"
   },
   "passkeys": {
     "challengeExpired": "This passkey request expired. Please try again",
@@ -129,7 +130,8 @@
     "invalid": "{field} is invalid",
     "twoFactorCode": "{field} must be a 6-digit code or a recovery code (ABCD-EFGH)",
     "personName": "{field} may only contain letters, spaces, apostrophes, hyphens and dots",
-    "passwordTooLong": "{field} is too long (at most 72 bytes — accented letters count double)"
+    "passwordTooLong": "{field} is too long (at most 72 bytes — accented letters count double)",
+    "planId": "{field} must have 2 to 40 lowercase letters, numbers or hyphens"
   },
   "fields": {
     "name": "name",
@@ -153,7 +155,15 @@
     "contentType": "content type",
     "size": "size",
     "fileId": "file",
-    "newEmail": "new email"
+    "newEmail": "new email",
+    "amount": "price",
+    "nameEn": "name (English)",
+    "namePt": "name (Portuguese)",
+    "descriptionEn": "description (English)",
+    "descriptionPt": "description (Portuguese)",
+    "kind": "type",
+    "interval": "billing cycle",
+    "sortOrder": "order"
   },
   "mail": {
     "subjects": {

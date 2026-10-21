@@ -59,7 +59,6 @@ provider:
     PAYMENT_PROVIDERS: ${param:paymentProviders, ''}
     PAYMENTS_PUBLIC_API_URL: ${param:paymentsPublicApiUrl, ''}
     INFINITEPAY_HANDLE: ${param:infinitepayHandle, ''}
-    ABACATEPAY_PRODUCTS: ${param:abacatepayProducts, ''}
     STRIPE_SECRET_KEY: ${ssm:/${self:service}/${sls:stage}/STRIPE_SECRET_KEY, ''}
     STRIPE_WEBHOOK_SECRET: ${ssm:/${self:service}/${sls:stage}/STRIPE_WEBHOOK_SECRET, ''}
     ABACATEPAY_API_KEY: ${ssm:/${self:service}/${sls:stage}/ABACATEPAY_API_KEY, ''}

@@ -51,6 +51,7 @@ export function AppLayout() {
       label: m.nav.groupAdmin,
       items: [
         { to: '/admin/users', label: m.nav.users, icon: 'users', permission: 'users:read' },
+        { to: '/admin/plans', label: m.nav.plans, icon: 'card', permission: 'plans:manage' },
         { to: '/admin/audit', label: m.nav.audit, icon: 'list', permission: 'audit:read' },
       ],
     },

@@ -17,7 +17,8 @@ import {
 import { Payment } from './entities/payment.entity';
 import { Subscription } from './entities/subscription.entity';
 import { PaymentProviders } from './payment-providers';
-import { findPlan, PLANS, type Plan } from './plans';
+import { planText, type Plan } from './plans';
+import { PlansService } from './plans.service';
 import type { PaymentEvent, PaymentProvider, WebhookRequest } from './providers/payment-provider';
 
 /**
@@ -35,23 +36,23 @@ export class PaymentsService {
     @InjectRepository(Payment) private readonly payments: Repository<Payment>,
     @InjectRepository(Subscription) private readonly subscriptions: Repository<Subscription>,
     private readonly providers: PaymentProviders,
+    private readonly plansService: PlansService,
     private readonly users: UsersService,
     private readonly audit: AuditService,
     private readonly config: ConfigService,
   ) {}
 
-  /** O catálogo, cada plano com as plataformas ligadas que conseguem cobrá-lo. */
-  plans(): PlansResponseDto {
-    const lang = RequestContext.get()?.requestedLang === 'pt-BR' ? 'pt-BR' : 'en';
+  /** O que está à venda, cada plano com as plataformas ligadas que conseguem cobrá-lo. */
+  async plans(): Promise<PlansResponseDto> {
+    const lang = RequestContext.get()?.requestedLang ?? 'en';
     return {
-      plans: PLANS.map((plan) => ({
+      plans: (await this.plansService.listActive()).map((plan) => ({
         id: plan.id,
         kind: plan.kind,
-        interval: plan.interval,
+        interval: plan.interval ?? undefined,
         amount: plan.amount,
         currency: plan.currency,
-        name: plan.name[lang],
-        description: plan.description[lang],
+        ...planText(plan, lang),
         providers: this.providersFor(plan).map((p) => p.id),
       })),
       providers: this.providers.all().map((p) => ({ id: p.id, methods: [...p.methods] })),
@@ -63,8 +64,7 @@ export class PaymentsService {
     planId: string,
     providerId?: string,
   ): Promise<CheckoutResponseDto> {
-    const plan = findPlan(planId);
-    if (!plan) throw new NotFoundException(i18nKey('payments.planNotFound'));
+    const plan = await this.plansService.findActive(planId);
     const provider = this.pickProvider(plan, providerId);
     await this.ensureNotOwned(userId, plan);
 
@@ -83,15 +83,19 @@ export class PaymentsService {
 
     const front = this.config.get<string>('app.frontendUrl', '').replace(/\/$/, '');
     const api = this.config.get<string>('payments.publicApiUrl', '').replace(/\/$/, '');
-    const lang = RequestContext.get()?.requestedLang === 'pt-BR' ? 'pt-BR' : 'en';
     const { url, providerRef } = await provider.createCheckout({
       payment,
       plan,
-      title: plan.name[lang],
+      title: planText(plan, RequestContext.get()?.requestedLang ?? 'en').name,
       customer: { name: user.name, email: user.email },
       successUrl: `${front}/billing/return?payment=${payment.id}`,
       cancelUrl: `${front}/billing?canceled=1`,
       webhookUrl: api ? `${api}/api/v1/payments/webhooks/${provider.id}` : '',
+      products: {
+        get: (key) => plan.providerProducts?.[provider.id]?.[key],
+        save: (key, productId) =>
+          this.plansService.rememberProduct(plan.id, provider.id, key, productId),
+      },
     });
     payment.providerRef = providerRef;
     await this.payments.save(payment);
@@ -116,9 +120,8 @@ export class PaymentsService {
       this.subscriptions.find({ where: { userId }, order: { createdAt: 'DESC' } }),
     ]);
     const current = subscriptions.find((s) => s.status !== 'canceled') ?? subscriptions[0] ?? null;
-    const lifetime = payments.some(
-      (p) => p.status === 'paid' && p.kind === 'one_time' && p.planId === 'pro-lifetime',
-    );
+    // Exemplo: qualquer plano pago de uma vez (e não reembolsado) dá o Pro para sempre
+    const lifetime = payments.some((p) => p.status === 'paid' && p.kind === 'one_time');
     return {
       plan: lifetime || subscriptions.some((s) => s.status !== 'canceled') ? 'pro' : 'free',
       subscription: current ? SubscriptionDto.from(current) : null,
@@ -150,9 +153,7 @@ export class PaymentsService {
   // ---------------------------------------------------------------- internos
 
   private providersFor(plan: Plan): PaymentProvider[] {
-    return this.providers
-      .all()
-      .filter((p) => p.supports[plan.kind] && (p.supportsPlan?.(plan) ?? true));
+    return this.providers.all().filter((p) => p.supports[plan.kind]);
   }
 
   private pickProvider(plan: Plan, providerId?: string): PaymentProvider {

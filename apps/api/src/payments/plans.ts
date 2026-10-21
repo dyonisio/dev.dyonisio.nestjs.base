@@ -1,36 +1,35 @@
+import type { Plan } from './entities/plan.entity';
+
+export type { Plan, PlanInterval, PlanKind } from './entities/plan.entity';
+
 /**
- * Catálogo de EXEMPLO do que se vende. Num produto de verdade, troque estes planos (ou leia de
- * uma tabela). Valores em centavos.
- *
- * Cada plataforma recebe o plano de um jeito:
- *  - Stripe e InfinitePay: o valor e o nome vão direto na cobrança (nada a cadastrar antes);
- *  - AbacatePay: cobra por produtos cadastrados nela. Crie um produto para cada plano (o de
- *    assinatura com ciclo) e informe os ids em ABACATEPAY_PRODUCTS (veja docs/PAYMENTS.md).
+ * Os planos de EXEMPLO com que a tabela `plans` nasce (só quando está vazia). Depois disso quem
+ * manda é o admin, em /admin/plans: preço, nomes, ordem e o que está à venda.
  */
-export type PlanKind = 'one_time' | 'subscription';
-
-export interface Plan {
-  id: string;
-  kind: PlanKind;
-  /** Só para assinaturas. */
-  interval?: 'month' | 'year';
-  amount: number;
-  currency: 'BRL';
-  name: { en: string; 'pt-BR': string };
-  description: { en: string; 'pt-BR': string };
-}
-
-export const PLANS: readonly Plan[] = [
+export const DEFAULT_PLANS: readonly Pick<
+  Plan,
+  | 'id'
+  | 'kind'
+  | 'interval'
+  | 'amount'
+  | 'currency'
+  | 'nameEn'
+  | 'namePt'
+  | 'descriptionEn'
+  | 'descriptionPt'
+  | 'sortOrder'
+>[] = [
   {
     id: 'pro-lifetime',
     kind: 'one_time',
+    interval: null,
     amount: 9900,
     currency: 'BRL',
-    name: { en: 'Pro, lifetime', 'pt-BR': 'Pro vitalício' },
-    description: {
-      en: 'Pay once, keep Pro forever.',
-      'pt-BR': 'Paga uma vez e fica com o Pro para sempre.',
-    },
+    nameEn: 'Pro, lifetime',
+    namePt: 'Pro vitalício',
+    descriptionEn: 'Pay once, keep Pro forever.',
+    descriptionPt: 'Paga uma vez e fica com o Pro para sempre.',
+    sortOrder: 0,
   },
   {
     id: 'pro-monthly',
@@ -38,12 +37,16 @@ export const PLANS: readonly Plan[] = [
     interval: 'month',
     amount: 2990,
     currency: 'BRL',
-    name: { en: 'Pro, monthly', 'pt-BR': 'Pro mensal' },
-    description: {
-      en: 'Billed every month. Cancel any time.',
-      'pt-BR': 'Cobrado todo mês. Cancele quando quiser.',
-    },
+    nameEn: 'Pro, monthly',
+    namePt: 'Pro mensal',
+    descriptionEn: 'Billed every month. Cancel any time.',
+    descriptionPt: 'Cobrado todo mês. Cancele quando quiser.',
+    sortOrder: 1,
   },
 ];
 
-export const findPlan = (id: string): Plan | undefined => PLANS.find((p) => p.id === id);
+/** O nome e a descrição no idioma da pessoa. */
+export const planText = (plan: Plan, lang: string) =>
+  lang === 'pt-BR'
+    ? { name: plan.namePt, description: plan.descriptionPt }
+    : { name: plan.nameEn, description: plan.descriptionEn };

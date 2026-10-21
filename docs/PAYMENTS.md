@@ -14,7 +14,7 @@ não mexe no resto do sistema.
 | Pagamento único | sim (cartão) | sim (Pix, cartão em até 12x) | sim (Pix, cartão) |
 | Assinatura | sim | **não** (a API pública não tem recorrência) | sim |
 | Ambiente de testes | sim (chaves `sk_test_`, cartões de teste) | **não**: toda cobrança é real | sim (Dev mode) |
-| Precisa cadastrar o produto antes | não (o valor vai na cobrança) | não | **sim** (cada plano é um produto lá) |
+| Cadastro de produto | não (o valor vai na cobrança) | não | a API cria sozinha, um por preço |
 | Como a API confirma o pagamento | webhook assinado + leitura na Stripe | consulta `payment_check` (o webhook não é assinado) | webhook com secret na URL + assinatura HMAC; consulta na volta |
 | Cancelar assinatura | no fim do período já pago | — | na hora |
 
@@ -45,16 +45,26 @@ conferido. Pagou menos do que o plano custa (produto errado, valor adulterado)? 
 | `POST /payments/checkout { planId, provider? }` | Logado com e-mail confirmado. Cria a cobrança e devolve a `url` da plataforma |
 | `POST /payments/:id/confirm { params? }` | Na volta: consulta a plataforma. `params` = o que ela pôs na URL de volta |
 | `GET /users/me/billing` | Plano atual (`free`/`pro`), assinatura e histórico |
+| `GET /admin/plans`, `POST /admin/plans`, `PATCH /admin/plans/:id` | Admin (`plans:manage`): lista, cria e edita os planos |
 | `POST /users/me/subscriptions/:id/cancel` | Cancela a assinatura na plataforma |
 | `POST /payments/webhooks/:provider` | Avisos das plataformas (`stripe`, `infinitepay`, `abacatepay`) |
 
-Tabelas: `payments` (cada compra ou primeira cobrança de assinatura) e `subscriptions` (o espelho da assinatura na
-plataforma). Auditoria: `payment.paid`, `payment.refunded`, `subscription.started`, `subscription.canceled`.
+Tabelas: `plans` (o que está à venda), `payments` (cada compra ou primeira cobrança de assinatura) e
+`subscriptions` (o espelho da assinatura na plataforma). Auditoria: `payment.paid`, `payment.refunded`,
+`subscription.started`, `subscription.canceled`, `plan.created`, `plan.updated`.
 
 ## Os planos
 
-Ficam em [plans.ts](../apps/api/src/payments/plans.ts): `pro-lifetime` (R$ 99, uma vez) e `pro-monthly`
-(R$ 29,90/mês). São exemplos: troque pelos do seu produto. O "é Pro?" está em `PaymentsService.billing()`.
+Ficam na tabela `plans` e se editam na tela **Administração → Planos** (`/admin/plans`, permissão `plans:manage`,
+que o admin tem): preço, nomes em português e inglês, descrição, ordem e se está à venda. Um banco novo nasce com
+os dois de exemplo de [plans.ts](../apps/api/src/payments/plans.ts): `pro-lifetime` (R$ 99, uma vez) e
+`pro-monthly` (R$ 29,90/mês).
+
+- **Preço novo vale para as próximas compras.** O que já foi pago fica com o valor da época, e uma assinatura
+  ativa segue com o preço que tinha na plataforma (para mudar o preço de quem já assina, só pelo painel dela).
+- **Tipo e ciclo não mudam** depois de criado: compras e assinaturas antigas dependem deles. Crie outro plano.
+- **Não se apaga plano**, só se tira de venda: some de `/billing`, e quem comprou continua com ele.
+- O "é Pro?" está em `PaymentsService.billing()`: qualquer plano único pago, ou uma assinatura não cancelada.
 
 ## Ligar
 
@@ -73,9 +83,12 @@ Em produção, as **chaves secretas** vão no SSM Parameter Store (como o `JWT_S
 | `INFINITEPAY_HANDLE` | variável do GitHub | sua InfiniteTag, sem o `$` |
 | `ABACATEPAY_API_KEY` | SSM | chave de API (a de Dev mode para testes) |
 | `ABACATEPAY_WEBHOOK_SECRET` | SSM | o secret que você cadastrou no webhook |
-| `ABACATEPAY_PRODUCTS` | variável do GitHub | `pro-lifetime:prod_xxx,pro-monthly:prod_yyy` |
 
 O endereço público da API (usado na URL de webhook da InfinitePay) vem do `API_DOMAIN` no deploy.
+
+**O SSM é lido no deploy, não quando a API roda.** Criou ou trocou uma chave lá? Rode o Deploy de novo. Uma
+plataforma ligada sem as chaves fica de fora (o log diz qual falta: procure "ficou desligado"), e a tela mostra só
+as outras.
 
 ## Passo a passo por plataforma
 
@@ -104,13 +117,13 @@ Localmente, a [Stripe CLI](https://docs.stripe.com/stripe-cli) encaminha os webh
 
 ### AbacatePay
 
-1. Em modo **Dev**, crie uma **chave de API** e cadastre dois produtos: um único (R$ 99) e um com **ciclo mensal**
-   (R$ 29,90), com o mesmo valor dos planos.
-2. Ponha os ids dos produtos em `ABACATEPAY_PRODUCTS` (`pro-lifetime:prod_...,pro-monthly:prod_...`).
-3. Crie o webhook apontando para `https://api.base.dyonisio.dev/api/v1/payments/webhooks/abacatepay?webhookSecret=SEU_SECRET`,
+1. Em modo **Dev**, crie uma **chave de API** (com permissão de criar produtos e cobranças). Não precisa cadastrar
+   produtos: na primeira compra de cada preço a API cria o produto lá (com ciclo, se for assinatura) e guarda o id.
+   Mudou o preço em `/admin/plans`, nasce outro produto; trocou a chave de Dev para produção, também.
+2. Crie o webhook apontando para `https://api.base.dyonisio.dev/api/v1/payments/webhooks/abacatepay?webhookSecret=SEU_SECRET`,
    com os eventos `checkout.completed`, `checkout.refunded`, `subscription.completed`, `subscription.renewed` e
    `subscription.cancelled`. O mesmo secret vai em `ABACATEPAY_WEBHOOK_SECRET`.
-4. Ponha a chave no SSM e `abacatepay` em `PAYMENT_PROVIDERS`. No Dev mode, simule o pagamento pelo painel.
+3. Ponha a chave no SSM e `abacatepay` em `PAYMENT_PROVIDERS`. No Dev mode, simule o pagamento pelo painel.
 
 A documentação da AbacatePay não mostra o formato exato do corpo de cada evento. A API procura o id da compra e o da
 assinatura nos lugares prováveis e registra no log quando não acha. Confira o primeiro evento real no log e, se

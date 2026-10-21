@@ -96,15 +96,6 @@ export default () => {
       abacatepay: {
         apiKey: process.env.ABACATEPAY_API_KEY || undefined,
         webhookSecret: process.env.ABACATEPAY_WEBHOOK_SECRET || undefined,
-        /** "plano:produto,plano:produto" (ex.: pro-lifetime:prod_abc,pro-monthly:prod_def) */
-        products: Object.fromEntries(
-          (process.env.ABACATEPAY_PRODUCTS ?? '')
-            .split(',')
-            .map((pair) => pair.split(':').map((v) => v.trim()))
-            .filter(
-              (pair): pair is [string, string] => pair.length === 2 && !!pair[0] && !!pair[1],
-            ),
-        ),
       },
     },
     session: {

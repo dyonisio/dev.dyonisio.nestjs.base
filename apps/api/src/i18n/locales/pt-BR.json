@@ -100,7 +100,8 @@
     "alreadySubscribed": "Você já tem uma assinatura ativa deste plano",
     "alreadyPurchased": "Você já tem este plano",
     "notFound": "Compra não encontrada",
-    "subscriptionNotFound": "Assinatura não encontrada"
+    "subscriptionNotFound": "Assinatura não encontrada",
+    "planExists": "Já existe um plano com este id"
   },
   "passkeys": {
     "challengeExpired": "O pedido da passkey expirou. Tente de novo",
@@ -129,7 +130,8 @@
     "invalid": "{field} é inválido",
     "twoFactorCode": "{field} deve ser um código de 6 dígitos ou um código de recuperação (ABCD-EFGH)",
     "personName": "{field} só pode ter letras, espaços, apóstrofos, hífens e pontos",
-    "passwordTooLong": "{field} é longa demais (no máximo 72 bytes — letras acentuadas contam em dobro)"
+    "passwordTooLong": "{field} é longa demais (no máximo 72 bytes — letras acentuadas contam em dobro)",
+    "planId": "{field} deve ter de 2 a 40 letras minúsculas, números ou hífens"
   },
   "fields": {
     "name": "nome",
@@ -153,7 +155,15 @@
     "contentType": "tipo do arquivo",
     "size": "tamanho",
     "fileId": "arquivo",
-    "newEmail": "novo e-mail"
+    "newEmail": "novo e-mail",
+    "amount": "preço",
+    "nameEn": "nome (inglês)",
+    "namePt": "nome (português)",
+    "descriptionEn": "descrição (inglês)",
+    "descriptionPt": "descrição (português)",
+    "kind": "tipo",
+    "interval": "ciclo",
+    "sortOrder": "ordem"
   },
   "mail": {
     "subjects": {

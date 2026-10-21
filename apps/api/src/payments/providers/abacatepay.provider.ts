@@ -1,14 +1,15 @@
 import { BadRequestException, Logger } from '@nestjs/common';
-import { createHmac, timingSafeEqual } from 'crypto';
+import { createHash, createHmac, timingSafeEqual } from 'crypto';
 import { i18nKey } from '../../i18n/translations';
 import type { Payment } from '../entities/payment.entity';
 import type { Subscription } from '../entities/subscription.entity';
-import type { Plan } from '../plans';
+import type { Plan } from '../entities/plan.entity';
 import type {
   CheckoutInput,
   CheckoutResult,
   PaymentEvent,
   PaymentProvider,
+  ProductStore,
   WebhookRequest,
 } from './payment-provider';
 
@@ -25,17 +26,15 @@ export interface AbacatePayConfig {
   apiKey: string;
   /** O secret do webhook cadastrado na AbacatePay (vem em ?webhookSecret= na URL). */
   webhookSecret: string;
-  /** plano do catálogo → id do produto na AbacatePay (ABACATEPAY_PRODUCTS). */
-  products: Record<string, string>;
   fetch?: typeof fetch;
 }
 
 type Json = Record<string, unknown>;
 
 /**
- * AbacatePay (Pix e cartão), com pagamento único e assinatura. Cobra por PRODUTOS cadastrados
- * nela: cada plano do catálogo precisa de um produto lá (o de assinatura com ciclo), mapeado em
- * ABACATEPAY_PRODUCTS. Teste com a chave do Dev mode.
+ * AbacatePay (Pix e cartão), com pagamento único e assinatura. Ela só cobra PRODUTOS cadastrados
+ * nela: a API cria o produto sozinha na primeira compra de cada preço (o de assinatura com ciclo)
+ * e guarda o id no plano. Mudou o preço no admin, nasce outro produto. Teste com a chave do Dev mode.
  *
  * Confiança: o webhook traz o secret na URL e a assinatura HMAC do corpo; os dois são conferidos.
  * Na volta do checkout, a cobrança é consultada na API dela.
@@ -48,18 +47,15 @@ export class AbacatePayProvider implements PaymentProvider {
 
   constructor(private readonly config: AbacatePayConfig) {}
 
-  supportsPlan(plan: Plan): boolean {
-    return !!this.config.products[plan.id];
-  }
-
   async createCheckout({
     payment,
     plan,
+    title,
     successUrl,
     cancelUrl,
+    products,
   }: CheckoutInput): Promise<CheckoutResult> {
-    const productId = this.config.products[plan.id];
-    if (!productId) throw new BadRequestException(i18nKey('payments.providerUnavailable'));
+    const productId = await this.productFor(plan, title, products);
     const recurring = plan.kind === 'subscription';
     const data = await this.request<Json>(
       'POST',
@@ -132,6 +128,31 @@ export class AbacatePayProvider implements PaymentProvider {
       default:
         return [];
     }
+  }
+
+  /**
+   * O produto deste plano NESTE preço (e nesta conta: trocar a chave de Dev para produção cria
+   * outros). Se não existe, cria e guarda.
+   */
+  private async productFor(plan: Plan, title: string, products: ProductStore): Promise<string> {
+    const account = createHash('sha256').update(this.config.apiKey).digest('hex').slice(0, 8);
+    const key = `${account}:${plan.interval ?? 'once'}:${plan.amount}`;
+    const existing = products.get(key);
+    if (existing) return existing;
+    const data = await this.request<Json>('POST', '/products/create', {
+      // único na AbacatePay: o mesmo plano ganha um produto por preço
+      externalId: `${plan.id}-${plan.amount}-${Date.now().toString(36)}`,
+      name: title,
+      price: plan.amount,
+      currency: 'BRL',
+      ...(plan.kind === 'subscription'
+        ? { cycle: plan.interval === 'year' ? 'ANNUALLY' : 'MONTHLY' }
+        : {}),
+    });
+    if (typeof data.id !== 'string')
+      throw new BadRequestException(i18nKey('payments.providerFailed'));
+    await products.save(key, data.id);
+    return data.id;
   }
 
   async confirm(payment: Payment): Promise<PaymentEvent[]> {

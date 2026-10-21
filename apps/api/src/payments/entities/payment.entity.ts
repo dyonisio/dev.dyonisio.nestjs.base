@@ -9,7 +9,7 @@ import {
   UpdateDateColumn,
 } from 'typeorm';
 import { User } from '../../users/entities/user.entity';
-import type { PlanKind } from '../plans';
+import type { PlanKind } from './plan.entity';
 
 export type PaymentStatus = 'pending' | 'paid' | 'failed' | 'canceled' | 'refunded';
 

@@ -11,17 +11,13 @@ import {
   SuccessAlert,
 } from '../../components/ui';
 import { useI18n } from '../../i18n/I18nProvider';
-import type { Language } from '../../i18n/language';
 import { goToExternal } from '../../lib/external';
-import { formatDate } from '../../lib/format';
+import { formatDate, formatMoney as money } from '../../lib/format';
 import { useAction, useQuery } from '../../lib/hooks';
 
 type Plan = components['schemas']['PlanDto'];
 type Billing = components['schemas']['BillingDto'];
 type ProviderInfo = components['schemas']['ProviderInfoDto'];
-
-const money = (lang: Language, cents: number, currency: string) =>
-  new Intl.NumberFormat(lang, { style: 'currency', currency }).format(cents / 100);
 
 /**
  * /billing — o plano da pessoa, os planos à venda, a assinatura e o histórico.
@@ -129,7 +125,9 @@ function PlansSection({
               </span>
               <span className="row-meta">
                 {plan.kind === 'subscription'
-                  ? f(m.billing.perMonth, { price: money(lang, plan.amount, plan.currency) })
+                  ? f(plan.interval === 'year' ? m.billing.perYear : m.billing.perMonth, {
+                      price: money(lang, plan.amount, plan.currency),
+                    })
                   : f(m.billing.once, { price: money(lang, plan.amount, plan.currency) })}
                 {' · '}
                 {plan.description}

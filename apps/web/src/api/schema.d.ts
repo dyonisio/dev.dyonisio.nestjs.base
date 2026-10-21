@@ -1133,6 +1133,50 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/admin/plans": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * All plans (on sale or not)
+         * @description Permission: `plans:manage`.
+         */
+        get: operations["AdminPlansController_list_v1"];
+        put?: never;
+        /**
+         * Create a plan
+         * @description Recorded in the audit log. Permission: `plans:manage`.
+         */
+        post: operations["AdminPlansController_create_v1"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/plans/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /**
+         * Change a plan (price, names, on sale)
+         * @description A new price applies to new purchases only: past payments keep theirs, and active subscriptions keep the price they had on the platform. Kind and interval cannot change. Recorded in the audit log. Permission: `plans:manage`.
+         */
+        patch: operations["AdminPlansController_update_v1"];
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -1144,7 +1188,7 @@ export interface components {
              * @example user.role_changed
              * @enum {string}
              */
-            action: "auth.login" | "auth.login_failed" | "auth.logout" | "auth.refresh_token_reuse" | "auth.password_changed" | "auth.password_reset" | "auth.magic_link_sent" | "auth.email_verified" | "auth.2fa_enabled" | "auth.2fa_disabled" | "auth.2fa_failed" | "auth.2fa_recovery_code_used" | "auth.2fa_recovery_codes_regenerated" | "auth.2fa_reset_by_admin" | "auth.social_linked" | "auth.social_unlinked" | "auth.passkey_added" | "auth.passkey_removed" | "user.registered" | "user.created" | "user.invitation_sent" | "user.updated" | "user.role_changed" | "user.deleted" | "user.restored" | "user.avatar_changed" | "user.email_change_requested" | "user.email_changed" | "user.self_deleted" | "user.data_exported" | "user.anonymized" | "session.revoked" | "payment.paid" | "payment.refunded" | "subscription.started" | "subscription.canceled";
+            action: "auth.login" | "auth.login_failed" | "auth.logout" | "auth.refresh_token_reuse" | "auth.password_changed" | "auth.password_reset" | "auth.magic_link_sent" | "auth.email_verified" | "auth.2fa_enabled" | "auth.2fa_disabled" | "auth.2fa_failed" | "auth.2fa_recovery_code_used" | "auth.2fa_recovery_codes_regenerated" | "auth.2fa_reset_by_admin" | "auth.social_linked" | "auth.social_unlinked" | "auth.passkey_added" | "auth.passkey_removed" | "user.registered" | "user.created" | "user.invitation_sent" | "user.updated" | "user.role_changed" | "user.deleted" | "user.restored" | "user.avatar_changed" | "user.email_change_requested" | "user.email_changed" | "user.self_deleted" | "user.data_exported" | "user.anonymized" | "session.revoked" | "payment.paid" | "payment.refunded" | "subscription.started" | "subscription.canceled" | "plan.created" | "plan.updated";
             /**
              * Format: uuid
              * @description Who performed the action (null = anonymous, e.g. failed login)
@@ -1299,7 +1343,7 @@ export interface components {
              */
             role: "admin" | "manager" | "user";
             /** @example [] */
-            permissions: ("users:read" | "users:create" | "users:update" | "users:delete" | "users:manage-roles" | "users:reset-2fa" | "audit:read")[];
+            permissions: ("users:read" | "users:create" | "users:update" | "users:delete" | "users:manage-roles" | "users:reset-2fa" | "audit:read" | "plans:manage")[];
             /** @example true */
             isActive: boolean;
             /**
@@ -1835,6 +1879,81 @@ export interface components {
             /** @description Most recent first */
             payments: components["schemas"]["PaymentDto"][];
         };
+        AdminPlanDto: {
+            /** @example pro-monthly */
+            id: string;
+            /** @enum {string} */
+            kind: "one_time" | "subscription";
+            /** @enum {string|null} */
+            interval: "month" | "year" | null;
+            /**
+             * @description In cents
+             * @example 2990
+             */
+            amount: number;
+            /** @example BRL */
+            currency: string;
+            nameEn: string;
+            namePt: string;
+            descriptionEn: string;
+            descriptionPt: string;
+            /** @description On sale (shown on /billing) */
+            active: boolean;
+            sortOrder: number;
+            /** Format: date-time */
+            createdAt: string;
+            /** Format: date-time */
+            updatedAt: string;
+        };
+        CreatePlanDto: {
+            /**
+             * @description Stable id (lowercase letters, numbers and hyphens). Cannot be changed later.
+             * @example pro-yearly
+             */
+            id: string;
+            /**
+             * @description Cannot be changed later
+             * @enum {string}
+             */
+            kind: "one_time" | "subscription";
+            /**
+             * @description Required for subscriptions. Cannot be changed later
+             * @enum {string}
+             */
+            interval?: "month" | "year";
+            /**
+             * @description In cents (50 at least: the Stripe minimum)
+             * @example 2990
+             */
+            amount: number;
+            /** @example Pro, yearly */
+            nameEn: string;
+            /** @example Pro anual */
+            namePt: string;
+            descriptionEn?: string;
+            descriptionPt?: string;
+            /** @default true */
+            active?: boolean;
+            /** @default 0 */
+            sortOrder?: number;
+        };
+        UpdatePlanDto: {
+            /**
+             * @description In cents (50 at least: the Stripe minimum)
+             * @example 2990
+             */
+            amount?: number;
+            /** @example Pro, yearly */
+            nameEn?: string;
+            /** @example Pro anual */
+            namePt?: string;
+            descriptionEn?: string;
+            descriptionPt?: string;
+            /** @default true */
+            active?: boolean;
+            /** @default 0 */
+            sortOrder?: number;
+        };
     };
     responses: never;
     parameters: never;
@@ -1851,7 +1970,7 @@ export interface operations {
                 page?: number;
                 /** @description Items per page */
                 limit?: number;
-                action?: "auth.login" | "auth.login_failed" | "auth.logout" | "auth.refresh_token_reuse" | "auth.password_changed" | "auth.password_reset" | "auth.magic_link_sent" | "auth.email_verified" | "auth.2fa_enabled" | "auth.2fa_disabled" | "auth.2fa_failed" | "auth.2fa_recovery_code_used" | "auth.2fa_recovery_codes_regenerated" | "auth.2fa_reset_by_admin" | "auth.social_linked" | "auth.social_unlinked" | "auth.passkey_added" | "auth.passkey_removed" | "user.registered" | "user.created" | "user.invitation_sent" | "user.updated" | "user.role_changed" | "user.deleted" | "user.restored" | "user.avatar_changed" | "user.email_change_requested" | "user.email_changed" | "user.self_deleted" | "user.data_exported" | "user.anonymized" | "session.revoked" | "payment.paid" | "payment.refunded" | "subscription.started" | "subscription.canceled";
+                action?: "auth.login" | "auth.login_failed" | "auth.logout" | "auth.refresh_token_reuse" | "auth.password_changed" | "auth.password_reset" | "auth.magic_link_sent" | "auth.email_verified" | "auth.2fa_enabled" | "auth.2fa_disabled" | "auth.2fa_failed" | "auth.2fa_recovery_code_used" | "auth.2fa_recovery_codes_regenerated" | "auth.2fa_reset_by_admin" | "auth.social_linked" | "auth.social_unlinked" | "auth.passkey_added" | "auth.passkey_removed" | "user.registered" | "user.created" | "user.invitation_sent" | "user.updated" | "user.role_changed" | "user.deleted" | "user.restored" | "user.avatar_changed" | "user.email_change_requested" | "user.email_changed" | "user.self_deleted" | "user.data_exported" | "user.anonymized" | "session.revoked" | "payment.paid" | "payment.refunded" | "subscription.started" | "subscription.canceled" | "plan.created" | "plan.updated";
                 /** @description Who performed the actions */
                 actorId?: string;
                 /** @description Affected record (e.g. a user id) */
@@ -4978,6 +5097,172 @@ export interface operations {
                 };
             };
             /** @description Platform not enabled */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponseDto"];
+                };
+            };
+        };
+    };
+    AdminPlansController_list_v1: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Language for error messages */
+                "Accept-Language"?: "en" | "pt-BR";
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AdminPlanDto"][];
+                };
+            };
+            /** @description Missing, invalid or expired token, or the session was ended */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponseDto"];
+                };
+            };
+            /** @description Requires the permission(s): plans:manage */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponseDto"];
+                };
+            };
+        };
+    };
+    AdminPlansController_create_v1: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Language for error messages */
+                "Accept-Language"?: "en" | "pt-BR";
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CreatePlanDto"];
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AdminPlanDto"];
+                };
+            };
+            /** @description Validation failed */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponseDto"];
+                };
+            };
+            /** @description Missing, invalid or expired token, or the session was ended */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponseDto"];
+                };
+            };
+            /** @description Requires the permission(s): plans:manage */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponseDto"];
+                };
+            };
+            /** @description A plan with this id already exists */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponseDto"];
+                };
+            };
+        };
+    };
+    AdminPlansController_update_v1: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Language for error messages */
+                "Accept-Language"?: "en" | "pt-BR";
+            };
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UpdatePlanDto"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AdminPlanDto"];
+                };
+            };
+            /** @description Validation failed */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponseDto"];
+                };
+            };
+            /** @description Missing, invalid or expired token, or the session was ended */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponseDto"];
+                };
+            };
+            /** @description Requires the permission(s): plans:manage */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponseDto"];
+                };
+            };
+            /** @description Plan not found */
             404: {
                 headers: {
                     [name: string]: unknown;

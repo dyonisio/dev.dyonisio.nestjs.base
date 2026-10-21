@@ -11,7 +11,7 @@ export interface PaymentsConfig {
   providers: string[];
   stripe: { secretKey?: string; webhookSecret?: string };
   infinitepay: { handle?: string };
-  abacatepay: { apiKey?: string; webhookSecret?: string; products: Record<string, string> };
+  abacatepay: { apiKey?: string; webhookSecret?: string };
 }
 
 /**
@@ -70,7 +70,6 @@ export class PaymentProviders {
         return new AbacatePayProvider({
           apiKey: cfg.abacatepay.apiKey,
           webhookSecret: cfg.abacatepay.webhookSecret,
-          products: cfg.abacatepay.products,
         });
       default:
         this.logger.warn(`Plataforma de pagamento desconhecida em PAYMENT_PROVIDERS: "${id}"`);
