@@ -6,6 +6,8 @@ import { AuditAction } from '../audit/audit-action.enum';
 import { AuditService } from '../audit/audit.service';
 import { RequestContext } from '../common/request-context/request-context';
 import { i18nKey } from '../i18n/translations';
+import { MailService } from '../mail/mail.service';
+import type { MailRecipient, PlanNames } from '../mail/mail.types';
 import { UsersService } from '../users/users.service';
 import {
   type AdminBillingDto,
@@ -49,6 +51,7 @@ export class PaymentsService {
     private readonly users: UsersService,
     private readonly audit: AuditService,
     private readonly config: ConfigService,
+    private readonly mail: MailService,
   ) {}
 
   /** O que está à venda, cada plano com as plataformas ligadas que conseguem cobrá-lo. */
@@ -364,6 +367,14 @@ export class PaymentsService {
         amount: payment.amount,
       },
     });
+    await this.notify(payment.userId, payment.planId, (user, plan) =>
+      this.mail.sendPaymentConfirmed(user, {
+        plan,
+        amount: payment.amount,
+        currency: payment.currency,
+        recurring: payment.kind === 'subscription',
+      }),
+    );
   }
 
   private async markRefunded(providerId: string, paymentId: string): Promise<void> {
@@ -378,6 +389,34 @@ export class PaymentsService {
       target: { type: 'user', id: payment.userId },
       metadata: { payment: payment.id, provider: providerId },
     });
+    await this.notify(payment.userId, payment.planId, (user, plan) =>
+      this.mail.sendPaymentRefunded(user, {
+        plan,
+        amount: payment.amount,
+        currency: payment.currency,
+      }),
+    );
+  }
+
+  /**
+   * Avisa a pessoa por e-mail. Nunca derruba o fluxo: o pagamento já foi aplicado, e um
+   * e-mail que falha (ou conta já excluída) não pode fazer o webhook falhar e ser repetido.
+   */
+  private async notify(
+    userId: string,
+    planId: string,
+    send: (user: MailRecipient, plan: PlanNames) => Promise<boolean>,
+  ): Promise<void> {
+    try {
+      const [user, plan] = await Promise.all([
+        this.users.findById(userId),
+        this.plansService.find(planId),
+      ]);
+      if (!user) return;
+      await send(user, plan ? { en: plan.nameEn, pt: plan.namePt } : { en: planId, pt: planId });
+    } catch (error) {
+      this.logger.warn(`e-mail sobre o plano de ${userId} não saiu: ${(error as Error).message}`);
+    }
   }
 
   private async syncSubscription(
@@ -409,6 +448,7 @@ export class PaymentsService {
       });
     }
     const wasCanceled = !started && sub.status === 'canceled';
+    const wasEnding = !started && sub.cancelAtPeriodEnd;
     sub.status = event.status;
     if (event.cancelAtPeriodEnd !== undefined) sub.cancelAtPeriodEnd = event.cancelAtPeriodEnd;
     if (event.currentPeriodEnd !== undefined) sub.currentPeriodEnd = event.currentPeriodEnd;
@@ -429,6 +469,22 @@ export class PaymentsService {
         target,
         metadata,
       });
+    }
+
+    // E-mail: ao pedir o cancelamento ("continua Pro até X") e se terminar ANTES do previsto.
+    // O fim natural, na data já avisada, não manda outro.
+    if (started) return;
+    const endedEarly =
+      !sub.currentPeriodEnd || sub.currentPeriodEnd.getTime() > Date.now() + 3_600_000;
+    const current = sub;
+    if (event.status === 'canceled' && !wasCanceled && (!wasEnding || endedEarly)) {
+      await this.notify(sub.userId, sub.planId, (user, plan) =>
+        this.mail.sendSubscriptionCanceled(user, plan, null),
+      );
+    } else if (event.status !== 'canceled' && !wasEnding && sub.cancelAtPeriodEnd) {
+      await this.notify(sub.userId, sub.planId, (user, plan) =>
+        this.mail.sendSubscriptionCanceled(user, plan, current.currentPeriodEnd),
+      );
     }
   }
 }

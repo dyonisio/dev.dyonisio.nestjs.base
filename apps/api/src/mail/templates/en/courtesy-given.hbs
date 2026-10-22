@@ -1,0 +1,11 @@
+{{#if extended}}
+<h1>Your courtesy Pro was extended</h1>
+<p>Hi, {{name}}.</p>
+<p>Your courtesy Pro on <strong>{{appName}}</strong> now lasts until <strong>{{endsAt}}</strong>.</p>
+{{else}}
+<h1>You got courtesy Pro</h1>
+<p>Hi, {{name}}.</p>
+<p>The <strong>{{appName}}</strong> team unlocked <strong>Pro</strong> on your account, for free, until <strong>{{endsAt}}</strong>.</p>
+{{/if}}
+<p>Nothing is charged: when the courtesy ends, the account goes back to the free plan on its own (we will remind you a few days before).</p>
+{{> button url=billingUrl label="See my plan"}}

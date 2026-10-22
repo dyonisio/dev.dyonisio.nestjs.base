@@ -38,6 +38,23 @@ conferido. Pagou menos do que o plano custa (produto errado, valor adulterado)? 
 - **Mais de uma plataforma:** se mais de uma atende o plano, a pessoa escolhe na tela. Com uma só, o checkout vai
   direto para ela.
 
+## E-mails
+
+A pessoa recebe um e-mail nosso (no idioma da conta) quando:
+
+| Quando | E-mail |
+| --- | --- |
+| A compra, ou a primeira cobrança da assinatura, é confirmada | Pagamento confirmado: plano e valor |
+| Pede o cancelamento | Assinatura cancelada: continua Pro até a data |
+| A assinatura termina **antes** do previsto (admin cortou, cartão recusado de vez) | Assinatura cancelada: terminou agora |
+| Recebe um reembolso | Reembolso: valor, e que perdeu o que a compra dava |
+| Ganha ou tem estendido o Pro de cortesia | Pro de cortesia até a data |
+| Faltam 3 dias para a cortesia acabar | Aviso, uma vez só (pelo job de manutenção, a cada 6 h) |
+
+Compra pendente não manda nada (quase sempre é alguém que desistiu do checkout), e as renovações também não: o
+recibo de cada cobrança é da plataforma. Na Stripe, ligue em **Settings → Customer emails** (*Successful payments*
+e *Refunds*); em modo teste ela não envia. Um e-mail que falha nunca desfaz o pagamento: vai para o log.
+
 ## Rotas
 
 | Rota | O que faz |

@@ -1,0 +1,11 @@
+{{#if extended}}
+<h1>Seu Pro de cortesia foi estendido</h1>
+<p>Olá, {{name}}.</p>
+<p>O seu Pro de cortesia no <strong>{{appName}}</strong> agora vai até <strong>{{endsAt}}</strong>.</p>
+{{else}}
+<h1>Você ganhou o Pro de cortesia</h1>
+<p>Olá, {{name}}.</p>
+<p>A equipe do <strong>{{appName}}</strong> liberou o <strong>Pro</strong> na sua conta, de graça, até <strong>{{endsAt}}</strong>.</p>
+{{/if}}
+<p>Nada é cobrado: quando a cortesia terminar, a conta volta para o plano gratuito sozinha (avisamos uns dias antes).</p>
+{{> button url=billingUrl label="Ver meu plano"}}

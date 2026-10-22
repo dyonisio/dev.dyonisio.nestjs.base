@@ -25,6 +25,7 @@ describe('Pagamentos (e2e)', () => {
   let payments: Repository<import('../src/payments/entities/payment.entity').Payment>;
   let audit: Repository<import('../src/audit/audit-log.entity').AuditLog>;
   let publicKey: string;
+  let mail: import('../src/mail/mail.service').MailService;
   /** Respostas de mentira da InfinitePay e da AbacatePay (o que o `fetch` da API recebe). */
   let fakeApi: (url: string, body: Json | undefined) => Json;
   const calls: { url: string; body: Json | undefined }[] = [];
@@ -94,6 +95,7 @@ describe('Pagamentos (e2e)', () => {
     ({ ABACATEPAY_PUBLIC_KEY: publicKey } =
       await import('../src/payments/providers/abacatepay.provider'));
     stripe = app.get(PaymentProviders).get('stripe') as typeof stripe;
+    mail = app.get((await import('../src/mail/mail.service')).MailService);
     payments = app.get(getRepositoryToken(Payment));
     audit = app.get(getRepositoryToken(AuditLog));
 
@@ -177,8 +179,19 @@ describe('Pagamentos (e2e)', () => {
         client_reference_id: res.body.paymentId,
       };
       const event = { type: 'checkout.session.completed', data: { object: session } };
+      const confirmed = jest.spyOn(mail, 'sendPaymentConfirmed');
       await stripeWebhook(event).expect(200);
       await stripeWebhook(event).expect(200); // a Stripe repete avisos: não muda nada
+      expect(confirmed).toHaveBeenCalledTimes(1); // e o e-mail sai uma vez só
+      expect(confirmed.mock.calls[0]).toEqual([
+        expect.objectContaining({ email: 'stripe@test.com' }),
+        expect.objectContaining({
+          plan: { en: 'Pro, lifetime', pt: 'Pro vitalício' },
+          amount: 9900,
+          recurring: false,
+        }),
+      ]);
+      confirmed.mockRestore();
 
       expect((await billing(token)).plan).toBe('pro');
       expect(
@@ -595,14 +608,32 @@ describe('Pagamentos (e2e)', () => {
       await grant({ months: 1, endsAt: '2099-01-01T00:00:00Z', reason: 'os dois' }).expect(400);
       await grant({ endsAt: '2020-01-01T00:00:00Z', reason: 'no passado' }).expect(400);
 
+      const given = jest.spyOn(mail, 'sendCourtesyGiven');
       const first = (await grant({ months: 2, reason: 'Instabilidade de outubro' }).expect(200))
         .body;
+      expect(given).toHaveBeenLastCalledWith(
+        expect.objectContaining({ email: 'cortesia@test.com' }),
+        expect.any(Date),
+        false,
+      );
+      // o job de manutenção avisa uma vez, nos 3 dias antes do fim
+      const { GrantsService } = await import('../src/payments/grants.service');
+      const grants = app.get(GrantsService);
+      const ending = jest.spyOn(mail, 'sendCourtesyEnding');
+      const nearEnd = new Date(new Date(first.grant.endsAt as string).getTime() - 2 * 86_400_000);
+      expect(await grants.notifyEnding(new Date())).toBe(0);
+      expect(await grants.notifyEnding(nearEnd)).toBe(1);
+      expect(await grants.notifyEnding(nearEnd)).toBe(0);
+      expect(ending).toHaveBeenCalledTimes(1);
       expect(first).toMatchObject({ plan: 'pro', grant: { reason: 'Instabilidade de outubro' } });
       const end = new Date(first.grant.endsAt as string).getTime();
       expect(end - Date.now()).toBeGreaterThan(58 * 86_400_000);
 
       // de novo: estende a mesma, a partir do fim
       const second = (await grant({ months: 1, reason: 'mais um' }).expect(200)).body;
+      expect(given).toHaveBeenLastCalledWith(expect.anything(), expect.any(Date), true);
+      given.mockRestore();
+      ending.mockRestore();
       expect(second.grant.id).toBe(first.grant.id);
       expect(new Date(second.grant.endsAt as string).getTime()).toBeGreaterThan(end);
 
@@ -650,11 +681,17 @@ describe('Pagamentos (e2e)', () => {
         );
 
       // InfinitePay: sem API de reembolso
+      const refundedMail = jest.spyOn(mail, 'sendPaymentRefunded');
       const infinite = await buyer('reembolso-infinite@test.com');
       expect((await adminBilling(infinite.userId)).payments[0]).toMatchObject({ refund: 'manual' });
       const after = (await refund(infinite.userId, infinite.payment.id).expect(200)).body;
       expect(after).toMatchObject({ plan: 'free', lifetime: false });
       expect(after.payments[0]).toMatchObject({ status: 'refunded', refund: null });
+      expect(refundedMail).toHaveBeenCalledWith(
+        expect.objectContaining({ email: 'reembolso-infinite@test.com' }),
+        expect.objectContaining({ amount: 9900, currency: 'BRL' }),
+      );
+      refundedMail.mockRestore();
       expect((await refund(infinite.userId, infinite.payment.id).expect(400)).body.code).toBe(
         'payments.notRefundable',
       );
@@ -726,7 +763,13 @@ describe('Pagamentos (e2e)', () => {
       jest
         .spyOn(stripe.client.subscriptions, 'update')
         .mockResolvedValue(stripeSub({ cancel_at_period_end: true }) as never);
+      const canceledMail = jest.spyOn(mail, 'sendSubscriptionCanceled');
       const atEnd = (await cancel('period_end').expect(200)).body;
+      expect(canceledMail).toHaveBeenLastCalledWith(
+        expect.objectContaining({ email: 'cancela-stripe@test.com' }),
+        { en: 'Pro, monthly', pt: 'Pro mensal' },
+        expect.any(Date),
+      );
       expect(atEnd.subscription).toMatchObject({ cancelAtPeriodEnd: true, status: 'active' });
       expect(atEnd.subscription.cancelOptions).toEqual(['now', 'now_refund']);
 
@@ -748,6 +791,10 @@ describe('Pagamentos (e2e)', () => {
       expect(refunded).toMatchObject({ plan: 'free', subscription: { status: 'canceled' } });
       expect(refunded.subscription.cancelOptions).toEqual([]);
       expect(refunded.payments[0]).toMatchObject({ id: payment.id, status: 'refunded' });
+      // cortou antes do fim já avisado: sai o "terminou agora"
+      expect(canceledMail).toHaveBeenCalledTimes(2);
+      expect(canceledMail).toHaveBeenLastCalledWith(expect.anything(), expect.anything(), null);
+      canceledMail.mockRestore();
     });
 
     it('cancelar na AbacatePay: só agora, sem reembolso de assinatura', async () => {

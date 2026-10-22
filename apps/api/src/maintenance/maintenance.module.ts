@@ -1,5 +1,6 @@
 import { Module } from '@nestjs/common';
 import { FilesModule } from '../files/files.module';
+import { GrantsModule } from '../payments/grants.module';
 import { RateLimitStorageModule } from '../rate-limit/rate-limit.module';
 import { SessionsModule } from '../sessions/sessions.module';
 import { UsersModule } from '../users/users.module';
@@ -7,7 +8,7 @@ import { MaintenanceService } from './maintenance.service';
 
 /** Tarefas de manutenção (sem rotas). Importado pelo AppModule e pela aplicação do job. */
 @Module({
-  imports: [FilesModule, SessionsModule, UsersModule, RateLimitStorageModule],
+  imports: [FilesModule, SessionsModule, UsersModule, RateLimitStorageModule, GrantsModule],
   providers: [MaintenanceService],
   exports: [MaintenanceService],
 })

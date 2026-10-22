@@ -1,0 +1,20 @@
+<h1>Payment confirmed</h1>
+<p>Hi, {{name}}.</p>
+<p>We received your payment and <strong>Pro</strong> is now unlocked on your <strong>{{appName}}</strong> account.</p>
+<table role="presentation" cellspacing="0" cellpadding="8" style="margin:16px 0;border-collapse:collapse;">
+  <tr>
+    <td style="color:#6b7280;">Plan</td>
+    <td><strong>{{plan}}</strong></td>
+  </tr>
+  <tr>
+    <td style="color:#6b7280;">Amount</td>
+    <td><strong>{{amount}}</strong>{{#if recurring}} per cycle{{/if}}</td>
+  </tr>
+</table>
+{{#if recurring}}
+<p>The subscription renews on its own. You can cancel any time on your plan page.</p>
+{{else}}
+<p>It is a one-time payment: Pro is yours, with no new charges.</p>
+{{/if}}
+<p>The receipt for the charge comes from the payment platform, in a separate email.</p>
+{{> button url=billingUrl label="See my plan"}}

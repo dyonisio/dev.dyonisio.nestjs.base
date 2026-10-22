@@ -41,6 +41,11 @@ export class PlansService implements OnModuleInit {
     return this.repo.find({ order: { sortOrder: 'ASC', createdAt: 'ASC' } });
   }
 
+  /** Um plano, à venda ou não (compras antigas apontam para ele). */
+  find(id: string): Promise<Plan | null> {
+    return this.repo.findOneBy({ id });
+  }
+
   async listActive(): Promise<Plan[]> {
     return (await this.list()).filter((p) => p.active);
   }

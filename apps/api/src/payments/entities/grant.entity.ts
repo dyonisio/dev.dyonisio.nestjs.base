@@ -40,6 +40,10 @@ export class Grant {
   @Column({ type: Date, nullable: true })
   revokedAt: Date | null;
 
+  /** Quando saiu o e-mail "termina em breve" (uma vez só; estender zera). */
+  @Column({ type: Date, nullable: true })
+  endingNoticeAt: Date | null;
+
   @CreateDateColumn()
   createdAt: Date;
 }

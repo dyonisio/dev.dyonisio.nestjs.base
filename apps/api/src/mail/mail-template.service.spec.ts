@@ -67,6 +67,36 @@ const contexts: { [K in MailTemplate]: MailTemplateContextMap[K] } = {
   },
   [MailTemplate.EMAIL_CHANGED]: { name: 'Maria', newEmail: 'nova@x.com', when: '14/10/2026 10:00' },
   [MailTemplate.ACCOUNT_DELETED]: { name: 'Maria', purgeDate: '13 de novembro de 2026' },
+  [MailTemplate.PAYMENT_CONFIRMED]: {
+    name: 'Maria',
+    plan: 'Pro mensal',
+    amount: 'R$ 29,90',
+    recurring: true,
+    billingUrl: 'http://front.test/billing',
+  },
+  [MailTemplate.PAYMENT_REFUNDED]: {
+    name: 'Maria',
+    plan: 'Pro vitalício',
+    amount: 'R$ 99,00',
+    billingUrl: 'http://front.test/billing',
+  },
+  [MailTemplate.SUBSCRIPTION_CANCELED]: {
+    name: 'Maria',
+    plan: 'Pro mensal',
+    endsAt: '22 de novembro de 2026',
+    billingUrl: 'http://front.test/billing',
+  },
+  [MailTemplate.COURTESY_GIVEN]: {
+    name: 'Maria',
+    endsAt: '22 de novembro de 2026',
+    extended: false,
+    billingUrl: 'http://front.test/billing',
+  },
+  [MailTemplate.COURTESY_ENDING]: {
+    name: 'Maria',
+    endsAt: '22 de novembro de 2026',
+    billingUrl: 'http://front.test/billing',
+  },
 };
 
 const templatesDir = join(__dirname, 'templates');

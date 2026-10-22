@@ -22,9 +22,44 @@ export enum MailTemplate {
   PASSKEY_ADDED = 'passkey-added',
   EMAIL_CHANGED = 'email-changed',
   ACCOUNT_DELETED = 'account-deleted',
+  // Plano e pagamentos
+  PAYMENT_CONFIRMED = 'payment-confirmed',
+  PAYMENT_REFUNDED = 'payment-refunded',
+  SUBSCRIPTION_CANCELED = 'subscription-canceled',
+  COURTESY_GIVEN = 'courtesy-given',
+  COURTESY_ENDING = 'courtesy-ending',
 }
 
 export interface MailTemplateContextMap {
+  [MailTemplate.PAYMENT_CONFIRMED]: {
+    name: string;
+    plan: string;
+    amount: string;
+    /** Assinatura (renova sozinha) ou compra única */
+    recurring: boolean;
+    billingUrl: string;
+  };
+  [MailTemplate.PAYMENT_REFUNDED]: {
+    name: string;
+    plan: string;
+    amount: string;
+    billingUrl: string;
+  };
+  [MailTemplate.SUBSCRIPTION_CANCELED]: {
+    name: string;
+    plan: string;
+    /** Até quando continua Pro; null = terminou agora */
+    endsAt: string | null;
+    billingUrl: string;
+  };
+  [MailTemplate.COURTESY_GIVEN]: {
+    name: string;
+    endsAt: string;
+    /** Já tinha cortesia e ela foi estendida */
+    extended: boolean;
+    billingUrl: string;
+  };
+  [MailTemplate.COURTESY_ENDING]: { name: string; endsAt: string; billingUrl: string };
   [MailTemplate.WELCOME]: { name: string; loginUrl: string };
   [MailTemplate.VERIFY_EMAIL]: { name: string; verifyUrl: string; expiresInHours: number };
   [MailTemplate.FORGOT_PASSWORD]: { name: string; resetUrl: string; expiresInMinutes: number };
@@ -94,6 +129,12 @@ export interface SendMailOptions<T extends MailTemplate> {
 }
 
 /** Destinatário. `locale` é o idioma salvo do usuário (os e-mails saem nele). */
+/** O nome do plano nos dois idiomas: o e-mail usa o da pessoa. */
+export interface PlanNames {
+  en: string;
+  pt: string;
+}
+
 export interface MailRecipient {
   name: string;
   email: string;

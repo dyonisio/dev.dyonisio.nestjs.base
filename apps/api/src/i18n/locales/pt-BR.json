@@ -186,7 +186,13 @@
       "emailChanged": "O e-mail da sua conta foi alterado",
       "accountDeleted": "Sua conta foi excluída",
       "accountCreated": "Sua conta no {appName} foi criada",
-      "magicLink": "Seu link para entrar no {appName}"
+      "magicLink": "Seu link para entrar no {appName}",
+      "paymentConfirmed": "Pagamento confirmado: bem-vindo(a) ao Pro",
+      "paymentRefunded": "Seu reembolso está a caminho",
+      "subscriptionCanceled": "Sua assinatura foi cancelada",
+      "courtesyGiven": "Você ganhou o Pro de cortesia",
+      "courtesyExtended": "Seu Pro de cortesia foi estendido",
+      "courtesyEnding": "Seu Pro de cortesia termina em breve"
     }
   },
   "roles": {

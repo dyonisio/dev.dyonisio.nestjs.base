@@ -12,6 +12,7 @@ import {
   MailQueue,
   MailRecipient,
   MailTemplate,
+  PlanNames,
   SendMailOptions,
 } from './mail.types';
 
@@ -297,6 +298,96 @@ export class MailService {
     });
   }
 
+  // ---------- Plano e pagamentos ----------
+  // O recibo de cada cobrança (e das renovações) é da plataforma; estes avisam o que mudou no plano.
+
+  sendPaymentConfirmed(
+    user: MailRecipient,
+    payment: { plan: PlanNames; amount: number; currency: string; recurring: boolean },
+  ) {
+    const lang = this.resolveLang(user.locale);
+    return this.send({
+      to: user.email,
+      lang,
+      subject: this.subject('paymentConfirmed', lang),
+      template: MailTemplate.PAYMENT_CONFIRMED,
+      context: {
+        name: user.name,
+        plan: this.planName(payment.plan, lang),
+        amount: this.formatMoney(payment.amount, payment.currency, lang),
+        recurring: payment.recurring,
+        billingUrl: this.billingUrl,
+      },
+    });
+  }
+
+  sendPaymentRefunded(
+    user: MailRecipient,
+    payment: { plan: PlanNames; amount: number; currency: string },
+  ) {
+    const lang = this.resolveLang(user.locale);
+    return this.send({
+      to: user.email,
+      lang,
+      subject: this.subject('paymentRefunded', lang),
+      template: MailTemplate.PAYMENT_REFUNDED,
+      context: {
+        name: user.name,
+        plan: this.planName(payment.plan, lang),
+        amount: this.formatMoney(payment.amount, payment.currency, lang),
+        billingUrl: this.billingUrl,
+      },
+    });
+  }
+
+  /** `endsAt`: até quando continua Pro (cancelou no fim do período); null = terminou agora. */
+  sendSubscriptionCanceled(user: MailRecipient, plan: PlanNames, endsAt: Date | null) {
+    const lang = this.resolveLang(user.locale);
+    return this.send({
+      to: user.email,
+      lang,
+      subject: this.subject('subscriptionCanceled', lang),
+      template: MailTemplate.SUBSCRIPTION_CANCELED,
+      context: {
+        name: user.name,
+        plan: this.planName(plan, lang),
+        endsAt: endsAt ? this.formatDay(endsAt, lang) : null,
+        billingUrl: this.billingUrl,
+      },
+    });
+  }
+
+  sendCourtesyGiven(user: MailRecipient, endsAt: Date, extended: boolean) {
+    const lang = this.resolveLang(user.locale);
+    return this.send({
+      to: user.email,
+      lang,
+      subject: this.subject(extended ? 'courtesyExtended' : 'courtesyGiven', lang),
+      template: MailTemplate.COURTESY_GIVEN,
+      context: {
+        name: user.name,
+        endsAt: this.formatDay(endsAt, lang),
+        extended,
+        billingUrl: this.billingUrl,
+      },
+    });
+  }
+
+  sendCourtesyEnding(user: MailRecipient, endsAt: Date) {
+    const lang = this.resolveLang(user.locale);
+    return this.send({
+      to: user.email,
+      lang,
+      subject: this.subject('courtesyEnding', lang),
+      template: MailTemplate.COURTESY_ENDING,
+      context: {
+        name: user.name,
+        endsAt: this.formatDay(endsAt, lang),
+        billingUrl: this.billingUrl,
+      },
+    });
+  }
+
   /** Idioma suportado mais próximo do pedido; senão, o idioma padrão. */
   /**
    * Idioma do e-mail: o salvo na conta; sem ele, o que a pessoa está usando agora (o
@@ -325,6 +416,28 @@ export class MailService {
       dateStyle: 'short',
       timeStyle: 'short',
     });
+  }
+
+  /** Só a data, por extenso ("22 de novembro de 2026"), no fuso configurado. */
+  private formatDay(date: Date, lang: string): string {
+    return date.toLocaleDateString(lang, {
+      timeZone: this.config.get<string>('mail.timezone', 'America/Sao_Paulo'),
+      dateStyle: 'long',
+    });
+  }
+
+  /** Centavos → "R$ 29,90". */
+  private formatMoney(cents: number, currency: string, lang: string): string {
+    return new Intl.NumberFormat(lang, { style: 'currency', currency }).format(cents / 100);
+  }
+
+  private planName(plan: PlanNames, lang: string): string {
+    return lang === 'pt-BR' ? plan.pt : plan.en;
+  }
+
+  /** Tela do plano no front. */
+  private get billingUrl() {
+    return `${this.frontendUrl}/billing`;
   }
 
   /** Tela de segurança da conta no front (sessões, 2FA, formas de login). */

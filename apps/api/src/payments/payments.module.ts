@@ -3,11 +3,11 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 import { UsersModule } from '../users/users.module';
 import { AdminBillingController } from './admin-billing.controller';
 import { AdminPlansController } from './admin-plans.controller';
-import { Grant } from './entities/grant.entity';
 import { Payment } from './entities/payment.entity';
 import { Plan } from './entities/plan.entity';
 import { Subscription } from './entities/subscription.entity';
-import { GrantsService } from './grants.service';
+import { GrantsModule } from './grants.module';
+import { MailModule } from '../mail/mail.module';
 import { PaymentProviders } from './payment-providers';
 import { PaymentsController } from './payments.controller';
 import { PaymentsService } from './payments.service';
@@ -19,10 +19,15 @@ import { PlansService } from './plans.service';
  * desligados". Veja docs/PAYMENTS.md.
  */
 @Module({
-  imports: [TypeOrmModule.forFeature([Payment, Subscription, Plan, Grant]), UsersModule],
+  imports: [
+    TypeOrmModule.forFeature([Payment, Subscription, Plan]),
+    GrantsModule,
+    MailModule,
+    UsersModule,
+  ],
   // AdminBilling (users/:id/...) DEPOIS do PaymentsController (users/me/...): o "me" nunca vira :id
   controllers: [PaymentsController, AdminPlansController, AdminBillingController],
-  providers: [PaymentsService, PaymentProviders, PlansService, GrantsService],
+  providers: [PaymentsService, PaymentProviders, PlansService],
   exports: [PaymentsService, PaymentProviders, PlansService],
 })
 export class PaymentsModule {}

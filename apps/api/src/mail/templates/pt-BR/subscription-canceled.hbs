@@ -1,0 +1,9 @@
+<h1>Assinatura cancelada</h1>
+<p>Olá, {{name}}.</p>
+{{#if endsAt}}
+<p>A sua assinatura do <strong>{{plan}}</strong> no <strong>{{appName}}</strong> foi cancelada. Nada mais será cobrado, e você continua com o Pro até <strong>{{endsAt}}</strong>.</p>
+{{else}}
+<p>A sua assinatura do <strong>{{plan}}</strong> no <strong>{{appName}}</strong> terminou agora, e nada mais será cobrado.</p>
+{{/if}}
+<p>Se quiser voltar, é só assinar de novo na tela do seu plano.</p>
+{{> button url=billingUrl label="Ver meu plano"}}

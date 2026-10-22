@@ -2,6 +2,7 @@ import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { AuditService } from '../audit/audit.service';
 import { FilesCleanupService } from '../files/cleanup/files-cleanup.service';
+import { GrantsService } from '../payments/grants.service';
 import { DatabaseThrottlerStorage } from '../rate-limit/database-throttler.storage';
 import { SessionService } from '../sessions/session.service';
 import { AccountPurgeService } from '../users/account/account-purge.service';
@@ -26,6 +27,7 @@ export class MaintenanceService {
     private readonly audit: AuditService,
     private readonly rateLimits: DatabaseThrottlerStorage,
     private readonly config: ConfigService,
+    private readonly grants: GrantsService,
   ) {}
 
   async run(now = new Date()): Promise<MaintenanceReport> {
@@ -43,6 +45,8 @@ export class MaintenanceService {
         return this.audit.purgeOlderThan(new Date(now.getTime() - retention * 86_400_000));
       },
       deletedRateLimits: () => this.rateLimits.purgeExpired(now.getTime()),
+      // e-mail "seu Pro de cortesia termina em breve" (uma vez por cortesia)
+      courtesyEndingNotices: () => this.grants.notifyEnding(now),
     };
 
     const report: MaintenanceReport = {};

@@ -186,7 +186,13 @@
       "emailChanged": "Your account email was changed",
       "accountDeleted": "Your account was deleted",
       "accountCreated": "Your {appName} account is ready",
-      "magicLink": "Your sign-in link for {appName}"
+      "magicLink": "Your sign-in link for {appName}",
+      "paymentConfirmed": "Payment confirmed: welcome to Pro",
+      "paymentRefunded": "Your refund is on its way",
+      "subscriptionCanceled": "Your subscription was canceled",
+      "courtesyGiven": "You got courtesy Pro",
+      "courtesyExtended": "Your courtesy Pro was extended",
+      "courtesyEnding": "Your courtesy Pro ends soon"
     }
   },
   "roles": {

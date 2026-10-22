@@ -1,0 +1,20 @@
+<h1>Pagamento confirmado</h1>
+<p>Olá, {{name}}.</p>
+<p>Recebemos o seu pagamento e o <strong>Pro</strong> já está liberado na sua conta do <strong>{{appName}}</strong>.</p>
+<table role="presentation" cellspacing="0" cellpadding="8" style="margin:16px 0;border-collapse:collapse;">
+  <tr>
+    <td style="color:#6b7280;">Plano</td>
+    <td><strong>{{plan}}</strong></td>
+  </tr>
+  <tr>
+    <td style="color:#6b7280;">Valor</td>
+    <td><strong>{{amount}}</strong>{{#if recurring}} por ciclo{{/if}}</td>
+  </tr>
+</table>
+{{#if recurring}}
+<p>A assinatura renova sozinha. Você pode cancelar quando quiser, na tela do seu plano.</p>
+{{else}}
+<p>É um pagamento único: o Pro fica com você, sem cobranças novas.</p>
+{{/if}}
+<p>O recibo da cobrança vem da plataforma de pagamento, em outro e-mail.</p>
+{{> button url=billingUrl label="Ver meu plano"}}

@@ -35,11 +35,49 @@ const SUBJECT_KEYS: Record<MailTemplate, string> = {
   [MailTemplate.PASSKEY_ADDED]: 'passkeyAdded',
   [MailTemplate.EMAIL_CHANGED]: 'emailChanged',
   [MailTemplate.ACCOUNT_DELETED]: 'accountDeleted',
+  [MailTemplate.PAYMENT_CONFIRMED]: 'paymentConfirmed',
+  [MailTemplate.PAYMENT_REFUNDED]: 'paymentRefunded',
+  [MailTemplate.SUBSCRIPTION_CANCELED]: 'subscriptionCanceled',
+  [MailTemplate.COURTESY_GIVEN]: 'courtesyGiven',
+  [MailTemplate.COURTESY_ENDING]: 'courtesyEnding',
 };
 
 /** Dados de exemplo de cada template, no idioma informado. */
 function samples(lang: string): { [K in MailTemplate]: MailTemplateContextMap[K] } {
+  const day = (days: number) =>
+    new Date(Date.now() + days * 86_400_000).toLocaleDateString(lang, { dateStyle: 'long' });
+  const pt = lang === 'pt-BR';
   return {
+    [MailTemplate.PAYMENT_CONFIRMED]: {
+      name: 'Maria Silva',
+      plan: pt ? 'Pro mensal' : 'Pro, monthly',
+      amount: pt ? 'R$ 29,90' : 'R$29.90',
+      recurring: true,
+      billingUrl: 'http://localhost:5173/billing',
+    },
+    [MailTemplate.PAYMENT_REFUNDED]: {
+      name: 'Maria Silva',
+      plan: pt ? 'Pro vitalício' : 'Pro, lifetime',
+      amount: pt ? 'R$ 99,00' : 'R$99.00',
+      billingUrl: 'http://localhost:5173/billing',
+    },
+    [MailTemplate.SUBSCRIPTION_CANCELED]: {
+      name: 'Maria Silva',
+      plan: pt ? 'Pro mensal' : 'Pro, monthly',
+      endsAt: day(18),
+      billingUrl: 'http://localhost:5173/billing',
+    },
+    [MailTemplate.COURTESY_GIVEN]: {
+      name: 'Maria Silva',
+      endsAt: day(61),
+      extended: false,
+      billingUrl: 'http://localhost:5173/billing',
+    },
+    [MailTemplate.COURTESY_ENDING]: {
+      name: 'Maria Silva',
+      endsAt: day(3),
+      billingUrl: 'http://localhost:5173/billing',
+    },
     [MailTemplate.WELCOME]: { name: 'Maria Silva', loginUrl: 'http://localhost:5173/login' },
     [MailTemplate.VERIFY_EMAIL]: {
       name: 'Maria Silva',

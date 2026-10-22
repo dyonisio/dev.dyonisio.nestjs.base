@@ -1,9 +1,11 @@
 import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { IsNull, MoreThan, Repository } from 'typeorm';
+import { Between, IsNull, MoreThan, Repository } from 'typeorm';
 import { AuditAction } from '../audit/audit-action.enum';
 import { AuditService } from '../audit/audit.service';
 import { i18nKey } from '../i18n/translations';
+import { MailService } from '../mail/mail.service';
+import { UsersService } from '../users/users.service';
 import { Grant } from './entities/grant.entity';
 
 export interface GiveGrant {
@@ -14,12 +16,17 @@ export interface GiveGrant {
   reason: string;
 }
 
+/** Quantos dias antes do fim sai o e-mail "seu Pro de cortesia termina em breve". */
+export const ENDING_NOTICE_DAYS = 3;
+
 /** Pro de cortesia: dar, estender e revogar. Quem pode receber é decidido em PaymentsService. */
 @Injectable()
 export class GrantsService {
   constructor(
     @InjectRepository(Grant) private readonly repo: Repository<Grant>,
     private readonly audit: AuditService,
+    private readonly users: UsersService,
+    private readonly mail: MailService,
   ) {}
 
   /** A cortesia que vale agora (a que termina mais tarde, se houver mais de uma). */
@@ -44,9 +51,11 @@ export class GrantsService {
       throw new BadRequestException(i18nKey('payments.grantPeriod'));
     }
 
+    const user = await this.users.getById(userId);
     const grant = current ?? this.repo.create({ userId, grantedById: actorId });
     grant.endsAt = endsAt;
     grant.reason = input.reason;
+    grant.endingNoticeAt = null; // estendeu: o aviso de fim sai de novo, perto da data nova
     const saved = await this.repo.save(grant);
     await this.audit.record(AuditAction.GRANT_GIVEN, {
       actorId,
@@ -57,7 +66,28 @@ export class GrantsService {
         ...(current ? { extended: true } : {}),
       },
     });
+    await this.mail.sendCourtesyGiven(user, endsAt, !!current);
     return saved;
+  }
+
+  /**
+   * Job de manutenção: avisa por e-mail, uma vez, quem tem a cortesia acabando nos próximos
+   * ENDING_NOTICE_DAYS dias. Devolve quantos avisos saíram.
+   */
+  async notifyEnding(now = new Date()): Promise<number> {
+    const soon = new Date(now.getTime() + ENDING_NOTICE_DAYS * 86_400_000);
+    const grants = await this.repo.find({
+      where: { revokedAt: IsNull(), endingNoticeAt: IsNull(), endsAt: Between(now, soon) },
+      take: 500,
+    });
+    let sent = 0;
+    for (const grant of grants) {
+      const user = await this.users.findById(grant.userId);
+      if (user && (await this.mail.sendCourtesyEnding(user, grant.endsAt))) sent++;
+      // marca mesmo se o e-mail falhar: melhor um aviso a menos que um por execução
+      await this.repo.update({ id: grant.id }, { endingNoticeAt: now });
+    }
+    return sent;
   }
 
   async revoke(userId: string, actorId: string): Promise<void> {

@@ -1,6 +1,7 @@
 import { ConfigService } from '@nestjs/config';
 import { AuditService } from '../audit/audit.service';
 import { FilesCleanupService } from '../files/cleanup/files-cleanup.service';
+import type { GrantsService } from '../payments/grants.service';
 import { DatabaseThrottlerStorage } from '../rate-limit/database-throttler.storage';
 import { SessionService } from '../sessions/session.service';
 import { AccountPurgeService } from '../users/account/account-purge.service';
@@ -14,6 +15,7 @@ describe('MaintenanceService', () => {
   const audit = { purgeOlderThan: jest.fn().mockResolvedValue(4) };
   const rateLimits = { purgeExpired: jest.fn().mockResolvedValue(5) };
   const config: Record<string, unknown> = {};
+  const grants = { notifyEnding: jest.fn().mockResolvedValue(6) };
   const service = new MaintenanceService(
     accounts as unknown as AccountPurgeService,
     files as unknown as FilesCleanupService,
@@ -21,6 +23,7 @@ describe('MaintenanceService', () => {
     audit as unknown as AuditService,
     rateLimits as unknown as DatabaseThrottlerStorage,
     { get: (k: string, d: unknown) => config[k] ?? d } as unknown as ConfigService,
+    grants as unknown as GrantsService,
   );
 
   beforeEach(() => {
@@ -35,6 +38,7 @@ describe('MaintenanceService', () => {
       deletedSessions: 3,
       deletedAuditLogs: 4,
       deletedRateLimits: 5,
+      courtesyEndingNotices: 6,
     });
   });
 

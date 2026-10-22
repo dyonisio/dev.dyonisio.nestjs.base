@@ -1,0 +1,9 @@
+<h1>Subscription canceled</h1>
+<p>Hi, {{name}}.</p>
+{{#if endsAt}}
+<p>Your <strong>{{plan}}</strong> subscription on <strong>{{appName}}</strong> was canceled. Nothing else will be charged, and you keep Pro until <strong>{{endsAt}}</strong>.</p>
+{{else}}
+<p>Your <strong>{{plan}}</strong> subscription on <strong>{{appName}}</strong> has ended, and nothing else will be charged.</p>
+{{/if}}
+<p>If you want to come back, just subscribe again on your plan page.</p>
+{{> button url=billingUrl label="See my plan"}}
