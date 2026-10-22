@@ -174,7 +174,9 @@ describe('Plano do usuário (admin)', () => {
       reason: 'Instabilidade',
     });
 
-    expect(await plan.findByText('Instabilidade')).toBeInTheDocument();
+    expect(await plan.findByText(/^Instabilidade · given on/)).toBeInTheDocument();
+    expect(plan.getByText('Courtesy Pro')).toBeInTheDocument();
+    expect(plan.getByText(/^Ends on/)).toBeInTheDocument();
     await userEvent.click(plan.getByRole('button', { name: 'End courtesy' }));
     await userEvent.click(
       within(screen.getByRole('dialog')).getByRole('button', { name: 'End courtesy' }),

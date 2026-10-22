@@ -69,7 +69,7 @@ export function UserBillingSection({ user }: { user: User }) {
       : subscribed
         ? f(m.adminBilling.subscribed, { plan: planName(sub.planId) })
         : data.grant
-          ? f(m.adminBilling.courtesyUntil, { date: formatDate(lang, data.grant.endsAt) })
+          ? m.adminBilling.courtesy
           : m.adminBilling.free;
 
   return (
@@ -91,11 +91,12 @@ export function UserBillingSection({ user }: { user: User }) {
               <li>
                 <div className="row-main">
                   <span className="row-title">
-                    {f(m.adminBilling.courtesyUntil, {
-                      date: formatDate(lang, data.grant.endsAt),
-                    })}
+                    {f(m.adminBilling.courtesyEnds, { date: formatDate(lang, data.grant.endsAt) })}
                   </span>
-                  <span className="row-meta">{data.grant.reason}</span>
+                  <span className="row-meta">
+                    {data.grant.reason} ·{' '}
+                    {f(m.adminBilling.givenOn, { date: formatDate(lang, data.grant.createdAt) })}
+                  </span>
                 </div>
                 <div className="row-actions">
                   <button type="button" onClick={() => open({ kind: 'grant' })}>
