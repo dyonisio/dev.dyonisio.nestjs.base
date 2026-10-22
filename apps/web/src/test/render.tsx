@@ -17,6 +17,7 @@ const ALL: Permission[] = [
   'users:reset-2fa',
   'audit:read',
   'plans:manage',
+  'billing:manage',
 ];
 
 /** Usuário de teste. `permissions` padrão: as do papel (admin = todas). */

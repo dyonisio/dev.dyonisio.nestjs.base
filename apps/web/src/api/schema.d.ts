@@ -1177,6 +1177,90 @@ export interface paths {
         patch: operations["AdminPlansController_update_v1"];
         trace?: never;
     };
+    "/api/v1/users/{id}/billing": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * A user's plan, subscription, payments and courtesy
+         * @description Each item says what the admin can do with it. Permission: `billing:manage`.
+         */
+        get: operations["AdminBillingController_billing_v1"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/users/{id}/subscriptions/{subscriptionId}/cancel": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Cancel a user's subscription
+         * @description `period_end`: Pro until the end of the paid period; `now`: ends now; `now_refund`: ends now and refunds the last charge. Only the modes in `cancelOptions` work on that platform. Permission: `billing:manage`.
+         */
+        post: operations["AdminBillingController_cancel_v1"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/users/{id}/payments/{paymentId}/refund": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Refund a user's one-time purchase
+         * @description Full refund through the platform when it has an API for it (`refund: api`). Otherwise (`manual`), refund it on the platform app first: this only records it. Either way the person loses what the purchase gave. Permission: `billing:manage`.
+         */
+        post: operations["AdminBillingController_refund_v1"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/users/{id}/grant": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Give courtesy Pro
+         * @description For `months` (from today, or from the end of the current courtesy) or until `endsAt`. Not for whoever has the lifetime plan or pays a subscription. Ends on its own at the date. Permission: `billing:manage`.
+         */
+        post: operations["AdminBillingController_grant_v1"];
+        /**
+         * End the courtesy Pro now
+         * @description Permission: `billing:manage`.
+         */
+        delete: operations["AdminBillingController_revokeGrant_v1"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -1188,7 +1272,7 @@ export interface components {
              * @example user.role_changed
              * @enum {string}
              */
-            action: "auth.login" | "auth.login_failed" | "auth.logout" | "auth.refresh_token_reuse" | "auth.password_changed" | "auth.password_reset" | "auth.magic_link_sent" | "auth.email_verified" | "auth.2fa_enabled" | "auth.2fa_disabled" | "auth.2fa_failed" | "auth.2fa_recovery_code_used" | "auth.2fa_recovery_codes_regenerated" | "auth.2fa_reset_by_admin" | "auth.social_linked" | "auth.social_unlinked" | "auth.passkey_added" | "auth.passkey_removed" | "user.registered" | "user.created" | "user.invitation_sent" | "user.updated" | "user.role_changed" | "user.deleted" | "user.restored" | "user.avatar_changed" | "user.email_change_requested" | "user.email_changed" | "user.self_deleted" | "user.data_exported" | "user.anonymized" | "session.revoked" | "payment.paid" | "payment.refunded" | "subscription.started" | "subscription.canceled" | "plan.created" | "plan.updated";
+            action: "auth.login" | "auth.login_failed" | "auth.logout" | "auth.refresh_token_reuse" | "auth.password_changed" | "auth.password_reset" | "auth.magic_link_sent" | "auth.email_verified" | "auth.2fa_enabled" | "auth.2fa_disabled" | "auth.2fa_failed" | "auth.2fa_recovery_code_used" | "auth.2fa_recovery_codes_regenerated" | "auth.2fa_reset_by_admin" | "auth.social_linked" | "auth.social_unlinked" | "auth.passkey_added" | "auth.passkey_removed" | "user.registered" | "user.created" | "user.invitation_sent" | "user.updated" | "user.role_changed" | "user.deleted" | "user.restored" | "user.avatar_changed" | "user.email_change_requested" | "user.email_changed" | "user.self_deleted" | "user.data_exported" | "user.anonymized" | "session.revoked" | "payment.paid" | "payment.refunded" | "subscription.started" | "subscription.canceled" | "plan.created" | "plan.updated" | "billing.subscription_canceled" | "billing.payment_refunded" | "billing.grant_given" | "billing.grant_revoked";
             /**
              * Format: uuid
              * @description Who performed the action (null = anonymous, e.g. failed login)
@@ -1343,7 +1427,7 @@ export interface components {
              */
             role: "admin" | "manager" | "user";
             /** @example [] */
-            permissions: ("users:read" | "users:create" | "users:update" | "users:delete" | "users:manage-roles" | "users:reset-2fa" | "audit:read" | "plans:manage")[];
+            permissions: ("users:read" | "users:create" | "users:update" | "users:delete" | "users:manage-roles" | "users:reset-2fa" | "audit:read" | "plans:manage" | "billing:manage")[];
             /** @example true */
             isActive: boolean;
             /**
@@ -1851,6 +1935,17 @@ export interface components {
             /** Format: date-time */
             createdAt: string;
         };
+        GrantDto: {
+            /** Format: uuid */
+            id: string;
+            /**
+             * Format: date-time
+             * @description Pro until this moment
+             */
+            endsAt: string;
+            /** Format: date-time */
+            createdAt: string;
+        };
         SubscriptionDto: {
             /** Format: uuid */
             id: string;
@@ -1870,12 +1965,14 @@ export interface components {
         };
         BillingDto: {
             /**
-             * @description pro = paid the lifetime plan, or has a subscription that is not canceled
+             * @description pro = paid the lifetime plan, has a subscription that is not canceled, or a courtesy that has not ended
              * @enum {string}
              */
             plan: "free" | "pro";
             /** @description Paid a one-time (lifetime) plan: Pro forever, nothing else to buy */
             lifetime: boolean;
+            /** @description Courtesy Pro given by an admin, while it lasts */
+            grant: components["schemas"]["GrantDto"] | null;
             /** @description The current subscription, if any */
             subscription: components["schemas"]["SubscriptionDto"] | null;
             /** @description Most recent first */
@@ -1956,6 +2053,90 @@ export interface components {
             /** @default 0 */
             sortOrder?: number;
         };
+        AdminGrantDto: {
+            /** Format: uuid */
+            id: string;
+            /**
+             * Format: date-time
+             * @description Pro until this moment
+             */
+            endsAt: string;
+            /** Format: date-time */
+            createdAt: string;
+            reason: string;
+            /** Format: uuid */
+            grantedById: string | null;
+        };
+        AdminSubscriptionDto: {
+            /** Format: uuid */
+            id: string;
+            planId: string;
+            /** @enum {string} */
+            provider: "stripe" | "infinitepay" | "abacatepay";
+            /** @enum {string} */
+            status: "active" | "past_due" | "canceled";
+            /** @description Canceled, but the paid period still counts until currentPeriodEnd */
+            cancelAtPeriodEnd: boolean;
+            /** Format: date-time */
+            currentPeriodEnd: string | null;
+            /** Format: date-time */
+            canceledAt: string | null;
+            /** Format: date-time */
+            createdAt: string;
+            /** @description How the admin can cancel it on this platform (empty: already canceled) */
+            cancelOptions: ("period_end" | "now" | "now_refund")[];
+        };
+        AdminPaymentDto: {
+            /** Format: uuid */
+            id: string;
+            planId: string;
+            /** @enum {string} */
+            kind: "one_time" | "subscription";
+            /** @enum {string} */
+            provider: "stripe" | "infinitepay" | "abacatepay";
+            /** @enum {string} */
+            status: "pending" | "paid" | "failed" | "canceled" | "refunded";
+            /** @description In cents */
+            amount: number;
+            currency: string;
+            /** Format: date-time */
+            paidAt: string | null;
+            /** Format: date-time */
+            createdAt: string;
+            /**
+             * @description api: refunded through the platform from here; manual: refund it on the platform panel/app, then record it here; null: cannot be refunded
+             * @enum {string|null}
+             */
+            refund: "api" | "manual" | null;
+        };
+        AdminBillingDto: {
+            /** @enum {string} */
+            plan: "free" | "pro";
+            lifetime: boolean;
+            grant: components["schemas"]["AdminGrantDto"] | null;
+            subscription: components["schemas"]["AdminSubscriptionDto"] | null;
+            /** @description Most recent first */
+            payments: components["schemas"]["AdminPaymentDto"][];
+        };
+        AdminCancelSubscriptionDto: {
+            /** @enum {string} */
+            mode: "period_end" | "now" | "now_refund";
+        };
+        AdminRefundDto: {
+            /** @description Shown on the platform, when it keeps one */
+            reason?: string;
+        };
+        GiveGrantDto: {
+            /** @description Months from today (or from the end of the current courtesy). Send this or endsAt */
+            months?: number;
+            /**
+             * Format: date-time
+             * @description End date. Send this or months
+             */
+            endsAt?: string;
+            /** @example Compensation for the outage on Oct 20 */
+            reason: string;
+        };
     };
     responses: never;
     parameters: never;
@@ -1972,7 +2153,7 @@ export interface operations {
                 page?: number;
                 /** @description Items per page */
                 limit?: number;
-                action?: "auth.login" | "auth.login_failed" | "auth.logout" | "auth.refresh_token_reuse" | "auth.password_changed" | "auth.password_reset" | "auth.magic_link_sent" | "auth.email_verified" | "auth.2fa_enabled" | "auth.2fa_disabled" | "auth.2fa_failed" | "auth.2fa_recovery_code_used" | "auth.2fa_recovery_codes_regenerated" | "auth.2fa_reset_by_admin" | "auth.social_linked" | "auth.social_unlinked" | "auth.passkey_added" | "auth.passkey_removed" | "user.registered" | "user.created" | "user.invitation_sent" | "user.updated" | "user.role_changed" | "user.deleted" | "user.restored" | "user.avatar_changed" | "user.email_change_requested" | "user.email_changed" | "user.self_deleted" | "user.data_exported" | "user.anonymized" | "session.revoked" | "payment.paid" | "payment.refunded" | "subscription.started" | "subscription.canceled" | "plan.created" | "plan.updated";
+                action?: "auth.login" | "auth.login_failed" | "auth.logout" | "auth.refresh_token_reuse" | "auth.password_changed" | "auth.password_reset" | "auth.magic_link_sent" | "auth.email_verified" | "auth.2fa_enabled" | "auth.2fa_disabled" | "auth.2fa_failed" | "auth.2fa_recovery_code_used" | "auth.2fa_recovery_codes_regenerated" | "auth.2fa_reset_by_admin" | "auth.social_linked" | "auth.social_unlinked" | "auth.passkey_added" | "auth.passkey_removed" | "user.registered" | "user.created" | "user.invitation_sent" | "user.updated" | "user.role_changed" | "user.deleted" | "user.restored" | "user.avatar_changed" | "user.email_change_requested" | "user.email_changed" | "user.self_deleted" | "user.data_exported" | "user.anonymized" | "session.revoked" | "payment.paid" | "payment.refunded" | "subscription.started" | "subscription.canceled" | "plan.created" | "plan.updated" | "billing.subscription_canceled" | "billing.payment_refunded" | "billing.grant_given" | "billing.grant_revoked";
                 /** @description Who performed the actions */
                 actorId?: string;
                 /** @description Affected record (e.g. a user id) */
@@ -5265,6 +5446,320 @@ export interface operations {
                 };
             };
             /** @description Plan not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponseDto"];
+                };
+            };
+        };
+    };
+    AdminBillingController_billing_v1: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Language for error messages */
+                "Accept-Language"?: "en" | "pt-BR";
+            };
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AdminBillingDto"];
+                };
+            };
+            /** @description Invalid id */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponseDto"];
+                };
+            };
+            /** @description Missing, invalid or expired token, or the session was ended */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponseDto"];
+                };
+            };
+            /** @description Requires the permission(s): billing:manage */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponseDto"];
+                };
+            };
+            /** @description User not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponseDto"];
+                };
+            };
+        };
+    };
+    AdminBillingController_cancel_v1: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Language for error messages */
+                "Accept-Language"?: "en" | "pt-BR";
+            };
+            path: {
+                id: string;
+                subscriptionId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AdminCancelSubscriptionDto"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AdminBillingDto"];
+                };
+            };
+            /** @description Invalid id, or the platform cannot cancel this way */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponseDto"];
+                };
+            };
+            /** @description Missing, invalid or expired token, or the session was ended */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponseDto"];
+                };
+            };
+            /** @description Requires the permission(s): billing:manage */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponseDto"];
+                };
+            };
+            /** @description Subscription not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponseDto"];
+                };
+            };
+        };
+    };
+    AdminBillingController_refund_v1: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Language for error messages */
+                "Accept-Language"?: "en" | "pt-BR";
+            };
+            path: {
+                id: string;
+                paymentId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AdminRefundDto"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AdminBillingDto"];
+                };
+            };
+            /** @description Invalid id, or the payment cannot be refunded */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponseDto"];
+                };
+            };
+            /** @description Missing, invalid or expired token, or the session was ended */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponseDto"];
+                };
+            };
+            /** @description Requires the permission(s): billing:manage */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponseDto"];
+                };
+            };
+            /** @description Payment not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponseDto"];
+                };
+            };
+        };
+    };
+    AdminBillingController_grant_v1: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Language for error messages */
+                "Accept-Language"?: "en" | "pt-BR";
+            };
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["GiveGrantDto"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AdminBillingDto"];
+                };
+            };
+            /** @description Invalid period, has the lifetime plan or pays a subscription */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponseDto"];
+                };
+            };
+            /** @description Missing, invalid or expired token, or the session was ended */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponseDto"];
+                };
+            };
+            /** @description Requires the permission(s): billing:manage */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponseDto"];
+                };
+            };
+            /** @description User not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponseDto"];
+                };
+            };
+        };
+    };
+    AdminBillingController_revokeGrant_v1: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Language for error messages */
+                "Accept-Language"?: "en" | "pt-BR";
+            };
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AdminBillingDto"];
+                };
+            };
+            /** @description Invalid id */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponseDto"];
+                };
+            };
+            /** @description Missing, invalid or expired token, or the session was ended */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponseDto"];
+                };
+            };
+            /** @description Requires the permission(s): billing:manage */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponseDto"];
+                };
+            };
+            /** @description User not found, or no active courtesy */
             404: {
                 headers: {
                     [name: string]: unknown;

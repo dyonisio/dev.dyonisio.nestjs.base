@@ -1,6 +1,7 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { IsIn, IsObject, IsOptional, IsString, MaxLength } from 'class-validator';
 import { i18nValidationMessage } from '../../i18n/i18n-validation';
+import type { Grant } from '../entities/grant.entity';
 import type { Payment } from '../entities/payment.entity';
 import type { Subscription } from '../entities/subscription.entity';
 import { PROVIDER_IDS } from '../providers/payment-provider';
@@ -169,10 +170,27 @@ export class SubscriptionDto {
   }
 }
 
+/** Pro de cortesia, dado pelo admin. */
+export class GrantDto {
+  @ApiProperty({ format: 'uuid' })
+  id: string;
+
+  @ApiProperty({ description: 'Pro until this moment' })
+  endsAt: Date;
+
+  @ApiProperty()
+  createdAt: Date;
+
+  static from(g: Grant): GrantDto {
+    return { id: g.id, endsAt: g.endsAt, createdAt: g.createdAt };
+  }
+}
+
 export class BillingDto {
   @ApiProperty({
     enum: ['free', 'pro'],
-    description: 'pro = paid the lifetime plan, or has a subscription that is not canceled',
+    description:
+      'pro = paid the lifetime plan, has a subscription that is not canceled, or a courtesy that has not ended',
   })
   plan: 'free' | 'pro';
 
@@ -180,6 +198,13 @@ export class BillingDto {
     description: 'Paid a one-time (lifetime) plan: Pro forever, nothing else to buy',
   })
   lifetime: boolean;
+
+  @ApiProperty({
+    type: GrantDto,
+    nullable: true,
+    description: 'Courtesy Pro given by an admin, while it lasts',
+  })
+  grant: GrantDto | null;
 
   @ApiProperty({
     type: SubscriptionDto,

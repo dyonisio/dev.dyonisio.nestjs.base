@@ -102,7 +102,12 @@
     "notFound": "Compra não encontrada",
     "subscriptionNotFound": "Assinatura não encontrada",
     "planExists": "Já existe um plano com este id",
-    "alreadyLifetime": "Você já tem o Pro para sempre: não há mais nada a comprar"
+    "alreadyLifetime": "Você já tem o Pro para sempre: não há mais nada a comprar",
+    "notRefundable": "Este pagamento não pode ser reembolsado aqui (só compras únicas pagas; na assinatura, cancele com reembolso)",
+    "cancelModeUnavailable": "Esta plataforma não cancela a assinatura deste jeito",
+    "grantPeriod": "Escolha quantos meses, ou uma data final no futuro",
+    "grantNotFound": "Este usuário não tem cortesia ativa",
+    "grantHasSubscription": "Este usuário já paga uma assinatura. Cancele antes, ou espere terminar"
   },
   "passkeys": {
     "challengeExpired": "O pedido da passkey expirou. Tente de novo",

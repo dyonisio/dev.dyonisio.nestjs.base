@@ -8,7 +8,14 @@ import { RequestContext } from '../common/request-context/request-context';
 import { i18nKey } from '../i18n/translations';
 import { UsersService } from '../users/users.service';
 import {
+  type AdminBillingDto,
+  type AdminCancelMode,
+  AdminGrantDto,
+  type GiveGrantDto,
+} from './dto/admin-billing.dto';
+import {
   BillingDto,
+  GrantDto,
   CheckoutResponseDto,
   PaymentDto,
   PlansResponseDto,
@@ -16,6 +23,7 @@ import {
 } from './dto/payments.dto';
 import { Payment } from './entities/payment.entity';
 import { Subscription } from './entities/subscription.entity';
+import { GrantsService } from './grants.service';
 import { PaymentProviders } from './payment-providers';
 import { planText, type Plan } from './plans';
 import { PlansService } from './plans.service';
@@ -37,6 +45,7 @@ export class PaymentsService {
     @InjectRepository(Subscription) private readonly subscriptions: Repository<Subscription>,
     private readonly providers: PaymentProviders,
     private readonly plansService: PlansService,
+    private readonly grants: GrantsService,
     private readonly users: UsersService,
     private readonly audit: AuditService,
     private readonly config: ConfigService,
@@ -115,21 +124,115 @@ export class PaymentsService {
   }
 
   async billing(userId: string): Promise<BillingDto> {
-    const [payments, subscriptions] = await Promise.all([
-      this.payments.find({ where: { userId }, order: { createdAt: 'DESC' }, take: 50 }),
-      this.subscriptions.find({ where: { userId }, order: { createdAt: 'DESC' } }),
-    ]);
-    const current = subscriptions.find((s) => s.status !== 'canceled') ?? subscriptions[0] ?? null;
-    // Exemplo: qualquer plano pago de uma vez (e não reembolsado) dá o Pro para sempre
-    const lifetime = payments.some((p) => p.status === 'paid' && p.kind === 'one_time');
+    const state = await this.state(userId);
     return {
-      plan: lifetime || subscriptions.some((s) => s.status !== 'canceled') ? 'pro' : 'free',
-      lifetime,
-      subscription: current ? SubscriptionDto.from(current) : null,
-      payments: payments
+      plan: state.plan,
+      lifetime: state.lifetime,
+      grant: state.grant ? GrantDto.from(state.grant) : null,
+      subscription: state.current ? SubscriptionDto.from(state.current) : null,
+      payments: state.payments
         .filter((p) => p.status !== 'pending' || Date.now() - p.createdAt.getTime() < 86_400_000)
         .map((p) => PaymentDto.from(p)),
     };
+  }
+
+  // ---------------------------------------------------------------- admin
+
+  /** O plano de um usuário, com o que o admin pode fazer em cada item. */
+  async adminBilling(userId: string): Promise<AdminBillingDto> {
+    await this.users.getById(userId);
+    const state = await this.state(userId);
+    return {
+      plan: state.plan,
+      lifetime: state.lifetime,
+      grant: state.grant ? AdminGrantDto.fromGrant(state.grant) : null,
+      subscription: state.current
+        ? {
+            ...SubscriptionDto.from(state.current),
+            cancelOptions: this.cancelOptions(state.current),
+          }
+        : null,
+      payments: state.payments.map((p) => ({ ...PaymentDto.from(p), refund: this.refundKind(p) })),
+    };
+  }
+
+  /** Cancela pelo admin: só cancelar (no fim do período ou agora) ou cancelar devolvendo a última cobrança. */
+  async adminCancel(
+    userId: string,
+    subscriptionId: string,
+    mode: AdminCancelMode,
+    actorId: string,
+  ): Promise<AdminBillingDto> {
+    const sub = await this.subscriptions.findOne({ where: { id: subscriptionId, userId } });
+    if (!sub) throw new NotFoundException(i18nKey('payments.subscriptionNotFound'));
+    if (!this.cancelOptions(sub).includes(mode)) {
+      throw new BadRequestException(i18nKey('payments.cancelModeUnavailable'));
+    }
+    // cancelOptions só oferece o que a plataforma ligada sabe fazer
+    const provider = this.providers.get(sub.provider)!;
+    const events =
+      mode === 'now_refund'
+        ? await provider.cancelAndRefund!(sub)
+        : await provider.cancelSubscription!(sub, mode);
+    await this.apply(provider, events);
+    await this.audit.record(AuditAction.ADMIN_SUBSCRIPTION_CANCELED, {
+      actorId,
+      target: { type: 'user', id: userId },
+      metadata: { subscription: sub.id, provider: provider.id, mode },
+    });
+    return this.adminBilling(userId);
+  }
+
+  /**
+   * Reembolso de uma compra única paga. Onde a plataforma tem API, devolve por lá; onde não tem
+   * (InfinitePay), o admin devolve no app dela e aqui só registra.
+   */
+  async adminRefund(
+    userId: string,
+    paymentId: string,
+    reason: string | undefined,
+    actorId: string,
+  ): Promise<AdminBillingDto> {
+    const payment = await this.payments.findOne({ where: { id: paymentId, userId } });
+    if (!payment) throw new NotFoundException(i18nKey('payments.notFound'));
+    const kind = this.refundKind(payment);
+    if (!kind) throw new BadRequestException(i18nKey('payments.notRefundable'));
+    if (kind === 'api') {
+      const provider = this.providers.get(payment.provider)!;
+      await this.apply(provider, await provider.refund!(payment, reason));
+    } else {
+      await this.markRefunded(payment.provider, payment.id);
+    }
+    await this.audit.record(AuditAction.ADMIN_PAYMENT_REFUNDED, {
+      actorId,
+      target: { type: 'user', id: userId },
+      metadata: {
+        payment: payment.id,
+        provider: payment.provider,
+        amount: payment.amount,
+        manual: kind === 'manual',
+        ...(reason ? { reason } : {}),
+      },
+    });
+    return this.adminBilling(userId);
+  }
+
+  /** Pro de cortesia. Quem já tem o vitalício ou paga assinatura não precisa (por ora). */
+  async adminGrant(userId: string, dto: GiveGrantDto, actorId: string): Promise<AdminBillingDto> {
+    await this.users.getById(userId);
+    const state = await this.state(userId);
+    if (state.lifetime) throw new BadRequestException(i18nKey('payments.alreadyLifetime'));
+    if (state.current && state.current.status !== 'canceled') {
+      throw new BadRequestException(i18nKey('payments.grantHasSubscription'));
+    }
+    await this.grants.give(userId, dto, actorId);
+    return this.adminBilling(userId);
+  }
+
+  async adminRevokeGrant(userId: string, actorId: string): Promise<AdminBillingDto> {
+    await this.users.getById(userId);
+    await this.grants.revoke(userId, actorId);
+    return this.adminBilling(userId);
   }
 
   async cancelSubscription(userId: string, subscriptionId: string): Promise<SubscriptionDto> {
@@ -137,10 +240,12 @@ export class PaymentsService {
     if (!sub) throw new NotFoundException(i18nKey('payments.subscriptionNotFound'));
     if (sub.status === 'canceled' || sub.cancelAtPeriodEnd) return SubscriptionDto.from(sub);
     const provider = this.providers.get(sub.provider);
-    if (!provider?.cancelSubscription) {
+    const [mode] = provider?.cancelModes ?? [];
+    if (!provider?.cancelSubscription || !mode) {
       throw new BadRequestException(i18nKey('payments.providerUnavailable'));
     }
-    await this.apply(provider, await provider.cancelSubscription(sub));
+    // a própria pessoa: o jeito mais gentil que a plataforma tiver (no fim do período, se houver)
+    await this.apply(provider, await provider.cancelSubscription(sub, mode));
     return SubscriptionDto.from(await this.subscriptions.findOneByOrFail({ id: sub.id }));
   }
 
@@ -152,6 +257,37 @@ export class PaymentsService {
   }
 
   // ---------------------------------------------------------------- internos
+
+  /** Tudo o que decide o plano de alguém. */
+  private async state(userId: string) {
+    const [payments, subscriptions, grant] = await Promise.all([
+      this.payments.find({ where: { userId }, order: { createdAt: 'DESC' }, take: 50 }),
+      this.subscriptions.find({ where: { userId }, order: { createdAt: 'DESC' } }),
+      this.grants.active(userId),
+    ]);
+    const current = subscriptions.find((s) => s.status !== 'canceled') ?? subscriptions[0] ?? null;
+    // Exemplo: qualquer plano pago de uma vez (e não reembolsado) dá o Pro para sempre
+    const lifetime = payments.some((p) => p.status === 'paid' && p.kind === 'one_time');
+    const subscribed = subscriptions.some((s) => s.status !== 'canceled');
+    const plan: 'free' | 'pro' = lifetime || subscribed || grant ? 'pro' : 'free';
+    return { plan, lifetime, grant, current, payments };
+  }
+
+  /** Como o admin pode cancelar esta assinatura, pelo que a plataforma dela sabe fazer. */
+  private cancelOptions(sub: Subscription): AdminCancelMode[] {
+    const provider = this.providers.get(sub.provider);
+    if (sub.status === 'canceled' || !provider?.cancelSubscription) return [];
+    const modes: AdminCancelMode[] = provider.cancelModes.filter(
+      (m) => m !== 'period_end' || !sub.cancelAtPeriodEnd,
+    );
+    return provider.cancelAndRefund ? [...modes, 'now_refund'] : modes;
+  }
+
+  /** Compra única paga: por API, se a plataforma tem; senão, o admin registra o que fez lá. */
+  private refundKind(payment: Payment): 'api' | 'manual' | null {
+    if (payment.status !== 'paid' || payment.kind !== 'one_time') return null;
+    return this.providers.get(payment.provider)?.refund ? 'api' : 'manual';
+  }
 
   private providersFor(plan: Plan): PaymentProvider[] {
     return this.providers.all().filter((p) => p.supports[plan.kind]);
@@ -194,7 +330,7 @@ export class PaymentsService {
     for (const event of events) {
       if (event.type === 'payment.paid') await this.markPaid(provider, event);
       else if (event.type === 'payment.refunded')
-        await this.markRefunded(provider, event.paymentId);
+        await this.markRefunded(provider.id, event.paymentId);
       else await this.syncSubscription(provider, event);
     }
   }
@@ -230,9 +366,9 @@ export class PaymentsService {
     });
   }
 
-  private async markRefunded(provider: PaymentProvider, paymentId: string): Promise<void> {
+  private async markRefunded(providerId: string, paymentId: string): Promise<void> {
     const payment = await this.payments.findOne({
-      where: { id: paymentId, provider: provider.id },
+      where: { id: paymentId, provider: providerId },
     });
     if (!payment || payment.status === 'refunded') return;
     payment.status = 'refunded';
@@ -240,7 +376,7 @@ export class PaymentsService {
     await this.audit.record(AuditAction.PAYMENT_REFUNDED, {
       actorId: payment.userId,
       target: { type: 'user', id: payment.userId },
-      metadata: { payment: payment.id, provider: provider.id },
+      metadata: { payment: payment.id, provider: providerId },
     });
   }
 

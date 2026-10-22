@@ -7,6 +7,10 @@ export const PROVIDER_IDS: readonly ProviderId[] = ['stripe', 'infinitepay', 'ab
 
 export type PaymentMethod = 'card' | 'pix' | 'boleto';
 
+/** period_end: vale até o fim do período já pago; now: termina na hora. */
+export type CancelMode = 'period_end' | 'now';
+export const CANCEL_MODES: readonly CancelMode[] = ['period_end', 'now'];
+
 export interface CheckoutInput {
   payment: Payment;
   plan: Plan;
@@ -71,6 +75,11 @@ export interface PaymentProvider {
   /** O que ela sabe fazer: a tela só oferece o que funciona. */
   readonly supports: Record<PlanKind, boolean>;
   readonly methods: readonly PaymentMethod[];
+  /**
+   * Como dá para cancelar uma assinatura aqui. A primeira é a usada quando a própria pessoa
+   * cancela; o admin escolhe entre todas.
+   */
+  readonly cancelModes: readonly CancelMode[];
 
   createCheckout(input: CheckoutInput): Promise<CheckoutResult>;
 
@@ -86,6 +95,15 @@ export interface PaymentProvider {
    */
   confirm(payment: Payment, params: Record<string, string>): Promise<PaymentEvent[]>;
 
-  /** Cancela a assinatura na plataforma (algumas mantêm até o fim do período pago). */
-  cancelSubscription?(subscription: Subscription): Promise<PaymentEvent[]>;
+  /** Cancela a assinatura na plataforma, de um dos jeitos de `cancelModes`. */
+  cancelSubscription?(subscription: Subscription, mode: CancelMode): Promise<PaymentEvent[]>;
+
+  /**
+   * Devolve por inteiro uma compra única paga. Sem isto, o reembolso é feito no painel (ou app)
+   * da plataforma e o admin só o registra aqui.
+   */
+  refund?(payment: Payment, reason?: string): Promise<PaymentEvent[]>;
+
+  /** Cancela a assinatura agora e devolve a última cobrança dela. */
+  cancelAndRefund?(subscription: Subscription): Promise<PaymentEvent[]>;
 }

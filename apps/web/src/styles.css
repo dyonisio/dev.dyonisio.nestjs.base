@@ -1744,3 +1744,16 @@ a.plain:hover .row-title {
     transition: none !important;
   }
 }
+
+/* Escolha entre opções (ex.: como cancelar a assinatura) */
+.choices {
+  border: 0;
+  padding: 0;
+  margin: 0 0 16px;
+  display: grid;
+  gap: 8px;
+}
+.choices legend {
+  padding: 0;
+  margin-bottom: 8px;
+}

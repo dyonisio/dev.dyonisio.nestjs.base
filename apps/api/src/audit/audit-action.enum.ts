@@ -45,6 +45,11 @@ export enum AuditAction {
   SUBSCRIPTION_CANCELED = 'subscription.canceled',
   PLAN_CREATED = 'plan.created',
   PLAN_UPDATED = 'plan.updated',
+  // ...e o que o admin faz no plano de um usuário (o efeito, como payment.refunded, vem à parte)
+  ADMIN_SUBSCRIPTION_CANCELED = 'billing.subscription_canceled',
+  ADMIN_PAYMENT_REFUNDED = 'billing.payment_refunded',
+  GRANT_GIVEN = 'billing.grant_given',
+  GRANT_REVOKED = 'billing.grant_revoked',
 }
 
 export type AuditTargetType = 'user' | 'session' | 'plan';

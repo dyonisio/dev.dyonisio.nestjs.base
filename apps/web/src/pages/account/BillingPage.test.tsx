@@ -35,7 +35,7 @@ const plans = {
     { id: 'infinitepay', methods: ['pix', 'card'] },
   ],
 };
-const free = { plan: 'free', lifetime: false, subscription: null, payments: [] };
+const free = { plan: 'free', lifetime: false, grant: null, subscription: null, payments: [] };
 
 afterEach(() => {
   vi.unstubAllGlobals();
@@ -163,6 +163,25 @@ describe('Plano vitalício', () => {
       await screen.findByText(/Cancel this subscription so you are not charged again/),
     ).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Cancel subscription' })).toBeInTheDocument();
+  });
+});
+
+describe('Pro de cortesia', () => {
+  it('mostra até quando vale', async () => {
+    renderApp('/billing', makeUser(), {
+      'GET /api/v1/payments/plans': () => json(200, plans),
+      'GET /api/v1/users/me/billing': () =>
+        json(200, {
+          ...free,
+          plan: 'pro',
+          grant: {
+            id: 'g1',
+            endsAt: '2026-12-21T12:00:00.000Z',
+            createdAt: '2026-10-21T12:00:00.000Z',
+          },
+        }),
+    });
+    expect(await screen.findByText(/You have courtesy Pro until/)).toBeInTheDocument();
   });
 });
 

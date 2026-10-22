@@ -24,6 +24,7 @@ import { useI18n } from '../../i18n/I18nProvider';
 import type { Language } from '../../i18n/language';
 import { describeUserAgent, formatDate, formatDateTime } from '../../lib/format';
 import { useAction, useQuery } from '../../lib/hooks';
+import { UserBillingSection } from './UserBillingSection';
 import { UserStatus } from './UsersPage';
 
 /** /admin/users/:id — dados, role e ações de um usuário. Cada bloco aparece só com a permissão dele. */
@@ -68,6 +69,7 @@ export function UserDetailPage() {
       {can(me, 'users:manage-roles') && <RoleForm user={user} onSaved={changed} />}
       <SessionsSection user={user} />
       <LoginMethodsSection user={user} />
+      {can(me, 'billing:manage') && <UserBillingSection user={user} />}
       <ActionsSection user={user} onChanged={query.reload} />
     </>
   );

@@ -74,7 +74,11 @@
                 "subscription.started",
                 "subscription.canceled",
                 "plan.created",
-                "plan.updated"
+                "plan.updated",
+                "billing.subscription_canceled",
+                "billing.payment_refunded",
+                "billing.grant_given",
+                "billing.grant_revoked"
               ]
             }
           },
@@ -5295,6 +5299,505 @@
           "Payments"
         ]
       }
+    },
+    "/api/v1/users/{id}/billing": {
+      "get": {
+        "description": "Each item says what the admin can do with it. Permission: `billing:manage`.",
+        "operationId": "AdminBillingController_billing_v1",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "header",
+            "name": "Accept-Language",
+            "required": false,
+            "description": "Language for error messages",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "en",
+                "pt-BR"
+              ],
+              "default": "en"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AdminBillingDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid id",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing, invalid or expired token, or the session was ended",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Requires the permission(s): billing:manage",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "User not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "A user's plan, subscription, payments and courtesy",
+        "tags": [
+          "Payments"
+        ]
+      }
+    },
+    "/api/v1/users/{id}/subscriptions/{subscriptionId}/cancel": {
+      "post": {
+        "description": "`period_end`: Pro until the end of the paid period; `now`: ends now; `now_refund`: ends now and refunds the last charge. Only the modes in `cancelOptions` work on that platform. Permission: `billing:manage`.",
+        "operationId": "AdminBillingController_cancel_v1",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "subscriptionId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "header",
+            "name": "Accept-Language",
+            "required": false,
+            "description": "Language for error messages",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "en",
+                "pt-BR"
+              ],
+              "default": "en"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AdminCancelSubscriptionDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AdminBillingDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid id, or the platform cannot cancel this way",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing, invalid or expired token, or the session was ended",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Requires the permission(s): billing:manage",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Subscription not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Cancel a user's subscription",
+        "tags": [
+          "Payments"
+        ]
+      }
+    },
+    "/api/v1/users/{id}/payments/{paymentId}/refund": {
+      "post": {
+        "description": "Full refund through the platform when it has an API for it (`refund: api`). Otherwise (`manual`), refund it on the platform app first: this only records it. Either way the person loses what the purchase gave. Permission: `billing:manage`.",
+        "operationId": "AdminBillingController_refund_v1",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "paymentId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "header",
+            "name": "Accept-Language",
+            "required": false,
+            "description": "Language for error messages",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "en",
+                "pt-BR"
+              ],
+              "default": "en"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AdminRefundDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AdminBillingDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid id, or the payment cannot be refunded",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing, invalid or expired token, or the session was ended",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Requires the permission(s): billing:manage",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Payment not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Refund a user's one-time purchase",
+        "tags": [
+          "Payments"
+        ]
+      }
+    },
+    "/api/v1/users/{id}/grant": {
+      "post": {
+        "description": "For `months` (from today, or from the end of the current courtesy) or until `endsAt`. Not for whoever has the lifetime plan or pays a subscription. Ends on its own at the date. Permission: `billing:manage`.",
+        "operationId": "AdminBillingController_grant_v1",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "header",
+            "name": "Accept-Language",
+            "required": false,
+            "description": "Language for error messages",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "en",
+                "pt-BR"
+              ],
+              "default": "en"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/GiveGrantDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AdminBillingDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid period, has the lifetime plan or pays a subscription",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing, invalid or expired token, or the session was ended",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Requires the permission(s): billing:manage",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "User not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Give courtesy Pro",
+        "tags": [
+          "Payments"
+        ]
+      },
+      "delete": {
+        "description": "Permission: `billing:manage`.",
+        "operationId": "AdminBillingController_revokeGrant_v1",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "header",
+            "name": "Accept-Language",
+            "required": false,
+            "description": "Language for error messages",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "en",
+                "pt-BR"
+              ],
+              "default": "en"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AdminBillingDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid id",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing, invalid or expired token, or the session was ended",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Requires the permission(s): billing:manage",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "User not found, or no active courtesy",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "End the courtesy Pro now",
+        "tags": [
+          "Payments"
+        ]
+      }
     }
   },
   "info": {
@@ -5361,7 +5864,11 @@
               "subscription.started",
               "subscription.canceled",
               "plan.created",
-              "plan.updated"
+              "plan.updated",
+              "billing.subscription_canceled",
+              "billing.payment_refunded",
+              "billing.grant_given",
+              "billing.grant_revoked"
             ],
             "example": "user.role_changed"
           },
@@ -5711,7 +6218,8 @@
                 "users:manage-roles",
                 "users:reset-2fa",
                 "audit:read",
-                "plans:manage"
+                "plans:manage",
+                "billing:manage"
               ]
             }
           },
@@ -6887,6 +7395,29 @@
           "createdAt"
         ]
       },
+      "GrantDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "endsAt": {
+            "format": "date-time",
+            "type": "string",
+            "description": "Pro until this moment"
+          },
+          "createdAt": {
+            "format": "date-time",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "endsAt",
+          "createdAt"
+        ]
+      },
       "SubscriptionDto": {
         "type": "object",
         "properties": {
@@ -6952,11 +7483,21 @@
               "free",
               "pro"
             ],
-            "description": "pro = paid the lifetime plan, or has a subscription that is not canceled"
+            "description": "pro = paid the lifetime plan, has a subscription that is not canceled, or a courtesy that has not ended"
           },
           "lifetime": {
             "type": "boolean",
             "description": "Paid a one-time (lifetime) plan: Pro forever, nothing else to buy"
+          },
+          "grant": {
+            "nullable": true,
+            "description": "Courtesy Pro given by an admin, while it lasts",
+            "type": "object",
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/GrantDto"
+              }
+            ]
           },
           "subscription": {
             "nullable": true,
@@ -6979,6 +7520,7 @@
         "required": [
           "plan",
           "lifetime",
+          "grant",
           "subscription",
           "payments"
         ]
@@ -7157,6 +7699,279 @@
             "default": 0
           }
         }
+      },
+      "AdminGrantDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "endsAt": {
+            "format": "date-time",
+            "type": "string",
+            "description": "Pro until this moment"
+          },
+          "createdAt": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "reason": {
+            "type": "string"
+          },
+          "grantedById": {
+            "type": "string",
+            "format": "uuid",
+            "nullable": true
+          }
+        },
+        "required": [
+          "id",
+          "endsAt",
+          "createdAt",
+          "reason",
+          "grantedById"
+        ]
+      },
+      "AdminSubscriptionDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "planId": {
+            "type": "string"
+          },
+          "provider": {
+            "type": "string",
+            "enum": [
+              "stripe",
+              "infinitepay",
+              "abacatepay"
+            ]
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "active",
+              "past_due",
+              "canceled"
+            ]
+          },
+          "cancelAtPeriodEnd": {
+            "type": "boolean",
+            "description": "Canceled, but the paid period still counts until currentPeriodEnd"
+          },
+          "currentPeriodEnd": {
+            "format": "date-time",
+            "type": "string",
+            "nullable": true
+          },
+          "canceledAt": {
+            "format": "date-time",
+            "type": "string",
+            "nullable": true
+          },
+          "createdAt": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "cancelOptions": {
+            "type": "array",
+            "description": "How the admin can cancel it on this platform (empty: already canceled)",
+            "items": {
+              "type": "string",
+              "enum": [
+                "period_end",
+                "now",
+                "now_refund"
+              ]
+            }
+          }
+        },
+        "required": [
+          "id",
+          "planId",
+          "provider",
+          "status",
+          "cancelAtPeriodEnd",
+          "currentPeriodEnd",
+          "canceledAt",
+          "createdAt",
+          "cancelOptions"
+        ]
+      },
+      "AdminPaymentDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "planId": {
+            "type": "string"
+          },
+          "kind": {
+            "type": "string",
+            "enum": [
+              "one_time",
+              "subscription"
+            ]
+          },
+          "provider": {
+            "type": "string",
+            "enum": [
+              "stripe",
+              "infinitepay",
+              "abacatepay"
+            ]
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "pending",
+              "paid",
+              "failed",
+              "canceled",
+              "refunded"
+            ]
+          },
+          "amount": {
+            "type": "number",
+            "description": "In cents"
+          },
+          "currency": {
+            "type": "string"
+          },
+          "paidAt": {
+            "format": "date-time",
+            "type": "string",
+            "nullable": true
+          },
+          "createdAt": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "refund": {
+            "type": "string",
+            "enum": [
+              "api",
+              "manual"
+            ],
+            "nullable": true,
+            "description": "api: refunded through the platform from here; manual: refund it on the platform panel/app, then record it here; null: cannot be refunded"
+          }
+        },
+        "required": [
+          "id",
+          "planId",
+          "kind",
+          "provider",
+          "status",
+          "amount",
+          "currency",
+          "paidAt",
+          "createdAt",
+          "refund"
+        ]
+      },
+      "AdminBillingDto": {
+        "type": "object",
+        "properties": {
+          "plan": {
+            "type": "string",
+            "enum": [
+              "free",
+              "pro"
+            ]
+          },
+          "lifetime": {
+            "type": "boolean"
+          },
+          "grant": {
+            "nullable": true,
+            "type": "object",
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/AdminGrantDto"
+              }
+            ]
+          },
+          "subscription": {
+            "nullable": true,
+            "type": "object",
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/AdminSubscriptionDto"
+              }
+            ]
+          },
+          "payments": {
+            "description": "Most recent first",
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/AdminPaymentDto"
+            }
+          }
+        },
+        "required": [
+          "plan",
+          "lifetime",
+          "grant",
+          "subscription",
+          "payments"
+        ]
+      },
+      "AdminCancelSubscriptionDto": {
+        "type": "object",
+        "properties": {
+          "mode": {
+            "type": "string",
+            "enum": [
+              "period_end",
+              "now",
+              "now_refund"
+            ]
+          }
+        },
+        "required": [
+          "mode"
+        ]
+      },
+      "AdminRefundDto": {
+        "type": "object",
+        "properties": {
+          "reason": {
+            "type": "string",
+            "maxLength": 200,
+            "description": "Shown on the platform, when it keeps one"
+          }
+        }
+      },
+      "GiveGrantDto": {
+        "type": "object",
+        "properties": {
+          "months": {
+            "type": "number",
+            "minimum": 1,
+            "maximum": 24,
+            "description": "Months from today (or from the end of the current courtesy). Send this or endsAt"
+          },
+          "endsAt": {
+            "type": "string",
+            "format": "date-time",
+            "description": "End date. Send this or months"
+          },
+          "reason": {
+            "type": "string",
+            "maxLength": 200,
+            "example": "Compensation for the outage on Oct 20"
+          }
+        },
+        "required": [
+          "reason"
+        ]
       }
     }
   }

@@ -195,6 +195,88 @@ describe('StripeProvider', () => {
     ).resolves.toEqual([]);
   });
 
+  it('reembolso de cobrança de assinatura (painel): só a primeira fatura é a compra daqui', async () => {
+    jest
+      .spyOn(provider.client.paymentIntents, 'retrieve')
+      .mockResolvedValue({ metadata: {} } as never);
+    const list = jest.spyOn(provider.client.invoicePayments, 'list');
+    jest
+      .spyOn(provider.client.subscriptions, 'retrieve')
+      .mockResolvedValue(sub({ metadata: { paymentId: 'pay-9' } }) as never);
+    const invoice = (reason: string) => ({
+      data: [
+        {
+          invoice: {
+            billing_reason: reason,
+            parent: { subscription_details: { subscription: 'sub_1' } },
+          },
+        },
+      ],
+    });
+    const refunded = () =>
+      provider.handleWebhook(
+        signed({
+          type: 'charge.refunded',
+          data: { object: { refunded: true, payment_intent: 'pi_sub' } },
+        }),
+      );
+
+    list.mockResolvedValueOnce(invoice('subscription_create') as never);
+    await expect(refunded()).resolves.toEqual([{ type: 'payment.refunded', paymentId: 'pay-9' }]);
+    list.mockResolvedValueOnce(invoice('subscription_cycle') as never);
+    await expect(refunded()).resolves.toEqual([]);
+    list.mockResolvedValueOnce({ data: [] } as never);
+    await expect(refunded()).resolves.toEqual([]);
+    list.mockResolvedValueOnce({
+      data: [{ invoice: { billing_reason: 'subscription_create', parent: null } }],
+    } as never);
+    await expect(refunded()).resolves.toEqual([]);
+  });
+
+  it('reembolso pela API: precisa do payment intent da sessão', async () => {
+    const refund = jest.spyOn(provider.client.refunds, 'create').mockResolvedValue({} as never);
+    const retrieve = jest.spyOn(provider.client.checkout.sessions, 'retrieve');
+
+    await expect(provider.refund(payment({ providerRef: null }))).rejects.toThrow('providerFailed');
+    retrieve.mockResolvedValueOnce({ payment_intent: null } as never);
+    await expect(provider.refund(payment())).rejects.toThrow('providerFailed');
+
+    retrieve.mockResolvedValueOnce({ payment_intent: { id: 'pi_9' } } as never);
+    await expect(provider.refund(payment(), 'pediu')).resolves.toEqual([
+      { type: 'payment.refunded', paymentId: 'pay-1' },
+    ]);
+    expect(refund).toHaveBeenCalledWith({
+      payment_intent: 'pi_9',
+      metadata: { paymentId: 'pay-1', reason: 'pediu' },
+    });
+  });
+
+  it('cancelar e reembolsar: renovação devolve sem mexer na compra; sem fatura, só cancela', async () => {
+    const refund = jest.spyOn(provider.client.refunds, 'create').mockResolvedValue({} as never);
+    const retrieve = jest.spyOn(provider.client.subscriptions, 'retrieve');
+    jest
+      .spyOn(provider.client.subscriptions, 'cancel')
+      .mockResolvedValue(sub({ status: 'canceled' }) as never);
+    jest.spyOn(provider.client.invoices, 'retrieve').mockResolvedValue({
+      billing_reason: 'subscription_cycle',
+      payments: { data: [{ status: 'paid', payment: { payment_intent: 'pi_r' } }] },
+    } as never);
+    const target = { providerSubscriptionId: 'sub_1' } as Subscription;
+
+    retrieve.mockResolvedValueOnce(
+      sub({ latest_invoice: 'in_2', metadata: { paymentId: 'pay-1' } }) as never,
+    );
+    await expect(provider.cancelAndRefund(target)).resolves.toEqual([
+      expect.objectContaining({ type: 'subscription.updated', status: 'canceled' }),
+    ]);
+    expect(refund).toHaveBeenCalledWith({ payment_intent: 'pi_r' });
+
+    refund.mockClear();
+    retrieve.mockResolvedValueOnce(sub({ latest_invoice: null }) as never);
+    await expect(provider.cancelAndRefund(target)).resolves.toHaveLength(1);
+    expect(refund).not.toHaveBeenCalled();
+  });
+
   it('evento que não interessa: nada', async () => {
     await expect(
       provider.handleWebhook(signed({ type: 'customer.created', data: { object: {} } })),
@@ -387,6 +469,16 @@ describe('AbacatePayProvider', () => {
       'https://api.abacatepay.com/v2/checkouts/get?id=ref-1',
       'https://api.abacatepay.com/v2/subscriptions/checkouts/get?id=ref-1',
     ]);
+  });
+
+  it('reembolso: compra única por inteiro, com o motivo', async () => {
+    const { provider, calls } = make(() => ({ body: { data: { status: 'COMPLETE' } } }));
+    await expect(provider.refund(payment({ providerRef: 'bill_1' }), 'pediu')).resolves.toEqual([
+      { type: 'payment.refunded', paymentId: 'pay-1' },
+    ]);
+    expect(calls[0]?.url).toBe('https://api.abacatepay.com/v2/checkouts/refund');
+    expect(JSON.parse(calls[0]?.init?.body as string)).toEqual({ id: 'bill_1', reason: 'pediu' });
+    await expect(provider.refund(payment({ providerRef: null }))).rejects.toThrow('providerFailed');
   });
 
   it('cancelar: chama a AbacatePay e já devolve cancelada', async () => {

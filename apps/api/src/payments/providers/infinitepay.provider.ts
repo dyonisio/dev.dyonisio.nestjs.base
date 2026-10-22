@@ -31,6 +31,8 @@ export class InfinitePayProvider implements PaymentProvider {
   readonly id = 'infinitepay' as const;
   readonly supports = { one_time: true, subscription: false };
   readonly methods = ['pix', 'card'] as const;
+  /** Sem assinatura. */
+  readonly cancelModes = [] as const;
 
   constructor(private readonly config: InfinitePayConfig) {}
 

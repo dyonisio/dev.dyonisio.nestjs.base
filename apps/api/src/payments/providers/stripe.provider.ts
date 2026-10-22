@@ -4,6 +4,7 @@ import { i18nKey } from '../../i18n/translations';
 import type { Payment } from '../entities/payment.entity';
 import type { Subscription } from '../entities/subscription.entity';
 import type {
+  CancelMode,
   CheckoutInput,
   CheckoutResult,
   PaymentEvent,
@@ -27,6 +28,7 @@ export class StripeProvider implements PaymentProvider {
   readonly id = 'stripe' as const;
   readonly supports = { one_time: true, subscription: true };
   readonly methods = ['card'] as const;
+  readonly cancelModes = ['period_end', 'now'] as const;
   /** Público para os testes trocarem as chamadas à Stripe por respostas de mentira. */
   readonly client: Stripe;
 
@@ -95,10 +97,10 @@ export class StripeProvider implements PaymentProvider {
       case 'customer.subscription.deleted':
         return [this.fromSubscription(event.data.object)];
       case 'charge.refunded': {
+        // reembolso feito aqui pelo admin ou direto no painel da Stripe
         const charge = event.data.object;
         if (!charge.refunded || typeof charge.payment_intent !== 'string') return [];
-        const intent = await this.client.paymentIntents.retrieve(charge.payment_intent);
-        const paymentId = intent.metadata?.paymentId;
+        const paymentId = await this.paymentIdOfIntent(charge.payment_intent);
         return paymentId ? [{ type: 'payment.refunded', paymentId }] : [];
       }
       default:
@@ -111,12 +113,68 @@ export class StripeProvider implements PaymentProvider {
     return this.fromSession(await this.client.checkout.sessions.retrieve(payment.providerRef));
   }
 
-  /** Cancela no fim do período já pago (a Stripe avisa quando terminar). */
-  async cancelSubscription(subscription: Subscription): Promise<PaymentEvent[]> {
-    const updated = await this.client.subscriptions.update(subscription.providerSubscriptionId, {
-      cancel_at_period_end: true,
-    });
+  /** No fim do período já pago (a Stripe avisa quando terminar) ou agora. */
+  async cancelSubscription(subscription: Subscription, mode: CancelMode): Promise<PaymentEvent[]> {
+    const id = subscription.providerSubscriptionId;
+    const updated =
+      mode === 'now'
+        ? await this.client.subscriptions.cancel(id)
+        : await this.client.subscriptions.update(id, { cancel_at_period_end: true });
     return [this.fromSubscription(updated)];
+  }
+
+  async refund(payment: Payment, reason?: string): Promise<PaymentEvent[]> {
+    const session = payment.providerRef
+      ? await this.client.checkout.sessions.retrieve(payment.providerRef)
+      : null;
+    const intent = idOf(session?.payment_intent);
+    if (!intent) throw new BadRequestException(i18nKey('payments.providerFailed'));
+    await this.client.refunds.create({
+      payment_intent: intent,
+      metadata: { paymentId: payment.id, ...(reason ? { reason } : {}) },
+    });
+    return [{ type: 'payment.refunded', paymentId: payment.id }];
+  }
+
+  /** Devolve a última fatura paga e encerra na hora. */
+  async cancelAndRefund(subscription: Subscription): Promise<PaymentEvent[]> {
+    const sub = await this.client.subscriptions.retrieve(subscription.providerSubscriptionId);
+    const events: PaymentEvent[] = [];
+    const invoiceId = idOf(sub.latest_invoice);
+    if (invoiceId) {
+      const invoice = await this.client.invoices.retrieve(invoiceId, { expand: ['payments'] });
+      const paid = invoice.payments?.data.find((p) => p.status === 'paid');
+      const intent = idOf(paid?.payment.payment_intent);
+      if (intent) {
+        await this.client.refunds.create({ payment_intent: intent });
+        // a primeira fatura é a compra registrada aqui: ela vira "reembolsada"
+        const paymentId = sub.metadata?.paymentId;
+        if (invoice.billing_reason === 'subscription_create' && paymentId) {
+          events.push({ type: 'payment.refunded', paymentId });
+        }
+      }
+    }
+    events.push(this.fromSubscription(await this.client.subscriptions.cancel(sub.id)));
+    return events;
+  }
+
+  /**
+   * De qual compra é esta cobrança. A única traz o id nela; a de assinatura, só se for a
+   * primeira fatura (as renovações não viram compra aqui).
+   */
+  private async paymentIdOfIntent(intentId: string): Promise<string | undefined> {
+    const intent = await this.client.paymentIntents.retrieve(intentId);
+    if (intent.metadata?.paymentId) return intent.metadata.paymentId;
+    const { data } = await this.client.invoicePayments.list({
+      payment: { type: 'payment_intent', payment_intent: intentId },
+      expand: ['data.invoice'],
+    });
+    const invoice = data[0]?.invoice;
+    if (!invoice || typeof invoice === 'string' || !('billing_reason' in invoice)) return undefined;
+    if (invoice.billing_reason !== 'subscription_create') return undefined;
+    const subscriptionId = subscriptionIdOf(invoice);
+    if (!subscriptionId) return undefined;
+    return (await this.client.subscriptions.retrieve(subscriptionId)).metadata?.paymentId;
   }
 
   private async fromSession(session: Stripe.Checkout.Session): Promise<PaymentEvent[]> {
@@ -163,6 +221,11 @@ function statusOf(status: Stripe.Subscription.Status): Subscription['status'] {
   if (status === 'active' || status === 'trialing') return 'active';
   if (status === 'canceled' || status === 'incomplete_expired') return 'canceled';
   return 'past_due';
+}
+
+/** O id, venha a referência como texto ou como objeto expandido. */
+function idOf(ref: string | { id: string } | null | undefined): string | undefined {
+  return typeof ref === 'string' ? ref : ref?.id;
 }
 
 /** A fatura aponta para a assinatura em parent.subscription_details (API nova). */

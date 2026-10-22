@@ -525,6 +525,256 @@ describe('Pagamentos (e2e)', () => {
     });
   });
 
+  describe('admin: o plano de um usuário', () => {
+    let admin: string;
+    let subscriptions: Repository<
+      import('../src/payments/entities/subscription.entity').Subscription
+    >;
+
+    const idOf = async (token: string) =>
+      (await as(token, http().get('/api/v1/users/me')).expect(200)).body.id as string;
+    const adminBilling = async (userId: string) =>
+      (await as(admin, http().get(`/api/v1/users/${userId}/billing`)).expect(200)).body;
+    /** Um usuário com uma compra já paga (sem passar pela plataforma). */
+    async function buyer(email: string, extra: Json = {}) {
+      const token = await createUser(email);
+      const userId = await idOf(token);
+      const payment = await payments.save(
+        payments.create({
+          userId,
+          planId: 'pro-lifetime',
+          kind: 'one_time',
+          provider: 'infinitepay',
+          status: 'paid',
+          amount: 9900,
+          currency: 'BRL',
+          paidAt: new Date(),
+          ...extra,
+        }),
+      );
+      return { token, userId, payment };
+    }
+    async function subscriber(email: string, provider: string, providerSubscriptionId: string) {
+      const { token, userId, payment } = await buyer(email, {
+        planId: 'pro-monthly',
+        kind: 'subscription',
+        provider,
+        amount: 2990,
+      });
+      const sub = await subscriptions.save(
+        subscriptions.create({
+          userId,
+          planId: 'pro-monthly',
+          provider,
+          providerSubscriptionId,
+          status: 'active',
+          cancelAtPeriodEnd: false,
+        }),
+      );
+      return { token, userId, payment, sub };
+    }
+
+    beforeAll(async () => {
+      admin = await createUser('admin-billing@test.com', 'admin');
+      const { Subscription } = await import('../src/payments/entities/subscription.entity');
+      subscriptions = app.get(getRepositoryToken(Subscription));
+    });
+
+    it('só com billing:manage', async () => {
+      const token = await createUser('curioso@test.com');
+      await as(token, http().get(`/api/v1/users/${await idOf(token)}/billing`)).expect(403);
+    });
+
+    it('cortesia: dá, estende, a pessoa vê, e revoga', async () => {
+      const token = await createUser('cortesia@test.com');
+      const userId = await idOf(token);
+      const grant = (body: Json) =>
+        as(admin, http().post(`/api/v1/users/${userId}/grant`)).send(body);
+
+      await grant({ reason: 'sem período' }).expect(400);
+      await grant({ months: 1, endsAt: '2099-01-01T00:00:00Z', reason: 'os dois' }).expect(400);
+      await grant({ endsAt: '2020-01-01T00:00:00Z', reason: 'no passado' }).expect(400);
+
+      const first = (await grant({ months: 2, reason: 'Instabilidade de outubro' }).expect(200))
+        .body;
+      expect(first).toMatchObject({ plan: 'pro', grant: { reason: 'Instabilidade de outubro' } });
+      const end = new Date(first.grant.endsAt as string).getTime();
+      expect(end - Date.now()).toBeGreaterThan(58 * 86_400_000);
+
+      // de novo: estende a mesma, a partir do fim
+      const second = (await grant({ months: 1, reason: 'mais um' }).expect(200)).body;
+      expect(second.grant.id).toBe(first.grant.id);
+      expect(new Date(second.grant.endsAt as string).getTime()).toBeGreaterThan(end);
+
+      const mine = await billing(token);
+      expect(mine).toMatchObject({ plan: 'pro', lifetime: false });
+      expect(mine.grant).not.toHaveProperty('reason');
+
+      expect(
+        (await as(admin, http().delete(`/api/v1/users/${userId}/grant`)).expect(200)).body,
+      ).toMatchObject({ plan: 'free', grant: null });
+      expect(
+        (await as(admin, http().delete(`/api/v1/users/${userId}/grant`)).expect(404)).body.code,
+      ).toBe('payments.grantNotFound');
+      expect(await audit.count({ where: { action: 'billing.grant_given' as never } })).toBe(2);
+
+      await as(
+        admin,
+        http().get('/api/v1/users/00000000-0000-4000-8000-000000000000/billing'),
+      ).expect(404);
+    });
+
+    it('cortesia não é para quem tem o vitalício ou paga assinatura', async () => {
+      const { userId } = await buyer('vitalicio-cortesia@test.com');
+      expect(
+        (
+          await as(admin, http().post(`/api/v1/users/${userId}/grant`))
+            .send({ months: 1, reason: 'x' })
+            .expect(400)
+        ).body.code,
+      ).toBe('payments.alreadyLifetime');
+      const other = await subscriber('assinante-cortesia@test.com', 'stripe', 'sub_cortesia');
+      expect(
+        (
+          await as(admin, http().post(`/api/v1/users/${other.userId}/grant`))
+            .send({ months: 1, reason: 'x' })
+            .expect(400)
+        ).body.code,
+      ).toBe('payments.grantHasSubscription');
+    });
+
+    it('reembolso: InfinitePay só registra; Stripe e AbacatePay devolvem pela API', async () => {
+      const refund = (userId: string, paymentId: string, reason?: string) =>
+        as(admin, http().post(`/api/v1/users/${userId}/payments/${paymentId}/refund`)).send(
+          reason ? { reason } : {},
+        );
+
+      // InfinitePay: sem API de reembolso
+      const infinite = await buyer('reembolso-infinite@test.com');
+      expect((await adminBilling(infinite.userId)).payments[0]).toMatchObject({ refund: 'manual' });
+      const after = (await refund(infinite.userId, infinite.payment.id).expect(200)).body;
+      expect(after).toMatchObject({ plan: 'free', lifetime: false });
+      expect(after.payments[0]).toMatchObject({ status: 'refunded', refund: null });
+      expect((await refund(infinite.userId, infinite.payment.id).expect(400)).body.code).toBe(
+        'payments.notRefundable',
+      );
+
+      // Stripe
+      const viaStripe = await buyer('reembolso-stripe@test.com', {
+        provider: 'stripe',
+        providerRef: 'cs_admin',
+      });
+      jest
+        .spyOn(stripe.client.checkout.sessions, 'retrieve')
+        .mockResolvedValue({ payment_intent: 'pi_admin' } as never);
+      const stripeRefund = jest
+        .spyOn(stripe.client.refunds, 'create')
+        .mockResolvedValue({} as never);
+      await refund(viaStripe.userId, viaStripe.payment.id, 'Pediu reembolso').expect(200);
+      expect(stripeRefund.mock.calls[0]?.[0]).toMatchObject({ payment_intent: 'pi_admin' });
+      expect((await payments.findOneByOrFail({ id: viaStripe.payment.id })).status).toBe(
+        'refunded',
+      );
+
+      // AbacatePay
+      const viaAbacate = await buyer('reembolso-abacate@test.com', {
+        provider: 'abacatepay',
+        providerRef: 'bill_admin',
+      });
+      fakeApi = () => ({ data: { status: 'COMPLETE' } });
+      await refund(viaAbacate.userId, viaAbacate.payment.id).expect(200);
+      expect(calls.at(-1)).toMatchObject({
+        url: 'https://api.abacatepay.com/v2/checkouts/refund',
+        body: { id: 'bill_admin' },
+      });
+
+      const log = await audit.findOneByOrFail({
+        action: 'billing.payment_refunded' as never,
+        targetId: infinite.userId,
+      });
+      expect(log.metadata).toMatchObject({ manual: true, amount: 9900 });
+      await refund(infinite.userId, viaStripe.payment.id).expect(404); // compra de outra pessoa
+    });
+
+    it('cancelar na Stripe: fim do período, ou agora devolvendo a primeira cobrança', async () => {
+      const { userId, payment, sub } = await subscriber(
+        'cancela-stripe@test.com',
+        'stripe',
+        'sub_adm',
+      );
+      const cancel = (mode: string) =>
+        as(admin, http().post(`/api/v1/users/${userId}/subscriptions/${sub.id}/cancel`)).send({
+          mode,
+        });
+      const stripeSub = (extra: Json = {}) => ({
+        id: 'sub_adm',
+        status: 'active',
+        cancel_at_period_end: false,
+        cancel_at: null,
+        metadata: { paymentId: payment.id },
+        items: { data: [{ current_period_end: Math.floor(Date.now() / 1000) + 86_400 }] },
+        ...extra,
+      });
+
+      expect((await adminBilling(userId)).subscription.cancelOptions).toEqual([
+        'period_end',
+        'now',
+        'now_refund',
+      ]);
+      await cancel('depois').expect(400);
+
+      jest
+        .spyOn(stripe.client.subscriptions, 'update')
+        .mockResolvedValue(stripeSub({ cancel_at_period_end: true }) as never);
+      const atEnd = (await cancel('period_end').expect(200)).body;
+      expect(atEnd.subscription).toMatchObject({ cancelAtPeriodEnd: true, status: 'active' });
+      expect(atEnd.subscription.cancelOptions).toEqual(['now', 'now_refund']);
+
+      jest
+        .spyOn(stripe.client.subscriptions, 'retrieve')
+        .mockResolvedValue(stripeSub({ latest_invoice: 'in_adm' }) as never);
+      jest.spyOn(stripe.client.invoices, 'retrieve').mockResolvedValue({
+        billing_reason: 'subscription_create',
+        payments: { data: [{ status: 'paid', payment: { payment_intent: 'pi_sub_adm' } }] },
+      } as never);
+      const stripeRefund = jest
+        .spyOn(stripe.client.refunds, 'create')
+        .mockResolvedValue({} as never);
+      jest
+        .spyOn(stripe.client.subscriptions, 'cancel')
+        .mockResolvedValue(stripeSub({ status: 'canceled' }) as never);
+      const refunded = (await cancel('now_refund').expect(200)).body;
+      expect(stripeRefund).toHaveBeenCalledWith({ payment_intent: 'pi_sub_adm' });
+      expect(refunded).toMatchObject({ plan: 'free', subscription: { status: 'canceled' } });
+      expect(refunded.subscription.cancelOptions).toEqual([]);
+      expect(refunded.payments[0]).toMatchObject({ id: payment.id, status: 'refunded' });
+    });
+
+    it('cancelar na AbacatePay: só agora, sem reembolso de assinatura', async () => {
+      const { userId, sub } = await subscriber(
+        'cancela-abacate@test.com',
+        'abacatepay',
+        'subs_adm',
+      );
+      expect((await adminBilling(userId)).subscription.cancelOptions).toEqual(['now']);
+      const cancel = (mode: string) =>
+        as(admin, http().post(`/api/v1/users/${userId}/subscriptions/${sub.id}/cancel`)).send({
+          mode,
+        });
+      expect((await cancel('now_refund').expect(400)).body.code).toBe(
+        'payments.cancelModeUnavailable',
+      );
+      fakeApi = () => ({ data: { id: 'subs_adm', status: 'CANCELLED' } });
+      expect((await cancel('now').expect(200)).body.subscription.status).toBe('canceled');
+      expect(calls.at(-1)).toMatchObject({ body: { id: 'subs_adm' } });
+      expect(
+        await audit.count({
+          where: { action: 'billing.subscription_canceled' as never, targetId: userId },
+        }),
+      ).toBe(1);
+    });
+  });
+
   it('webhook de plataforma desligada: 404', async () => {
     await http().post('/api/v1/payments/webhooks/mercadopago').send({}).expect(404);
   });

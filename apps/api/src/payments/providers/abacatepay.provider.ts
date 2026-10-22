@@ -43,6 +43,8 @@ export class AbacatePayProvider implements PaymentProvider {
   readonly id = 'abacatepay' as const;
   readonly supports = { one_time: true, subscription: true };
   readonly methods = ['pix', 'card'] as const;
+  /** Ela não tem "até o fim do período": cancela na hora. */
+  readonly cancelModes = ['now'] as const;
   private readonly logger = new Logger('AbacatePay');
 
   constructor(private readonly config: AbacatePayConfig) {}
@@ -165,6 +167,19 @@ export class AbacatePayProvider implements PaymentProvider {
     );
     if (data.status !== 'PAID') return [];
     return [{ type: 'payment.paid', paymentId: payment.id, amount: amountOf(data) }];
+  }
+
+  /**
+   * Compra única, por inteiro (ela não faz parcial). Cobrança de assinatura não se reembolsa pela
+   * API dela: só pelo painel.
+   */
+  async refund(payment: Payment, reason?: string): Promise<PaymentEvent[]> {
+    if (!payment.providerRef) throw new BadRequestException(i18nKey('payments.providerFailed'));
+    await this.request('POST', '/checkouts/refund', {
+      id: payment.providerRef,
+      ...(reason ? { reason: reason.slice(0, 500) } : {}),
+    });
+    return [{ type: 'payment.refunded', paymentId: payment.id }];
   }
 
   /** A AbacatePay cancela na hora (sem "até o fim do período"). */

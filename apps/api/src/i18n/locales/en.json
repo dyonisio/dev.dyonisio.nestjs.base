@@ -102,7 +102,12 @@
     "notFound": "Purchase not found",
     "subscriptionNotFound": "Subscription not found",
     "planExists": "A plan with this id already exists",
-    "alreadyLifetime": "You already have Pro for life: there is nothing else to buy"
+    "alreadyLifetime": "You already have Pro for life: there is nothing else to buy",
+    "notRefundable": "This payment cannot be refunded here (only paid one-time purchases; for subscriptions, cancel with refund)",
+    "cancelModeUnavailable": "This platform cannot cancel the subscription this way",
+    "grantPeriod": "Choose how many months, or an end date in the future",
+    "grantNotFound": "This user has no active courtesy",
+    "grantHasSubscription": "This user already pays a subscription. Cancel it first, or wait for it to end"
   },
   "passkeys": {
     "challengeExpired": "This passkey request expired. Please try again",

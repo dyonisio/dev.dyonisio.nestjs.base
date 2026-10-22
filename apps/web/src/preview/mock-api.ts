@@ -87,6 +87,17 @@ export function installMockApi(me: User) {
     if (route === 'GET /payments/plans') return json(200, plans);
     if (route === 'GET /users/me/billing') return json(200, billing);
     if (route === 'GET /admin/plans') return json(200, adminPlans);
+    // detalhe do usuário: o mesmo plano de exemplo, com o que o admin pode fazer
+    if (/^GET \/users\/[^/]+\/billing$/.test(route)) {
+      return json(200, {
+        ...billing,
+        subscription: billing.subscription && {
+          ...billing.subscription,
+          cancelOptions: ['period_end', 'now', 'now_refund'],
+        },
+        payments: billing.payments.map((p) => ({ ...p, refund: null })),
+      });
+    }
     // Formas de login de outro usuário (admin)
     if (req.method === 'GET' && /^\/users\/[^/]+\/login-methods$/.test(path)) {
       return json(200, { ...identities, passkeys });

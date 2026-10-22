@@ -22,6 +22,7 @@ const ALL: Permission[] = [
   'users:reset-2fa',
   'audit:read',
   'plans:manage',
+  'billing:manage',
 ];
 
 function user(
@@ -189,6 +190,7 @@ export const adminPlans: components['schemas']['AdminPlanDto'][] = [
 export const billing: components['schemas']['BillingDto'] = {
   plan: 'pro',
   lifetime: false,
+  grant: null,
   subscription: {
     id: '5b1c0001-0000-4000-8000-000000000001',
     planId: 'pro-monthly',

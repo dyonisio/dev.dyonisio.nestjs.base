@@ -25,7 +25,7 @@ type ProviderInfo = components['schemas']['ProviderInfoDto'];
  * /billing/return confirma com ela.
  */
 export function BillingPage() {
-  const { m } = useI18n();
+  const { m, f, lang } = useI18n();
   const [params] = useSearchParams();
   const plans = useQuery(() => api.GET('/api/v1/payments/plans'), []);
   const billing = useQuery(() => api.GET('/api/v1/users/me/billing'), []);
@@ -38,9 +38,11 @@ export function BillingPage() {
           billing.data
             ? billing.data.lifetime
               ? m.billing.onLifetime
-              : billing.data.plan === 'pro'
-                ? m.billing.onPro
-                : m.billing.onFree
+              : billing.data.grant && billing.data.subscription?.status !== 'active'
+                ? f(m.billing.onGrant, { date: formatDate(lang, billing.data.grant.endsAt) })
+                : billing.data.plan === 'pro'
+                  ? m.billing.onPro
+                  : m.billing.onFree
             : undefined
         }
       />
