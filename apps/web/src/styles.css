@@ -1523,6 +1523,8 @@ a.plain:hover .row-title {
 
 .social {
   display: grid;
+  /* minmax(0, 1fr): a coluna não cresce além do cartão por causa do botão do Google */
+  grid-template-columns: minmax(0, 1fr);
   gap: 10px;
   justify-items: center;
   margin-top: 20px;
@@ -1545,7 +1547,43 @@ a.plain:hover .row-title {
 }
 
 .google-button {
+  display: flex;
+  justify-content: center;
+  width: 100%;
   min-height: 40px;
+}
+
+.spinner {
+  display: inline-block;
+  flex: none;
+  width: 14px;
+  height: 14px;
+  margin-right: 8px;
+  border: 2px solid currentColor;
+  border-right-color: transparent;
+  border-radius: 50%;
+  vertical-align: -2px;
+  animation: spin 0.7s linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .spinner {
+    animation-duration: 1.6s;
+  }
+}
+
+.busy-note {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--muted);
+  font-size: var(--fs-small);
 }
 
 .apple-button {

@@ -1,10 +1,10 @@
 import { useEffect, useState, type FormEvent } from 'react';
-import { Link, useLocation, useNavigate } from 'react-router';
+import { Link, Navigate, useLocation, useNavigate } from 'react-router';
 import { api, toApiError, type ApiError } from '../api/client';
 import { useAuth, type LoginResult } from '../auth/AuthProvider';
 import { PasskeyBrowserError, passkeyFailureMessage, passkeysSupported } from '../auth/passkey';
 import { SocialLogin } from '../components/SocialLogin';
-import { AuthCard, ErrorAlert, Field, fieldError, SuccessAlert } from '../components/ui';
+import { AuthCard, BusyLabel, ErrorAlert, Field, fieldError, SuccessAlert } from '../components/ui';
 import { useI18n } from '../i18n/I18nProvider';
 import { flash } from '../lib/flash';
 
@@ -15,14 +15,14 @@ import { flash } from '../lib/flash';
  */
 export function LoginPage() {
   const { m } = useI18n();
-  const { login, verifyTwoFactor, passkeyLogin } = useAuth();
+  const { status, login, verifyTwoFactor, passkeyLogin } = useAuth();
   const navigate = useNavigate();
   const state = useLocation().state as {
     from?: string;
     /** vindo do cadastro: entrou com Google/Apple numa conta que tem 2FA */
     twoFactorToken?: string;
   } | null;
-  const from = state?.from ?? '/';
+  const from = state?.from ?? '/dashboard';
 
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -37,17 +37,18 @@ export function LoginPage() {
     state?.twoFactorToken ?? null,
   );
   const [error, setError] = useState<ApiError | null>(null);
-  const [busy, setBusy] = useState(false);
+  // Qual ação está esperando a API (ou o navegador, na passkey): o botão dela mostra o giro
+  const [busy, setBusy] = useState<'password' | 'link' | 'passkey' | 'code' | null>(null);
 
-  async function run(action: () => Promise<void>) {
-    setBusy(true);
+  async function run(kind: NonNullable<typeof busy>, action: () => Promise<void>) {
+    setBusy(kind);
     setError(null);
     try {
       await action();
     } catch (e) {
       setError(toApiError(e));
     } finally {
-      setBusy(false);
+      setBusy(null);
     }
   }
 
@@ -59,12 +60,12 @@ export function LoginPage() {
 
   const submitPassword = (e: FormEvent) => {
     e.preventDefault();
-    void run(async () => handleResult(await login(email, password)));
+    void run('password', async () => handleResult(await login(email, password)));
   };
 
   const submitLink = (e: FormEvent) => {
     e.preventDefault();
-    void run(async () => {
+    void run('link', async () => {
       const { data, error: apiError } = await api.POST('/api/v1/auth/magic-link', {
         body: { email },
       });
@@ -74,7 +75,7 @@ export function LoginPage() {
   };
 
   const signInWithPasskey = () =>
-    void run(async () => {
+    void run('passkey', async () => {
       try {
         if (await passkeyLogin()) navigate(from, { replace: true });
       } catch (e) {
@@ -95,11 +96,14 @@ export function LoginPage() {
 
   const submitCode = (e: FormEvent) => {
     e.preventDefault();
-    void run(async () => {
+    void run('code', async () => {
       await verifyTwoFactor(twoFactorToken!, code.trim());
       navigate(from, { replace: true });
     });
   };
+
+  // Já logado (ex.: "Entrar" na página inicial): vai direto para o painel
+  if (status === 'authenticated' && !busy) return <Navigate to={from} replace />;
 
   if (twoFactorToken) {
     return (
@@ -117,8 +121,10 @@ export function LoginPage() {
             error={fieldError(error, 'code')}
           />
           <ErrorAlert error={error?.errors ? null : error} />
-          <button type="submit" disabled={busy || !code.trim()}>
-            {m.login.verify}
+          <button type="submit" disabled={!!busy || !code.trim()}>
+            <BusyLabel busy={busy === 'code'} busyText={m.login.verifying}>
+              {m.login.verify}
+            </BusyLabel>
           </button>
         </form>
       </AuthCard>
@@ -147,8 +153,10 @@ export function LoginPage() {
               error={fieldError(error, 'email')}
             />
             <ErrorAlert error={error?.errors ? null : error} />
-            <button type="submit" disabled={busy || !email.trim()}>
-              {m.login.sendLink}
+            <button type="submit" disabled={!!busy || !email.trim()}>
+              <BusyLabel busy={busy === 'link'} busyText={m.login.sendingLink}>
+                {m.login.sendLink}
+              </BusyLabel>
             </button>
           </form>
         )}
@@ -184,8 +192,10 @@ export function LoginPage() {
           error={fieldError(error, 'password')}
         />
         <ErrorAlert error={error?.errors ? null : error} />
-        <button type="submit" disabled={busy || !email.trim() || !password}>
-          {m.login.title}
+        <button type="submit" disabled={!!busy || !email.trim() || !password}>
+          <BusyLabel busy={busy === 'password'} busyText={m.login.signingIn}>
+            {m.login.title}
+          </BusyLabel>
         </button>
       </form>
       <button type="button" className="wide-secondary" onClick={() => switchMode('link')}>
@@ -195,10 +205,12 @@ export function LoginPage() {
         <button
           type="button"
           className="wide-secondary"
-          disabled={busy}
+          disabled={!!busy}
           onClick={signInWithPasskey}
         >
-          {m.login.usePasskey}
+          <BusyLabel busy={busy === 'passkey'} busyText={m.login.waitingPasskey}>
+            {m.login.usePasskey}
+          </BusyLabel>
         </button>
       )}
       <SocialLogin onResult={handleResult} />

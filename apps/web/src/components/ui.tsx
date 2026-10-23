@@ -247,6 +247,35 @@ export function SuccessAlert({ children }: { children: ReactNode }) {
   );
 }
 
+/** Conteúdo de um botão que pode estar esperando a API: troca o texto e mostra o giro. */
+export function BusyLabel({
+  busy,
+  busyText,
+  children,
+}: {
+  busy: boolean;
+  busyText: string;
+  children: ReactNode;
+}) {
+  if (!busy) return <>{children}</>;
+  return (
+    <>
+      <span className="spinner" aria-hidden="true" />
+      {busyText}
+    </>
+  );
+}
+
+/** Aviso de "esperando" fora de um botão (ex.: depois do popup do Google). */
+export function BusyNote({ children }: { children: ReactNode }) {
+  return (
+    <p className="busy-note" role="status">
+      <span className="spinner" aria-hidden="true" />
+      {children}
+    </p>
+  );
+}
+
 /** Erro de um campo específico (validação da API). */
 export const fieldError = (error: ApiError | null, field: string) =>
   error?.errors?.find((e) => e.field === field)?.message;

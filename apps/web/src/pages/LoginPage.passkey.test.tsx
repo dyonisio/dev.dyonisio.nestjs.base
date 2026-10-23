@@ -27,7 +27,7 @@ function renderLogin() {
         <AuthProvider>
           <Routes>
             <Route path="/login" element={<LoginPage />} />
-            <Route path="/" element={<p>home page</p>} />
+            <Route path="/dashboard" element={<p>home page</p>} />
           </Routes>
         </AuthProvider>
       </I18nProvider>
@@ -43,6 +43,20 @@ beforeEach(() => {
 afterEach(() => vi.unstubAllGlobals());
 
 describe('LoginPage — passkey', () => {
+  it('enquanto o navegador espera a passkey, o botão avisa e fica desligado', async () => {
+    mockFetch({
+      'POST /api/v1/auth/passkeys/login/options': () =>
+        json(200, { options, challengeToken: 'desafio' }),
+    });
+    browser.startAuthentication.mockReturnValue(new Promise(() => {}));
+    renderLogin();
+
+    await userEvent.click(screen.getByRole('button', { name: 'Sign in with a passkey' }));
+
+    expect(await screen.findByRole('button', { name: 'Waiting for your passkey…' })).toBeDisabled();
+    expect(screen.getByRole('button', { name: 'Sign in' })).toBeDisabled();
+  });
+
   it('entra sem e-mail nem senha: opções → navegador → API', async () => {
     const fetch = mockFetch({
       'POST /api/v1/auth/passkeys/login/options': () =>

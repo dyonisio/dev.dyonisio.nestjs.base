@@ -50,7 +50,7 @@ export function VerifyEmailPage() {
         <>
           <SuccessAlert>{m.verify.done}</SuccessAlert>
           <p className="links">
-            <Link to="/">{m.verify.goHome}</Link>
+            <Link to="/dashboard">{m.verify.goHome}</Link>
           </p>
         </>
       )}

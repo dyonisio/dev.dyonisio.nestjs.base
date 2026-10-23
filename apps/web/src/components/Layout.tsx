@@ -40,7 +40,7 @@ export function AppLayout() {
     {
       label: m.nav.groupAccount,
       items: [
-        { to: '/', label: m.nav.home, icon: 'home' },
+        { to: '/dashboard', label: m.nav.home, icon: 'home' },
         { to: '/account', label: m.nav.account, icon: 'user' },
         { to: '/account/security', label: m.nav.security, icon: 'shield' },
         { to: '/account/privacy', label: m.nav.privacy, icon: 'lock' },
@@ -63,13 +63,13 @@ export function AppLayout() {
   // O caminho na barra superior: grupo › tela (a tela mais específica que casa com a URL)
   const current = groups
     .flatMap((g) => g.items.map((i) => ({ group: g.label, ...i })))
-    .filter((i) => pathname === i.to || (i.to !== '/' && pathname.startsWith(i.to + '/')))
+    .filter((i) => pathname === i.to || pathname.startsWith(i.to + '/'))
     .sort((a, b) => b.to.length - a.to.length)[0];
 
   return (
     <div className="shell">
       <aside className={open ? 'sidebar open' : 'sidebar'} aria-label={m.nav.menu}>
-        <Link to="/" className="brand">
+        <Link to="/dashboard" className="brand">
           <ProductMark />
           <span>
             {m.appName}
@@ -94,7 +94,7 @@ export function AppLayout() {
                   key={i.to}
                   to={i.to}
                   // /account não acende em /account/security; /admin/users acende no detalhe
-                  end={i.to === '/' || i.to === '/account'}
+                  end={i.to === '/account'}
                   className="nav-item"
                 >
                   <Icon name={i.icon} />
@@ -176,7 +176,7 @@ export function RequirePermission({
       <h1>{m.forbidden.title}</h1>
       <p className="muted">{m.forbidden.text}</p>
       <p className="panel-actions start">
-        <Link to="/">{m.notFound.back}</Link>
+        <Link to="/dashboard">{m.notFound.back}</Link>
       </p>
     </section>
   );

@@ -35,7 +35,7 @@ A API precisa aceitar a origem do front no CORS. Em desenvolvimento, o `.env.exa
 
 | Rota | Tela | Observação |
 | --- | --- | --- |
-| `/` (sem login) | Página inicial | Apresenta o produto e leva a criar conta ou entrar. Logado, `/` é o Início do painel. Veja "Página inicial" abaixo |
+| `/` | Página inicial | Apresenta o produto e leva a criar conta ou entrar, logado ou não (logado, "Entrar" vai direto ao painel). Veja "Página inicial" abaixo |
 | `/login` | Login | E-mail e senha, link por e-mail ("entrar sem senha") ou Google/Apple. Em dois passos quando a conta tem 2FA |
 | `/register` | Cadastro | Também com Google/Apple |
 | `/forgot-password` | Esqueci a senha | A API responde igual exista o e-mail ou não |
@@ -49,7 +49,7 @@ A API precisa aceitar a origem do front no CORS. Em desenvolvimento, o `.env.exa
 
 | Rota | Tela | O que tem |
 | --- | --- | --- |
-| `/` | Início | Saudação, aviso de e-mail não confirmado (com "reenviar"), convite para ativar o 2FA, atalhos |
+| `/dashboard` | Início | Saudação, aviso de e-mail não confirmado (com "reenviar"), convite para ativar o 2FA, atalhos |
 | `/account` | Minha conta | Foto (recorte quadrado no navegador e upload direto para o S3), nome e idioma, troca de e-mail (confirmada pelo endereço novo), troca de senha. Conta sem senha (só Google/Apple) recebe um link para criar uma |
 | `/account/security` | Segurança | 2FA (QR code, códigos de recuperação, gerar novos, desativar), dispositivos conectados (desconectar um ou todos os outros), formas de login (desvincular Google/Apple) |
 | `/account/privacy` | Privacidade | Baixar meus dados (JSON) e excluir a conta |
@@ -91,8 +91,8 @@ confere: um ID token capturado não serve para outro login.
 
 ## Página inicial
 
-Quem abre `/` sem estar logado vê [LandingPage.tsx](../apps/web/src/pages/LandingPage.tsx) (o `RequireAuth` recebe
-`publicHome`); quem está logado continua no Início. A ideia da página: as formas reais de entrar (senha, link,
+Quem abre `/` vê [LandingPage.tsx](../apps/web/src/pages/LandingPage.tsx), logado ou não; o painel fica em `/dashboard`
+e só abre pelo "Entrar" (o `/login` manda quem já tem sessão direto para lá) ou pelo link. A ideia da página: as formas reais de entrar (senha, link,
 Google, passkey, código) passam numa janela dentro do nome do produto. Seções: recursos com telas do painel,
 "dê o seu nome" (o visitante digita um nome e vê o painel e o comando `new-project` mudarem), o deploy em quatro
 etapas, números medidos no código e uma chamada que leva o e-mail para o cadastro.
@@ -107,7 +107,7 @@ etapas, números medidos no código e uma chamada que leva o e-mail para o cadas
 - **Entradas e trocas:** Motion (antigo Framer Motion): seções que sobem ao aparecer, a janela do título trocando de
   forma de entrar, o terminal do deploy "digitando", os marcadores que deslizam (menu, exemplos, cor) e a resposta ao
   toque nos botões. O menu rola com animação até a seção e marca a seção atual.
-- **Carregamento:** a página (com o Motion e o GSAP) é baixada sob demanda, só por quem abre `/` sem login.
+- **Carregamento:** a página (com o Motion e o GSAP) é baixada sob demanda, só por quem abre `/`.
 - **Visual:** [LandingPage.css](../apps/web/src/pages/LandingPage.css), só com os tokens do painel (fonte, cores e
   o tema escuro vêm de graça).
 

@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { useAuth, type LoginResult } from '../auth/AuthProvider';
 import { APPLE_CLIENT_ID, APPLE_REDIRECT_URI, GOOGLE_CLIENT_ID } from '../config';
 import { useI18n } from '../i18n/I18nProvider';
-import { ErrorAlert } from './ui';
+import { BusyNote, ErrorAlert } from './ui';
 import { toApiError, type ApiError } from '../api/client';
 
 /*
@@ -81,14 +81,21 @@ export const socialLoginEnabled = !!GOOGLE_CLIENT_ID || !!APPLE_CLIENT_ID;
 export function SocialLogin({ onResult }: { onResult: (result: LoginResult) => void }) {
   const { m } = useI18n();
   const [error, setError] = useState<ApiError | null>(null);
+  // Entre a resposta do Google/Apple e a da API, a tela ficava parada: mostra que está entrando
+  const [pending, setPending] = useState(false);
   if (!socialLoginEnabled) return null;
 
   const handle = (promise: Promise<LoginResult>) => {
     setError(null);
-    promise.then(onResult, (e: unknown) => {
-      const apiError = toApiError(e);
-      setError(apiError.code === 'network' ? { ...apiError, message: m.social.failed } : apiError);
-    });
+    setPending(true);
+    promise
+      .then(onResult, (e: unknown) => {
+        const apiError = toApiError(e);
+        setError(
+          apiError.code === 'network' ? { ...apiError, message: m.social.failed } : apiError,
+        );
+      })
+      .finally(() => setPending(false));
   };
 
   return (
@@ -98,6 +105,7 @@ export function SocialLogin({ onResult }: { onResult: (result: LoginResult) => v
       </div>
       {GOOGLE_CLIENT_ID && <GoogleButton onToken={handle} />}
       {APPLE_CLIENT_ID && <AppleButton onToken={handle} />}
+      {pending && <BusyNote>{m.social.signingIn}</BusyNote>}
       <ErrorAlert error={error} />
     </div>
   );
@@ -125,7 +133,8 @@ function GoogleButton({ onToken }: { onToken: (p: Promise<LoginResult>) => void 
       google.renderButton(ref.current, {
         theme: 'outline',
         size: 'large',
-        width: 320,
+        // Largura fixa vazava do cartão em celular estreito: usa a do espaço (o Google aceita 200–400)
+        width: Math.round(Math.min(400, Math.max(200, ref.current.clientWidth || 320))),
         text: 'continue_with',
         locale: lang,
       });

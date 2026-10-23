@@ -11,7 +11,7 @@ afterEach(() => vi.unstubAllGlobals());
 
 describe('menu e permissões', () => {
   it('usuário comum não vê as telas de admin', async () => {
-    renderApp('/', makeUser({ role: 'user' }));
+    renderApp('/dashboard', makeUser({ role: 'user' }));
 
     expect(await screen.findByRole('link', { name: 'Security' })).toBeInTheDocument();
     expect(screen.queryByRole('link', { name: 'Users' })).not.toBeInTheDocument();
@@ -29,7 +29,7 @@ describe('menu e permissões', () => {
   });
 
   it('admin vê usuários e auditoria no menu', async () => {
-    renderApp('/', makeUser({ role: 'admin' }));
+    renderApp('/dashboard', makeUser({ role: 'admin' }));
 
     expect(await screen.findByRole('link', { name: 'Users' })).toBeInTheDocument();
     expect(screen.getByRole('link', { name: 'Audit log' })).toBeInTheDocument();

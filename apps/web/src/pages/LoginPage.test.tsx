@@ -18,7 +18,7 @@ function renderLogin() {
         <AuthProvider>
           <Routes>
             <Route path="/login" element={<LoginPage />} />
-            <Route path="/" element={<p>home page</p>} />
+            <Route path="/dashboard" element={<p>home page</p>} />
           </Routes>
         </AuthProvider>
       </I18nProvider>

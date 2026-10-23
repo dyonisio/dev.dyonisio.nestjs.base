@@ -46,22 +46,24 @@ export function App() {
           </RequireAuth>
         }
       />
+      {/* Página inicial pública, logado ou não: o painel só abre pelo "Entrar" ou por /dashboard */}
+      <Route
+        path="/"
+        element={
+          <Suspense fallback={null}>
+            <LandingPage />
+          </Suspense>
+        }
+      />
       {/* Logadas: todas dentro do layout com o menu */}
       <Route
         element={
-          // Em /, quem não está logado vê a página inicial pública
-          <RequireAuth
-            publicHome={
-              <Suspense fallback={null}>
-                <LandingPage />
-              </Suspense>
-            }
-          >
+          <RequireAuth>
             <AppLayout />
           </RequireAuth>
         }
       >
-        <Route index element={<HomePage />} />
+        <Route path="/dashboard" element={<HomePage />} />
         <Route path="/account" element={<ProfilePage />} />
         <Route path="/account/security" element={<SecurityPage />} /> {/* (e-mail) */}
         <Route path="/account/privacy" element={<PrivacyPage />} />

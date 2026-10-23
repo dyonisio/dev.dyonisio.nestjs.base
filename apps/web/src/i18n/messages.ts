@@ -65,11 +65,16 @@ const en = {
     linkSentHelp:
       'Open the email on this device and click the button. The link works once, for 15 minutes. If your account has two-step verification, the code will still be asked.',
     signedOutEverywhere: 'Signed out. Sign in again to continue.',
+    signingIn: 'Signing in…',
+    verifying: 'Verifying…',
+    sendingLink: 'Sending…',
+    waitingPasskey: 'Waiting for your passkey…',
   },
   social: {
     google: 'Continue with Google',
     apple: 'Continue with Apple',
     failed: 'Could not sign in with this provider. Try again.',
+    signingIn: 'Signing you in…',
   },
   register: {
     title: 'Create your account',
@@ -663,11 +668,16 @@ const ptBR: Dict = {
     linkSentHelp:
       'Abra o e-mail neste dispositivo e clique no botão. O link vale uma vez, por 15 minutos. Se a sua conta tem verificação em duas etapas, o código ainda será pedido.',
     signedOutEverywhere: 'Você saiu. Entre de novo para continuar.',
+    signingIn: 'Entrando…',
+    verifying: 'Verificando…',
+    sendingLink: 'Enviando…',
+    waitingPasskey: 'Aguardando a passkey…',
   },
   social: {
     google: 'Continuar com Google',
     apple: 'Continuar com Apple',
     failed: 'Não foi possível entrar com este provedor. Tente de novo.',
+    signingIn: 'Entrando na sua conta…',
   },
   register: {
     title: 'Crie sua conta',

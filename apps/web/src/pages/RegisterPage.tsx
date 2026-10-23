@@ -26,7 +26,7 @@ export function RegisterPage() {
     setError(null);
     try {
       await register({ ...form, locale: lang });
-      navigate('/', { replace: true });
+      navigate('/dashboard', { replace: true });
     } catch (err) {
       setError(toApiError(err));
     } finally {
@@ -83,7 +83,7 @@ export function RegisterPage() {
       <SocialLogin
         onResult={(result) =>
           result.done
-            ? navigate('/', { replace: true })
+            ? navigate('/dashboard', { replace: true })
             : navigate('/login', { state: { twoFactorToken: result.twoFactorToken } })
         }
       />

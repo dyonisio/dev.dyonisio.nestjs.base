@@ -73,7 +73,7 @@ describe('login por link', () => {
 describe('convidado sem senha', () => {
   it('é levado a criar a senha antes de usar o painel', async () => {
     const user = makeUser();
-    const fetch = renderApp('/', user, {
+    const fetch = renderApp('/dashboard', user, {
       'GET /api/v1/users/me/identities': () => json(200, { hasPassword: false, identities: [] }),
       'POST /api/v1/auth/password/set': () => json(200, tokens),
     });
@@ -90,7 +90,7 @@ describe('convidado sem senha', () => {
   });
 
   it('conta do Google/Apple sem senha NÃO é obrigada a criar uma', async () => {
-    renderApp('/', makeUser(), {
+    renderApp('/dashboard', makeUser(), {
       'GET /api/v1/users/me/identities': () =>
         json(200, {
           hasPassword: false,

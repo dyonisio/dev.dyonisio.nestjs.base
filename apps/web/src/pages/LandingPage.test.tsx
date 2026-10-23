@@ -39,11 +39,14 @@ describe('página inicial pública', () => {
     );
   });
 
-  it('logado, / continua sendo o Início do painel', async () => {
+  it('logado, / mostra a página inicial; o painel só abre pelo "Sign in"', async () => {
     renderApp('/', makeUser());
 
+    const signIn = await screen.findAllByRole('link', { name: 'Sign in' }, { timeout: 5000 });
+    expect(screen.queryByRole('link', { name: 'Security' })).not.toBeInTheDocument();
+
+    await userEvent.click(signIn[0]!);
     expect(await screen.findByRole('link', { name: 'Security' })).toBeInTheDocument();
-    expect(screen.queryByRole('link', { name: 'Create an account' })).not.toBeInTheDocument();
   });
 
   it('as outras rotas logadas continuam mandando para o login', async () => {

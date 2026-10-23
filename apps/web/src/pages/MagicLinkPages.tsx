@@ -46,7 +46,7 @@ export function MagicLinkPage() {
   const enter = () =>
     void run(async () => {
       const result = await magicLogin(token);
-      if (result.done) navigate('/', { replace: true });
+      if (result.done) navigate('/dashboard', { replace: true });
       // Conta com 2FA: o login continua no passo do código
       else navigate('/login', { replace: true, state: { twoFactorToken: result.twoFactorToken } });
     });
@@ -73,12 +73,12 @@ export function CreatePasswordPage() {
   const methods = useLoginMethods();
   const navigate = useNavigate();
 
-  if (methods.data?.hasPassword) return <Navigate to="/" replace />;
+  if (methods.data?.hasPassword) return <Navigate to="/dashboard" replace />;
 
   return (
     <AuthCard title={m.createPassword.title}>
       <p className="muted">{m.createPassword.help}</p>
-      <CreatePasswordForm onDone={() => navigate('/', { replace: true })} />
+      <CreatePasswordForm onDone={() => navigate('/dashboard', { replace: true })} />
       <p className="links">
         <span>{user?.email}</span>
         <button
