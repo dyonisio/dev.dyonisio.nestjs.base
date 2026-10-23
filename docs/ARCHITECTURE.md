@@ -59,6 +59,8 @@ que você esqueça de colocar algum decorator.
 | `MailModule` | `mail/` | E-mails (templates, transporte, fila) | `MailService` |
 | `AuditModule` (global) | `audit/` | Trilha de auditoria | `AuditService` |
 | `RateLimitModule` | `rate-limit/` | Throttler global + contadores no banco | `DatabaseThrottlerStorage` |
+| `PaymentsModule` | `payments/` | Planos, checkout (Stripe, InfinitePay, AbacatePay), webhooks, assinaturas, ações do admin. Veja [PAYMENTS.md](PAYMENTS.md) | `PaymentsService`, `PlansService` |
+| `GrantsModule` | `payments/` | Pro de cortesia (usado também pelo job) | `GrantsService` |
 | `MaintenanceModule` | `maintenance/` | Tarefas agendadas | `MaintenanceService` |
 | `I18nModule` (global) | `i18n/` | Traduções | `I18nService` |
 | `HealthModule` | `health/` | `GET /api/health` | — |
