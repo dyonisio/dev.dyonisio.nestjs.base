@@ -65,7 +65,7 @@ jobs:
       #  - "sub" com a condição da trust policy da role (docs/aws/github-trust-policy.json)
       #  - "role" com o ARN da role no console (mesma conta e mesmo nome)
       - name: Diagnóstico do login na AWS
-        uses: actions/github-script@v7
+        uses: actions/github-script@v9
         env:
           ROLE_ARN: ${{ vars.AWS_ROLE_ARN }}
           REGION: ${{ vars.AWS_REGION || 'us-east-1' }}
