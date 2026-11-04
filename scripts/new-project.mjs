@@ -210,13 +210,18 @@ function rewrite(path, text, from, to) {
     if (rel === 'apps/web/src/styles.css') next = recolorCss(next, to.color);
     if (rel === 'apps/web/public/favicon.svg') next = next.split(from.color).join(to.color);
   }
-  // Trust policy: o repositório novo ainda não tem os ids numéricos da linha "imutável" (dono@id/repo@id)
+  // Trust policy: o repositório novo ainda não tem os ids numéricos da linha "imutável" (dono@id/repo@id).
+  // Fica com coringa no lugar dos ids (senão o login na AWS falha) e o FIRST_DEPLOY.md ensina a fixá-los.
   if (rel === 'docs/aws/github-trust-policy.json' && from.repo !== to.repo) {
     const policy = JSON.parse(next);
+    const [owner, name] = to.repo.split('/');
     for (const statement of policy.Statement ?? []) {
       const like = statement.Condition?.StringLike;
       if (like?.['token.actions.githubusercontent.com:sub']) {
-        like['token.actions.githubusercontent.com:sub'] = `repo:${to.repo}:environment:*`;
+        like['token.actions.githubusercontent.com:sub'] = [
+          `repo:${owner}@*/${name}@*:environment:*`,
+          `repo:${to.repo}:environment:*`,
+        ];
       }
     }
     next = `${JSON.stringify(policy, null, 2)}\n`;

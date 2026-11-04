@@ -219,17 +219,25 @@ conseguiria apagar outras coisas da conta.
 ### 4.3 A role que o GitHub assume
 
 1. **IAM → Roles → Create role** → **Custom trust policy**.
-2. Cole [docs/aws/github-trust-policy.json](aws/github-trust-policy.json) e troque:
-   - `SEU_ACCOUNT_ID` pelo número da sua conta (12 dígitos, canto superior direito do console);
-   - o dono e o repositório pelos seus;
-   - os **números** (`@62189506`, `@1420175707`) pelos do seu dono/repositório — veja abaixo como descobrir.
+2. Cole [docs/aws/github-trust-policy.json](aws/github-trust-policy.json) e troque `SEU_ACCOUNT_ID` pelo número da
+   sua conta (12 dígitos, canto superior direito do console). Se o projeto foi criado com `node scripts/new-project.mjs`,
+   o dono e o repositório já estão certos, com `@*` no lugar dos números; senão, troque-os pelos seus.
 3. **Next** → marque a política `nestjs-base-api-deploy` → nome `github-deploy-nestjs-base-api` → **Create role**.
 4. Abra a role e **copie o ARN** (`arn:aws:iam::123456789012:role/github-deploy-nestjs-base-api`).
 
 **Sobre o `sub` (quem é o GitHub):** o GitHub se identifica como `repo:dono@ID/repositorio@ID:environment:prod` (formato
 novo, com os IDs numéricos — mais seguro: um repositório recriado com o mesmo nome tem outro ID) ou
-`repo:dono/repositorio:environment:prod` (antigo). O modelo aceita os dois. Para descobrir os seus números, rode o deploy
-uma vez: a etapa **"Diagnóstico do login na AWS"** mostra o `sub` exato.
+`repo:dono/repositorio:environment:prod` (antigo). O modelo aceita os dois. Se a policy tiver só o formato antigo e o
+GitHub mandar o novo (ou o contrário), o login falha com `Not authorized to perform sts:AssumeRoleWithWebIdentity`.
+
+**Depois do primeiro deploy, fixe os números (opcional, mais seguro):**
+
+1. GitHub → **Actions** → abra a execução do Deploy → etapa **"Diagnóstico do login na AWS"** → copie a linha `sub`
+   (ex.: `repo:dono@62189506/repositorio@1420175707:environment:prod`).
+2. AWS → **IAM → Roles** → `github-deploy-nestjs-base-api` → aba **Trust relationships** → **Edit trust policy**.
+3. Na linha com `@*`, troque pelo `sub` copiado, mudando o final `prod` para `*` (vale para `prod` e `dev`):
+   `"repo:dono@62189506/repositorio@1420175707:environment:*"`.
+4. **Update policy**. Atualize também o `docs/aws/github-trust-policy.json` do repositório, para o próximo a usar o modelo.
 
 ### 4.4 Environments no GitHub
 
@@ -344,7 +352,7 @@ Daqui em diante, cada deploy é só o passo 6.
 
 | Erro (onde aparece) | Causa | Solução |
 | --- | --- | --- |
-| `Not authorized to perform sts:AssumeRoleWithWebIdentity` (etapa "Login na AWS") | A trust policy da role não bate com o que o GitHub envia | Compare o `sub` mostrado na etapa **"Diagnóstico do login na AWS"** com a condição da trust policy (4.3). Confira também o `AWS_ROLE_ARN` (mesma conta e nome) |
+| `Not authorized to perform sts:AssumeRoleWithWebIdentity` (etapa "Login na AWS") | A trust policy da role não bate com o que o GitHub envia (o mais comum: a policy só tem `repo:dono/repo:...` e o GitHub manda `repo:dono@ID/repo@ID:...`) | Copie o `sub` da etapa **"Diagnóstico do login na AWS"**; em IAM → Roles → a role → **Trust relationships** → **Edit trust policy**, acrescente-o na lista do `sub` com o final `prod` trocado por `*` (passo a passo em 4.3). Confira também o `AWS_ROLE_ARN` (mesma conta e nome) |
 | `Invalid variable source at index ...` (Build + deploy) | Sintaxe de variável no `serverless.yml` | Valor padrão que é outra variável vai **sem** `${}`: `${param:a, param:b}` |
 | `Encountered invalid "--param" CLI option value: "x="` | Parâmetro vazio | O workflow já só envia os preenchidos; confira se está usando a versão atual do `deploy.yml` |
 | `Variáveis obrigatórias vazias no environment` | Falta `FRONTEND_URL`, `MAIL_FROM` ou `SUPPORT_EMAIL` | Crie no environment (4.4) |
